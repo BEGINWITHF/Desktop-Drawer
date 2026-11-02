@@ -50,7 +50,9 @@
 
 顶栏右侧的齿轮按钮可以打开设置（顶栏隐藏时先把鼠标动一下；也可以从托盘图标重新打开窗口）：
 
-- **Icon size**：Compact / Cozy / Large，控制每页能放多少图标
+- **Icon size**：Compact / Cozy / Large 三个预设，控制每页能放多少图标
+- **Custom icon size**：滑杆自定义图标大小（24–160 px），拖动后自动覆盖预设
+- **Fit to window / Columns / Rows**：关掉自适应后可以指定每页的列数（2–16）和行数（1–16）；格子放不下时图标会自动缩小到合适尺寸
 - **Folders first**：文件夹排在文件前面
 - **Show hidden files**：显示桌面上的隐藏/系统项目
 - **Close to tray**：点关闭按钮时留在托盘而不是退出

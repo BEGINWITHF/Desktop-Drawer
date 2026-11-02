@@ -43,6 +43,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int _columns = 8;
     private int _rows = 4;
     private double _iconSize = 66;
+    private double _requestedIconSize = 72;
     private double _tileFontSize = 12.5;
     private double _tileNameHeight = 34;
     private double _tileWidth = 145;
@@ -813,8 +814,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        int columns = Math.Max(2, (int)Math.Floor((availableWidth - 8) / (_tileWidth + 4)));
-        int rows = Math.Max(1, (int)Math.Floor((availableHeight - 8) / (_tileHeight + 4)));
+        int columns = _settings.GridColumns > 0
+            ? Math.Clamp(_settings.GridColumns, 2, 24)
+            : Math.Max(2, (int)Math.Floor((availableWidth - 8) / (_tileWidth + 4)));
+
+        int rows = _settings.GridRows > 0
+            ? Math.Clamp(_settings.GridRows, 1, 16)
+            : Math.Max(1, (int)Math.Floor((availableHeight - 8) / (_tileHeight + 4)));
+
+        // Icons never grow past the cell they live in, so a denser grid shrinks them.
+        double cellWidth = availableWidth / columns;
+        double cellHeight = availableHeight / rows;
+        double maxIcon = Math.Min(cellWidth * 0.55, cellHeight * 0.55);
+        double iconSize = Math.Clamp(Math.Min(_requestedIconSize, maxIcon), 20, _requestedIconSize);
+
+        IconSize = iconSize;
+        TileFontSize = Math.Clamp(iconSize * 0.18, 10, 16);
+        TileNameHeight = Math.Clamp(iconSize * 0.5, 24, 60);
 
         if (!force && columns == _columns && rows == _rows)
         {
@@ -823,7 +839,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         Columns = columns;
         Rows = rows;
-        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}");
+        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}, icon {iconSize:0}");
 
         if (_hasLoadedOnce)
         {
@@ -838,27 +854,32 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         switch (density)
         {
             case TileDensity.Compact:
-                IconSize = 44;
-                TileFontSize = 11;
-                TileNameHeight = 28;
+                _requestedIconSize = 44;
                 _tileWidth = 108;
                 _tileHeight = 116;
                 break;
             case TileDensity.Large:
-                IconSize = 96;
-                TileFontSize = 13.5;
-                TileNameHeight = 40;
+                _requestedIconSize = 96;
                 _tileWidth = 210;
                 _tileHeight = 216;
                 break;
             default:
-                IconSize = 72;
-                TileFontSize = 12.5;
-                TileNameHeight = 36;
+                _requestedIconSize = 72;
                 _tileWidth = 168;
                 _tileHeight = 168;
                 break;
         }
+
+        if (_settings.IconSize > 0)
+        {
+            _requestedIconSize = Math.Clamp(_settings.IconSize, 24, 160);
+            _tileWidth = _requestedIconSize * 2.33;
+            _tileHeight = _requestedIconSize * 2.33;
+        }
+
+        IconSize = _requestedIconSize;
+        TileFontSize = Math.Clamp(_requestedIconSize * 0.18, 10, 16);
+        TileNameHeight = Math.Clamp(_requestedIconSize * 0.5, 24, 60);
     }
 
     private void SaveSettings()

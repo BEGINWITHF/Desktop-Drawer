@@ -35,6 +35,9 @@ public sealed class ChromePosition
 public sealed class AppSettings
 {
     public TileDensity Density { get; set; } = TileDensity.Cozy;
+    public int IconSize { get; set; }          // 0 = use the density preset
+    public int GridColumns { get; set; }       // 0 = fit to the window
+    public int GridRows { get; set; }          // 0 = fit to the window
     public SortMode SortMode { get; set; } = SortMode.Name;
     public GroupMode GroupMode { get; set; } = GroupMode.None;
     public bool FoldersFirst { get; set; } = true;

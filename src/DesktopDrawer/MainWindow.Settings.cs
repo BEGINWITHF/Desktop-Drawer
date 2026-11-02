@@ -29,6 +29,26 @@ public partial class MainWindow
         CompactRadio.IsChecked = _settings.Density == TileDensity.Compact;
         CozyRadio.IsChecked = _settings.Density == TileDensity.Cozy;
         LargeRadio.IsChecked = _settings.Density == TileDensity.Large;
+
+        IconSizeSlider.Value = _settings.IconSize > 0
+            ? Math.Clamp(_settings.IconSize, 24, 160)
+            : _settings.Density switch
+            {
+                TileDensity.Compact => 44,
+                TileDensity.Large => 96,
+                _ => 72
+            };
+        IconSizeValueText.Text = $"{IconSizeSlider.Value:0} px";
+
+        bool autoGrid = _settings.GridColumns <= 0 || _settings.GridRows <= 0;
+        AutoGridToggle.IsChecked = autoGrid;
+        ColumnsSlider.IsEnabled = !autoGrid;
+        RowsSlider.IsEnabled = !autoGrid;
+        ColumnsSlider.Value = autoGrid ? Math.Max(2, Columns) : Math.Clamp(_settings.GridColumns, 2, 16);
+        RowsSlider.Value = autoGrid ? Math.Max(1, Rows) : Math.Clamp(_settings.GridRows, 1, 16);
+        ColumnsValueText.Text = ((int)Math.Round(ColumnsSlider.Value)).ToString();
+        RowsValueText.Text = ((int)Math.Round(RowsSlider.Value)).ToString();
+
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
         CloseToTrayToggle.IsChecked = _settings.CloseToTray;
@@ -54,7 +74,64 @@ public partial class MainWindow
             return;
         }
 
+        _settings.IconSize = 0;
         ApplyDensity(density);
+        SaveSettings();
+        RecalculateGrid(force: true);
+
+        _initializingSettings = true;
+        IconSizeSlider.Value = _requestedIconSize;
+        IconSizeValueText.Text = $"{_requestedIconSize:0} px";
+        _initializingSettings = false;
+    }
+
+    private void IconSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || IconSizeValueText is null)
+        {
+            return;
+        }
+
+        _settings.IconSize = (int)Math.Round(e.NewValue);
+        IconSizeValueText.Text = $"{_settings.IconSize} px";
+        ApplyDensity(_settings.Density);
+        SaveSettings();
+        RecalculateGrid(force: true);
+    }
+
+    private void AutoGridToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializingSettings)
+        {
+            return;
+        }
+
+        bool auto = AutoGridToggle.IsChecked == true;
+        _settings.GridColumns = auto ? 0 : (int)Math.Round(ColumnsSlider.Value);
+        _settings.GridRows = auto ? 0 : (int)Math.Round(RowsSlider.Value);
+        ColumnsSlider.IsEnabled = !auto;
+        RowsSlider.IsEnabled = !auto;
+        SaveSettings();
+        RecalculateGrid(force: true);
+    }
+
+    private void GridSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || ColumnsValueText is null || RowsValueText is null)
+        {
+            return;
+        }
+
+        ColumnsValueText.Text = ((int)Math.Round(ColumnsSlider.Value)).ToString();
+        RowsValueText.Text = ((int)Math.Round(RowsSlider.Value)).ToString();
+
+        if (AutoGridToggle.IsChecked == true)
+        {
+            return;
+        }
+
+        _settings.GridColumns = (int)Math.Round(ColumnsSlider.Value);
+        _settings.GridRows = (int)Math.Round(RowsSlider.Value);
         SaveSettings();
         RecalculateGrid(force: true);
     }

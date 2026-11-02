@@ -699,9 +699,99 @@
                                 </StackPanel>
                             </Border>
 
+                            <Grid Margin="0,14,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Custom icon size" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="IconSizeValueText"
+                                           Grid.Column="1"
+                                           Text="72 px"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </Grid>
+                            <Slider x:Name="IconSizeSlider"
+                                    Minimum="24"
+                                    Maximum="160"
+                                    TickFrequency="2"
+                                    IsSnapToTickEnabled="True"
+                                    Margin="0,8,10,0"
+                                    ValueChanged="IconSizeSlider_ValueChanged" />
+
+                            <Border Height="1" Background="#12FFFFFF" Margin="0,18,10,16" />
+
+                            <TextBlock Text="GRID" Style="{StaticResource SectionLabel}" />
+
+                            <Grid Margin="0,0,10,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Fit to window" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Let the app choose how many columns and rows fit."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="AutoGridToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="AutoGridToggle_Changed"
+                                          Unchecked="AutoGridToggle_Changed" />
+                            </Grid>
+
+                            <Grid Margin="0,6,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Columns" FontSize="11.5" VerticalAlignment="Center" />
+                                <Slider x:Name="ColumnsSlider"
+                                        Grid.Column="1"
+                                        Minimum="2"
+                                        Maximum="16"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="GridSlider_ValueChanged" />
+                                <TextBlock x:Name="ColumnsValueText"
+                                           Grid.Column="2"
+                                           Text="8"
+                                           FontSize="11"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </Grid>
+
+                            <Grid Margin="0,8,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Rows" FontSize="11.5" VerticalAlignment="Center" />
+                                <Slider x:Name="RowsSlider"
+                                        Grid.Column="1"
+                                        Minimum="1"
+                                        Maximum="16"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="GridSlider_ValueChanged" />
+                                <TextBlock x:Name="RowsValueText"
+                                           Grid.Column="2"
+                                           Text="4"
+                                           FontSize="11"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </Grid>
+
                             <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
 
-                            <TextBlock Text="LAYOUT" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="SORTING" Style="{StaticResource SectionLabel}" />
 
                             <Grid Margin="0,0,10,15">
                                 <Grid.ColumnDefinitions>
