@@ -126,7 +126,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Tick += ChromeTimer_Tick;
         _embedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _embedTimer.Tick += EmbedTimer_Tick;
-        _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
 
         InitializeComponent();
@@ -313,6 +313,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ShowChrome();
         _chromeTimer.Start();
 
+        if (!EmbedInDesktopLayer)
+        {
+            DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
+        }
+
         if (!_settings.HasLaunched)
         {
             _settings.HasLaunched = true;
@@ -330,12 +335,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         try
         {
-            Point center = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
-            if (!DesktopHost.IsDesktopWindowAt((int)center.X, (int)center.Y))
-            {
-                return;
-            }
-
+            // Keep the overlay at the bottom of the window stack: directly above the
+            // desktop and below every application window, so it never covers software.
             DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
         }
         catch (Exception ex)
