@@ -104,6 +104,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastPageFlip;
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
+    private int _horizontalGestureSign;
+    private DateTime _horizontalNextAllowed;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -283,12 +285,39 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         DateTime now = DateTime.UtcNow;
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 300)
+
+        // A pause means the fingers left the pad; a new swipe can go either way.
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 400)
         {
             _horizontalAccumulator = 0;
+            _horizontalGestureSign = 0;
         }
 
         _lastHorizontalWheel = now;
+
+        int sign = Math.Sign(delta);
+        if (sign == 0)
+        {
+            return;
+        }
+
+        if (_horizontalGestureSign == 0)
+        {
+            _horizontalGestureSign = sign;
+        }
+
+        // Within one swipe the fingers travel back to their starting point. That
+        // return motion must not cancel the next swipe.
+        if (sign != _horizontalGestureSign)
+        {
+            return;
+        }
+
+        if (now < _horizontalNextAllowed)
+        {
+            return;
+        }
+
         _horizontalAccumulator += delta;
 
         if (Math.Abs(_horizontalAccumulator) < 110)
@@ -296,10 +325,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // Scrolling right moves the view backwards, exactly like a browser.
-        int step = _horizontalAccumulator > 0 ? -1 : 1;
         _horizontalAccumulator = 0;
-        GoToPage(_pageIndex + step);
+        _horizontalNextAllowed = now.AddMilliseconds(260);
+
+        // Scrolling right moves the view backwards, exactly like a browser.
+        GoToPage(_pageIndex + (sign > 0 ? -1 : 1));
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
