@@ -352,8 +352,14 @@ public partial class MainWindow
         DesktopItem? item = GetItemFromSource(e.OriginalSource);
         if (item is null)
         {
+            if (_renamingItem is not null)
+            {
+                CommitRename(_renamingItem);
+            }
+
             PageList.UnselectAll();
             _dragCandidate = null;
+            PageList.Focus();
             return;
         }
 
