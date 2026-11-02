@@ -63,6 +63,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _trayHintShown;
     private bool _chromeVisible = true;
     private bool _iconsRestoredForTray;
+    private bool _embeddedInDesktop;
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
 
@@ -247,8 +248,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RecalculateGrid(force: true);
         await RefreshAsync();
 
+        // Become part of the desktop itself instead of a floating window.
+        _embeddedInDesktop = DesktopHost.TryEmbed(this);
+
         _initialized = true;
-        PageList.Focus();
         _lastCursorPosition = Mouse.GetPosition(this);
         ShowChrome();
         _chromeTimer.Start();

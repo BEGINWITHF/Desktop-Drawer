@@ -437,10 +437,13 @@ public partial class MainWindow
             WindowState = WindowState.Normal;
         }
 
-        Activate();
-        Topmost = true;
-        Topmost = false;
-        PageList.Focus();
+        if (!_embeddedInDesktop)
+        {
+            Activate();
+            Topmost = true;
+            Topmost = false;
+            PageList.Focus();
+        }
     }
 
     private void HideToTray()

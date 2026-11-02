@@ -9,6 +9,8 @@
         MinHeight="520"
         WindowStyle="None"
         ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
         WindowStartupLocation="Manual"
         Background="#0A0D14"
         Foreground="{StaticResource TextPrimaryBrush}"
