@@ -154,33 +154,6 @@ public partial class MainWindow
         }
     }
 
-    private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ChangedButton != MouseButton.Left)
-        {
-            return;
-        }
-
-        if (IsInteractiveSource(e.OriginalSource as DependencyObject))
-        {
-            return;
-        }
-
-        if (_embeddedInDesktop)
-        {
-            return;
-        }
-
-        try
-        {
-            DragMove();
-        }
-        catch (InvalidOperationException)
-        {
-            // The mouse button was released while the drag was starting.
-        }
-    }
-
     private void PageArea_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (_settingsOpen)

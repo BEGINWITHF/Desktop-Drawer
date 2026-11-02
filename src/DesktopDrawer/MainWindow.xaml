@@ -201,8 +201,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Top"
                     Background="Transparent"
-                    BorderThickness="0"
-                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    BorderThickness="0">
                 <Grid Margin="12,0,8,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />

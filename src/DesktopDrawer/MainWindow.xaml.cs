@@ -141,6 +141,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         PreviewMouseDown += Window_PreviewMouseActivity;
         StateChanged += Window_StateChanged;
+        LocationChanged += Window_LocationChanged;
 
         _desktopService.DesktopChanged += OnDesktopChanged;
         Application.Current.SessionEnding += OnSessionEnding;
@@ -386,6 +387,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Top = workArea.Top;
         Width = workArea.Width;
         Height = workArea.Height;
+    }
+
+    private void Window_LocationChanged(object? sender, EventArgs e)
+    {
+        if (!_initialized || _cleanedUp)
+        {
+            return;
+        }
+
+        Rect workArea = SystemParameters.WorkArea;
+        if (Math.Abs(Left - workArea.Left) > 0.5 || Math.Abs(Top - workArea.Top) > 0.5)
+        {
+            Left = workArea.Left;
+            Top = workArea.Top;
+        }
     }
 
     private void Window_StateChanged(object? sender, EventArgs e)
