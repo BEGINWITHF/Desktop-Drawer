@@ -1408,6 +1408,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             UpdateDesktopIconsUi();
         }
+
+        if (!IsKeyboardFocusWithin && !_settingsOpen && !_cleanedUp)
+        {
+            PageList.Focus();
+        }
     }
 
     private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)

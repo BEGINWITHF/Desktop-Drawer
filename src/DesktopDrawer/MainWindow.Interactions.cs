@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
@@ -88,6 +89,41 @@ public partial class MainWindow
             return;
         }
 
+        if (!editingText && _renamingItem is null && control && shift && e.Key == Key.C)
+        {
+            CopySelectedPaths();
+            e.Handled = true;
+            return;
+        }
+
+        if (!editingText && _renamingItem is null && control && e.Key == Key.C)
+        {
+            CopySelectedFilesToClipboard();
+            e.Handled = true;
+            return;
+        }
+
+        if (!editingText && _renamingItem is null && control && e.Key == Key.X)
+        {
+            CutSelectedFilesToClipboard();
+            e.Handled = true;
+            return;
+        }
+
+        if (!editingText && _renamingItem is null && control && e.Key == Key.V)
+        {
+            PasteIntoDesktop();
+            e.Handled = true;
+            return;
+        }
+
+        if (!editingText && _renamingItem is null && control && e.Key == Key.A)
+        {
+            PageList.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
         if (_renamingItem is null && (e.Key == Key.PageDown || (alt && e.Key == Key.Right)))
         {
             GoToPage(_pageIndex + 1);
@@ -145,12 +181,6 @@ public partial class MainWindow
 
             e.Handled = true;
             return;
-        }
-
-        if (control && e.Key == Key.C)
-        {
-            CopySelectedFilesToClipboard();
-            e.Handled = true;
         }
     }
 
@@ -564,6 +594,16 @@ public partial class MainWindow
 
     private void CopySelectedFilesToClipboard()
     {
+        SetClipboardFileDrop(move: false);
+    }
+
+    private void CutSelectedFilesToClipboard()
+    {
+        SetClipboardFileDrop(move: true);
+    }
+
+    private void SetClipboardFileDrop(bool move)
+    {
         List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
         if (items.Count == 0)
         {
@@ -578,14 +618,185 @@ public partial class MainWindow
                 collection.Add(item.FullPath);
             }
 
-            Clipboard.SetFileDropList(collection);
-            ShowToast(items.Count == 1 ? "Item copied" : $"{items.Count} items copied");
+            var data = new DataObject();
+            data.SetFileDropList(collection);
+            data.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(move ? 2 : 1)));
+            Clipboard.SetDataObject(data, true);
+
+            if (move)
+            {
+                ShowToast(items.Count == 1 ? "Item cut" : $"{items.Count} items cut");
+            }
+            else
+            {
+                ShowToast(items.Count == 1 ? "Item copied" : $"{items.Count} items copied");
+            }
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not copy files to the clipboard");
             ShowToast("Could not copy to the clipboard.");
         }
+    }
+
+    private async void PasteIntoDesktop()
+    {
+        try
+        {
+            if (!Clipboard.ContainsFileDropList())
+            {
+                ShowToast("The clipboard is empty.");
+                return;
+            }
+
+            List<string> paths = Clipboard.GetFileDropList().Cast<string>().ToList();
+            if (paths.Count == 0)
+            {
+                return;
+            }
+
+            bool move = GetClipboardDropEffect() == 2;
+            _shellService.TransferToFolder(
+                paths,
+                _desktopService.UserDesktopPath,
+                move,
+                new WindowInteropHelper(this).Handle);
+
+            if (move)
+            {
+                Clipboard.Clear();
+            }
+
+            ShowToast(move ? "Moved to the desktop" : "Pasted to the desktop");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Paste failed");
+            ShowToast(ex is ShellOperationException ? ex.Message : "Could not paste into the desktop.");
+        }
+
+        await RefreshAsync();
+    }
+
+    private static int GetClipboardDropEffect()
+    {
+        try
+        {
+            if (Clipboard.GetDataObject() is { } data && data.GetDataPresent("Preferred DropEffect"))
+            {
+                if (data.GetData("Preferred DropEffect") is MemoryStream stream)
+                {
+                    byte[] bytes = stream.ToArray();
+                    if (bytes.Length >= 4)
+                    {
+                        return BitConverter.ToInt32(bytes, 0);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Default to copy.
+        }
+
+        return 1;
+    }
+
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        if (_settingsOpen || !e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        e.Effects = GetDropEffect(e, GetDroppedPaths(e), GetDropDestination(e));
+        e.Handled = true;
+    }
+
+    private async void Window_Drop(object sender, DragEventArgs e)
+    {
+        if (_settingsOpen || !e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            return;
+        }
+
+        string destination = GetDropDestination(e);
+        List<string> paths = GetDroppedPaths(e);
+
+        // Dropping items back into the folder they already live in changes nothing.
+        string normalizedDestination = destination.TrimEnd(Path.DirectorySeparatorChar);
+        paths = paths
+            .Where(path =>
+            {
+                string? parent = Path.GetDirectoryName(path);
+                return parent is null ||
+                       !string.Equals(parent.TrimEnd(Path.DirectorySeparatorChar), normalizedDestination, StringComparison.OrdinalIgnoreCase);
+            })
+            .ToList();
+
+        if (paths.Count == 0)
+        {
+            return;
+        }
+
+        bool move = GetDropEffect(e, paths, destination) == DragDropEffects.Move;
+
+        try
+        {
+            _shellService.TransferToFolder(paths, destination, move, new WindowInteropHelper(this).Handle);
+            ShowToast(move ? "Moved to the desktop" : "Copied to the desktop");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Drop failed");
+            ShowToast(ex is ShellOperationException ? ex.Message : "Could not drop the items here.");
+        }
+
+        await RefreshAsync();
+    }
+
+    private string GetDropDestination(DragEventArgs e)
+    {
+        DesktopItem? target = GetItemFromSource(e.OriginalSource as DependencyObject);
+        if (target is { IsFolder: true })
+        {
+            return target.FullPath;
+        }
+
+        return _desktopService.UserDesktopPath;
+    }
+
+    private static List<string> GetDroppedPaths(DragEventArgs e)
+    {
+        return e.Data.GetData(DataFormats.FileDrop) is string[] paths
+            ? paths.Where(path => !string.IsNullOrWhiteSpace(path)).ToList()
+            : [];
+    }
+
+    private static DragDropEffects GetDropEffect(DragEventArgs e, IReadOnlyCollection<string> paths, string destination)
+    {
+        if (paths.Count == 0)
+        {
+            return DragDropEffects.None;
+        }
+
+        if ((e.KeyStates & DragDropKeyStates.ControlKey) != 0)
+        {
+            return DragDropEffects.Copy;
+        }
+
+        if ((e.KeyStates & DragDropKeyStates.ShiftKey) != 0)
+        {
+            return DragDropEffects.Move;
+        }
+
+        string? destinationRoot = Path.GetPathRoot(destination);
+        bool sameVolume = paths.All(path =>
+            string.Equals(Path.GetPathRoot(path), destinationRoot, StringComparison.OrdinalIgnoreCase));
+
+        return sameVolume ? DragDropEffects.Move : DragDropEffects.Copy;
     }
 
     private void DeleteSelectedItems()

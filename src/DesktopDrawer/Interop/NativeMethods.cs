@@ -5,6 +5,29 @@ namespace DesktopDrawer.Interop;
 
 internal static class NativeMethods
 {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ShFileOpStruct
+    {
+        public IntPtr hwnd;
+        public uint wFunc;
+        public IntPtr pFrom;
+        public IntPtr pTo;
+        public ushort fFlags;
+        public int fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        public IntPtr lpszProgressTitle;
+    }
+
+    public const uint FoMove = 0x0001;
+    public const uint FoCopy = 0x0002;
+
+    public const ushort FofSilent = 0x0004;
+    public const ushort FofAllowUndo = 0x0040;
+    public const ushort FofNoConfirmMkDir = 0x0200;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern int SHFileOperation(ref ShFileOpStruct fileOp);
+
     public const uint ShgfiIcon = 0x000000100;
     public const uint ShgfiLargeIcon = 0x000000000;
     public const uint ShgfiDisplayName = 0x000000200;

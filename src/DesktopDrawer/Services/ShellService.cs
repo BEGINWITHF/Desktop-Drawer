@@ -70,6 +70,59 @@ public sealed class ShellService
         }
     }
 
+    public void TransferToFolder(IEnumerable<string> sources, string destination, bool move, IntPtr ownerWindow)
+    {
+        List<string> files = sources
+            .Where(path => !string.IsNullOrWhiteSpace(path) && (File.Exists(path) || Directory.Exists(path)))
+            .Select(Path.GetFullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        IntPtr from = IntPtr.Zero;
+        IntPtr to = IntPtr.Zero;
+
+        try
+        {
+            from = Marshal.StringToHGlobalUni(string.Join('\0', files) + "\0\0");
+            to = Marshal.StringToHGlobalUni(destination + "\0");
+
+            var operation = new NativeMethods.ShFileOpStruct
+            {
+                hwnd = ownerWindow,
+                wFunc = move ? NativeMethods.FoMove : NativeMethods.FoCopy,
+                pFrom = from,
+                pTo = to,
+                fFlags = (ushort)(NativeMethods.FofAllowUndo | NativeMethods.FofNoConfirmMkDir)
+            };
+
+            int result = NativeMethods.SHFileOperation(ref operation);
+            if (result != 0 || operation.fAnyOperationsAborted != 0)
+            {
+                throw new ShellOperationException(
+                    move
+                        ? "Windows could not move the items to the desktop."
+                        : "Windows could not copy the items to the desktop.");
+            }
+        }
+        finally
+        {
+            if (from != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(from);
+            }
+
+            if (to != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(to);
+            }
+        }
+    }
+
     public void DeleteToRecycleBin(IEnumerable<DesktopItem> items)
     {
         var errors = new List<string>();
