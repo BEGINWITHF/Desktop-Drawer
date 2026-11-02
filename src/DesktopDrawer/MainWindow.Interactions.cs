@@ -1,0 +1,843 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using DesktopDrawer.Helpers;
+using DesktopDrawer.Models;
+using DesktopDrawer.Services;
+
+namespace DesktopDrawer;
+
+public partial class MainWindow
+{
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        ShowChrome();
+
+        bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+        bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
+        bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
+        bool editingText = Keyboard.FocusedElement is TextBoxBase;
+        bool pageListFocused = PageList.IsKeyboardFocusWithin;
+
+        if (control && e.Key == Key.F)
+        {
+            FocusSearch();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            if (_settingsOpen)
+            {
+                CloseSettings();
+            }
+            else if (_renamingItem is not null)
+            {
+                CancelRename(_renamingItem);
+            }
+            else if (HasSearchText)
+            {
+                SearchText = string.Empty;
+                PageList.Focus();
+            }
+            else
+            {
+                PageList.UnselectAll();
+                PageList.Focus();
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (_settingsOpen)
+        {
+            return;
+        }
+
+        if (e.Key == Key.F5 && !editingText && _renamingItem is null)
+        {
+            _ = RefreshAsync();
+            e.Handled = true;
+            return;
+        }
+
+        if (control && shift && e.Key == Key.N && !editingText)
+        {
+            _ = CreateNewFolderAsync();
+            e.Handled = true;
+            return;
+        }
+
+        if (control && shift && e.Key == Key.H)
+        {
+            SetDesktopIconsHidden(!_desktopIconsService.AreHidden());
+            e.Handled = true;
+            return;
+        }
+
+        if (_renamingItem is null && (e.Key == Key.PageDown || (alt && e.Key == Key.Right)))
+        {
+            GoToPage(_pageIndex + 1, animate: true);
+            e.Handled = true;
+            return;
+        }
+
+        if (_renamingItem is null && (e.Key == Key.PageUp || (alt && e.Key == Key.Left)))
+        {
+            GoToPage(_pageIndex - 1, animate: true);
+            e.Handled = true;
+            return;
+        }
+
+        if (_renamingItem is null && control && e.Key == Key.Home)
+        {
+            GoToPage(0, animate: true);
+            e.Handled = true;
+            return;
+        }
+
+        if (_renamingItem is null && control && e.Key == Key.End)
+        {
+            GoToPage(_pageCount - 1, animate: true);
+            e.Handled = true;
+            return;
+        }
+
+        if (editingText || _renamingItem is not null || !pageListFocused)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            OpenSelectedItems();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Delete)
+        {
+            DeleteSelectedItems();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F2)
+        {
+            DesktopItem? item = GetPrimarySelectedItem();
+            if (item is not null)
+            {
+                BeginRename(item);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (control && e.Key == Key.C)
+        {
+            CopySelectedFilesToClipboard();
+            e.Handled = true;
+        }
+    }
+
+    private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left)
+        {
+            return;
+        }
+
+        if (IsInteractiveSource(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // The mouse button was released while the drag was starting.
+        }
+    }
+
+    private void PageArea_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_settingsOpen)
+        {
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        if ((now - _lastWheel).TotalMilliseconds > 450)
+        {
+            _wheelAccumulator = 0;
+        }
+
+        _lastWheel = now;
+        _wheelAccumulator += e.Delta;
+
+        if (Math.Abs(_wheelAccumulator) < 110)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if ((now - _lastPageFlip).TotalMilliseconds < 140)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        int direction = _wheelAccumulator > 0 ? -1 : 1;
+        _wheelAccumulator = 0;
+        GoToPage(_pageIndex + direction, animate: true);
+        e.Handled = true;
+    }
+
+    private void PrevPage_Click(object sender, RoutedEventArgs e)
+    {
+        GoToPage(_pageIndex - 1, animate: true);
+    }
+
+    private void NextPage_Click(object sender, RoutedEventArgs e)
+    {
+        GoToPage(_pageIndex + 1, animate: true);
+    }
+
+    private void PageDot_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is not null)
+        {
+            GoToPage(Convert.ToInt32(button.Tag), animate: true);
+        }
+    }
+
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RefreshAsync();
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void Window_Closing(object? sender, CancelEventArgs e)
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        if (_settings.CloseToTray)
+        {
+            e.Cancel = true;
+            HideToTray();
+            return;
+        }
+
+        _isExiting = true;
+    }
+
+    private void Window_Closed(object? sender, EventArgs e)
+    {
+        if (!_isExiting)
+        {
+            return;
+        }
+
+        Cleanup();
+        Application.Current.Shutdown();
+    }
+
+    private void ExitApplication()
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        _isExiting = true;
+        Cleanup();
+        Application.Current.Shutdown();
+    }
+
+    private void SearchBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        SearchBox.SelectAll();
+    }
+
+    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            SearchText = string.Empty;
+            PageList.Focus();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Down)
+        {
+            PageList.Focus();
+            if (PageList.SelectedItems.Count == 0 && VisibleItems.Count > 0)
+            {
+                PageList.SelectedItems.Add(VisibleItems[0]);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            SearchBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+
+            if (VisibleItems.Count > 0)
+            {
+                PageList.SelectedItems.Clear();
+                PageList.SelectedItems.Add(VisibleItems[0]);
+                OpenSelectedItems();
+            }
+
+            e.Handled = true;
+        }
+    }
+
+    private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        SearchText = string.Empty;
+        PageList.Focus();
+    }
+
+    private void FocusSearch()
+    {
+        SearchBox.Focus();
+        Keyboard.Focus(SearchBox);
+        SearchBox.SelectAll();
+    }
+
+    private void PageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_updatingPage)
+        {
+            UpdateSummary();
+        }
+    }
+
+    private void PageList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsTextEditingSource(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        DesktopItem? item = GetItemFromSource(e.OriginalSource);
+        if (item is null)
+        {
+            PageList.UnselectAll();
+            _dragCandidate = null;
+            return;
+        }
+
+        _dragCandidate = item;
+        _dragStart = e.GetPosition(PageList);
+    }
+
+    private void PageList_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            _dragCandidate = null;
+            return;
+        }
+
+        if (_dragCandidate is null || _renamingItem is not null)
+        {
+            return;
+        }
+
+        Point position = e.GetPosition(PageList);
+        if (Math.Abs(position.X - _dragStart.X) < 6 && Math.Abs(position.Y - _dragStart.Y) < 6)
+        {
+            return;
+        }
+
+        DesktopItem dragItem = _dragCandidate;
+        _dragCandidate = null;
+
+        List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (!items.Contains(dragItem))
+        {
+            items = [dragItem];
+        }
+
+        string[] paths = items
+            .Select(item => item.FullPath)
+            .Where(path => File.Exists(path) || Directory.Exists(path))
+            .ToArray();
+
+        if (paths.Length == 0)
+        {
+            return;
+        }
+
+        var data = new DataObject(DataFormats.FileDrop, paths);
+
+        try
+        {
+            DragDrop.DoDragDrop(
+                PageList,
+                data,
+                DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Drag and drop failed");
+        }
+    }
+
+    private void PageList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        DesktopItem? item = GetItemFromSource(e.OriginalSource);
+        bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+
+        if (item is null)
+        {
+            PageList.UnselectAll();
+            PageList.ContextMenu = BuildEmptyAreaMenu();
+        }
+        else
+        {
+            if (!PageList.SelectedItems.Contains(item))
+            {
+                if (!control)
+                {
+                    PageList.UnselectAll();
+                }
+
+                PageList.SelectedItems.Add(item);
+            }
+
+            PageList.ContextMenu = BuildItemMenu();
+        }
+
+        if (PageList.ContextMenu is not null)
+        {
+            PageList.ContextMenu.PlacementTarget = PageList;
+            PageList.ContextMenu.Placement = PlacementMode.MousePoint;
+        }
+    }
+
+    private void PageList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (_renamingItem is not null || IsTextEditingSource(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        DesktopItem? item = GetItemFromSource(e.OriginalSource);
+        if (item is null)
+        {
+            return;
+        }
+
+        if (!PageList.SelectedItems.Contains(item))
+        {
+            PageList.UnselectAll();
+            PageList.SelectedItems.Add(item);
+        }
+
+        OpenSelectedItems();
+    }
+
+    private void PageList_KeyDown(object sender, KeyEventArgs e)
+    {
+        // Shortcuts are handled in Window_PreviewKeyDown.
+    }
+
+    private DesktopItem? GetPrimarySelectedItem()
+    {
+        return PageList.SelectedItems.Cast<DesktopItem>().FirstOrDefault();
+    }
+
+    private void OpenSelectedItems()
+    {
+        List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            _shellService.Open(items);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not open desktop items");
+            ShowToast("Could not open that item.");
+        }
+    }
+
+    private void OpenWithSelectedItem()
+    {
+        DesktopItem? item = GetPrimarySelectedItem();
+        if (item is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _shellService.OpenWith(item);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not open the Open With dialog");
+            ShowToast("Could not open the Open With dialog.");
+        }
+    }
+
+    private void ShowSelectedInExplorer()
+    {
+        DesktopItem? item = GetPrimarySelectedItem();
+        if (item is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _shellService.ShowInExplorer(item);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not show item in Explorer");
+            ShowToast("Could not open File Explorer.");
+        }
+    }
+
+    private void ShowSelectedProperties()
+    {
+        DesktopItem? item = GetPrimarySelectedItem();
+        if (item is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _shellService.ShowProperties(item);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not show item properties");
+            ShowToast("Could not open item properties.");
+        }
+    }
+
+    private void CopySelectedPaths()
+    {
+        List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            _shellService.CopyPaths(items);
+            ShowToast(items.Count == 1 ? "Path copied" : "Paths copied");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not copy paths");
+            ShowToast("Could not copy to the clipboard.");
+        }
+    }
+
+    private void CopySelectedFilesToClipboard()
+    {
+        List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var collection = new StringCollection();
+            foreach (DesktopItem item in items)
+            {
+                collection.Add(item.FullPath);
+            }
+
+            Clipboard.SetFileDropList(collection);
+            ShowToast(items.Count == 1 ? "Item copied" : $"{items.Count} items copied");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not copy files to the clipboard");
+            ShowToast("Could not copy to the clipboard.");
+        }
+    }
+
+    private void DeleteSelectedItems()
+    {
+        List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        DeleteItems(items);
+    }
+
+    private async void DeleteItems(IReadOnlyList<DesktopItem> items)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        string message = items.Count == 1
+            ? $"Moved \"{items[0].DisplayName}\" to the Recycle Bin"
+            : $"Moved {items.Count} items to the Recycle Bin";
+
+        try
+        {
+            _shellService.DeleteToRecycleBin(items);
+            ShowToast(message);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Delete failed");
+            ShowToast(ex is ShellOperationException ? ex.Message : "Could not move the items to the Recycle Bin.");
+        }
+        finally
+        {
+            await RefreshAsync();
+        }
+    }
+
+    private async Task CreateNewFolderAsync()
+    {
+        try
+        {
+            if (HasSearchText)
+            {
+                SearchText = string.Empty;
+            }
+
+            string path = _shellService.CreateNewFolder(_desktopService.UserDesktopPath);
+            await RefreshAsync(selectPath: path);
+
+            DesktopItem? item = _allItems.FirstOrDefault(
+                candidate => string.Equals(candidate.FullPath, path, StringComparison.OrdinalIgnoreCase));
+
+            if (item is not null)
+            {
+                BeginRename(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not create a new folder");
+            ShowToast("Could not create a new folder.");
+        }
+    }
+
+    private void BeginRename(DesktopItem? item)
+    {
+        if (item is null || !VisibleItems.Contains(item))
+        {
+            return;
+        }
+
+        foreach (DesktopItem other in _allItems.Where(candidate => candidate.IsRenaming))
+        {
+            other.IsRenaming = false;
+        }
+
+        _renamingItem = item;
+        item.EditName = _shellService.GetRenameSeed(item);
+        item.IsRenaming = true;
+    }
+
+    private void CancelRename(DesktopItem item)
+    {
+        item.EditName = item.DisplayName;
+        item.IsRenaming = false;
+
+        if (ReferenceEquals(_renamingItem, item))
+        {
+            _renamingItem = null;
+        }
+
+        PageList.Focus();
+    }
+
+    private async void CommitRename(DesktopItem item)
+    {
+        if (!item.IsRenaming)
+        {
+            return;
+        }
+
+        string requestedName = item.EditName;
+        item.IsRenaming = false;
+
+        if (ReferenceEquals(_renamingItem, item))
+        {
+            _renamingItem = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(requestedName) ||
+            string.Equals(requestedName.Trim(), item.DisplayName, StringComparison.Ordinal))
+        {
+            item.EditName = item.DisplayName;
+            PageList.Focus();
+            return;
+        }
+
+        try
+        {
+            string destination = _shellService.Rename(item, requestedName);
+            ShowToast("Renamed");
+            await RefreshAsync(selectPath: destination);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Rename failed");
+            ShowToast(ex is ShellOperationException ? ex.Message : "Could not rename that item.");
+            item.EditName = item.DisplayName;
+        }
+        finally
+        {
+            PageList.Focus();
+        }
+    }
+
+    private void RenameBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not TextBox textBox || !textBox.IsVisible)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+        {
+            if (!textBox.IsVisible)
+            {
+                return;
+            }
+
+            textBox.Focus();
+            textBox.SelectAll();
+        }));
+    }
+
+    private void RenameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox { DataContext: DesktopItem item })
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            CommitRename(item);
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            CancelRename(item);
+            return;
+        }
+
+        if (e.Key == Key.Tab)
+        {
+            e.Handled = true;
+            CommitRename(item);
+        }
+    }
+
+    private void RenameBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox { DataContext: DesktopItem item } && item.IsRenaming)
+        {
+            CommitRename(item);
+        }
+    }
+
+    private DesktopItem? GetItemFromSource(object? source)
+    {
+        if (source is not DependencyObject dependencyObject)
+        {
+            return null;
+        }
+
+        ListBoxItem? container = ItemsControl.ContainerFromElement(PageList, dependencyObject) as ListBoxItem;
+        return container?.DataContext as DesktopItem;
+    }
+
+    private static bool IsTextEditingSource(DependencyObject? source)
+    {
+        for (DependencyObject? current = source; current is not null; current = GetParent(current))
+        {
+            if (current is TextBoxBase)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsInteractiveSource(DependencyObject? source)
+    {
+        for (DependencyObject? current = source; current is not null; current = GetParent(current))
+        {
+            if (current is ButtonBase or TextBoxBase or ScrollBar)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject child)
+    {
+        try
+        {
+            DependencyObject? parent = VisualTreeHelper.GetParent(child);
+            if (parent is not null)
+            {
+                return parent;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Content elements are not part of the visual tree.
+        }
+
+        return LogicalTreeHelper.GetParent(child);
+    }
+}

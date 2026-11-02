@@ -1,0 +1,875 @@
+<Window x:Class="DesktopDrawer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Desktop Drawer"
+        Icon="Assets/app.ico"
+        Width="1440"
+        Height="852"
+        MinWidth="720"
+        MinHeight="520"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        WindowStartupLocation="Manual"
+        Background="#0A0D14"
+        Foreground="{StaticResource TextPrimaryBrush}"
+        FontFamily="{StaticResource UiFont}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        Closed="Window_Closed"
+        SizeChanged="Window_SizeChanged"
+        Activated="Window_Activated"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0"
+                      ResizeBorderThickness="6"
+                      GlassFrameThickness="0"
+                      CornerRadius="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="DesktopListItem" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="Card"
+                                Margin="4"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                CornerRadius="14"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="#10FFFFFF" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="#18FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RenameTextBox" TargetType="{x:Type TextBox}">
+            <Setter Property="Background" Value="#26FFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="SelectionOpacity" Value="0.35" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="4,3">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          VerticalAlignment="Center"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="DesktopItemTemplate">
+            <Grid ToolTipService.InitialShowDelay="550"
+                  ToolTipService.ShowDuration="20000">
+                <Grid.ToolTip>
+                    <ToolTip>
+                        <StackPanel MaxWidth="360">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       FontSize="12.5"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding TypeLabel}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding FullPath}"
+                                       FontSize="10.5"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,7,0,0" />
+                            <TextBlock Text="{Binding ModifiedText}"
+                                       FontSize="10.5"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,3,0,0" />
+                        </StackPanel>
+                    </ToolTip>
+                </Grid.ToolTip>
+
+                <Grid x:Name="Tile"
+                      Margin="2"
+                      Background="Transparent"
+                      VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Image Source="{Binding Icon}"
+                               Width="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                               Height="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <TextBlock x:Name="FileGlyph"
+                                   Style="{StaticResource Glyph}"
+                                   Text="&#xE7C3;"
+                                   FontSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                   Foreground="#66FFFFFF"
+                                   Visibility="Collapsed" />
+                        <TextBlock x:Name="FolderGlyph"
+                                   Style="{StaticResource Glyph}"
+                                   Text="&#xE8B7;"
+                                   FontSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                   Foreground="#66FFFFFF"
+                                   Visibility="Collapsed" />
+                    </Grid>
+
+                    <TextBlock x:Name="NameText"
+                               Grid.Row="1"
+                               Text="{Binding DisplayName}"
+                               Margin="0,7,0,0"
+                               FontSize="{Binding DataContext.TileFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                               MaxHeight="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                               TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis"
+                               TextAlignment="Center"
+                               LineHeight="16"
+                               Foreground="{StaticResource TextPrimaryBrush}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect BlurRadius="7"
+                                              ShadowDepth="1.5"
+                                              Direction="270"
+                                              Opacity="0.9"
+                                              Color="#000000"
+                                              RenderingBias="Performance" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+
+                    <TextBox x:Name="RenameBox"
+                             Grid.Row="1"
+                             Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="{Binding DataContext.TileFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                             Style="{StaticResource RenameTextBox}"
+                             MaxHeight="44"
+                             Margin="0,6,0,0"
+                             Visibility="Collapsed"
+                             IsVisibleChanged="RenameBox_IsVisibleChanged"
+                             KeyDown="RenameBox_KeyDown"
+                             LostFocus="RenameBox_LostFocus" />
+                </Grid>
+            </Grid>
+
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                        <Setter TargetName="NameText" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="RenameBox" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding HasIcon}" Value="False">
+                        <Setter TargetName="FileGlyph" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                        <Setter TargetName="FolderGlyph" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="FileGlyph" Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                        <Setter TargetName="Tile" Property="Opacity" Value="0.6" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid x:Name="RootGrid" Background="#0A0D14">
+        <Image x:Name="BackdropImage"
+               Stretch="UniformToFill"
+               Opacity="1"
+               RenderOptions.BitmapScalingMode="HighQuality" />
+
+        <Border Background="{StaticResource WindowBackdropBrush}" />
+
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="0.86,0.02" GradientOrigin="0.86,0.02" RadiusX="0.75" RadiusY="0.75">
+                    <GradientStop Color="#247C9CFF" Offset="0" />
+                    <GradientStop Color="#007C9CFF" Offset="1" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="58" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="54" />
+            </Grid.RowDefinitions>
+
+            <Border x:Name="HeaderBar"
+                    Grid.Row="0"
+                    Background="{StaticResource ChromeTopBrush}"
+                    BorderThickness="0"
+                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid Margin="12,0,8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <Border Width="34"
+                                Height="34"
+                                CornerRadius="9"
+                                Background="#0EFFFFFF"
+                                BorderBrush="#18FFFFFF"
+                                BorderThickness="1">
+                            <Image Source="Assets/app.png"
+                                   Width="32"
+                                   Height="32"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Border>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Desktop Drawer"
+                                       FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="A paged desktop"
+                                       FontSize="10"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,0,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Grid Grid.Column="1"
+                          MinWidth="150"
+                          MaxWidth="320"
+                          Height="32"
+                          Margin="10,0"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Center">
+                        <Border Style="{StaticResource SearchBoxBorder}" />
+                        <Grid Margin="11,0,7,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Path Grid.Column="0"
+                                  Width="14"
+                                  Height="14"
+                                  Stroke="{StaticResource TextMutedBrush}"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Data="M 6.2,1.2 A 5,5 0 1 1 6.2,11.2 A 5,5 0 1 1 6.2,1.2 M 10.2,10.2 L 13.2,13.2"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,9,0" />
+
+                            <Grid Grid.Column="1">
+                                <TextBox x:Name="SearchBox"
+                                         Style="{StaticResource SearchTextBox}"
+                                         FontSize="12.5"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=120}"
+                                         PreviewKeyDown="SearchBox_PreviewKeyDown"
+                                         GotKeyboardFocus="SearchBox_GotKeyboardFocus" />
+                                <TextBlock Text="Search desktop"
+                                           FontSize="12.5"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="{Binding HasSearchText, Converter={StaticResource InverseBoolToVisibility}}" />
+                            </Grid>
+
+                            <Button Grid.Column="2"
+                                    x:Name="ClearSearchButton"
+                                    Width="22"
+                                    Height="22"
+                                    Style="{StaticResource SearchClearButton}"
+                                    Click="ClearSearchButton_Click"
+                                    ToolTip="Clear search"
+                                    Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Style="{StaticResource Glyph}"
+                                           Text="&#xE711;"
+                                           FontSize="9.5" />
+                            </Button>
+                        </Grid>
+                    </Grid>
+
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <Button x:Name="SortButton"
+                                Style="{StaticResource ToolbarButton}"
+                                Height="32"
+                                Padding="8,0"
+                                Click="SortButton_Click"
+                                ToolTip="Change sort order">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}"
+                                           Text="&#xE8CB;"
+                                           FontSize="12"
+                                           Margin="0,0,5,0"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBlock x:Name="SortLabelText"
+                                           Text="Name"
+                                           FontSize="11.5"
+                                           VerticalAlignment="Center" />
+                                <Path Width="7"
+                                      Height="4"
+                                      Margin="5,1,0,0"
+                                      Stretch="Fill"
+                                      Fill="{StaticResource TextMutedBrush}"
+                                      Data="M 0,0 L 8,0 L 4,5 Z"
+                                      VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource IconButton}"
+                                Width="32"
+                                Height="32"
+                                Margin="2,0,0,0"
+                                Click="RefreshButton_Click"
+                                ToolTip="Refresh (F5)">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE72C;"
+                                       FontSize="14" />
+                        </Button>
+
+                        <ToggleButton x:Name="HideIconsToggle"
+                                      Style="{StaticResource IconToggleButton}"
+                                      Width="32"
+                                      Height="32"
+                                      Margin="2,0,0,0"
+                                      Click="HideIconsToggle_Click"
+                                      ToolTip="Hide the Windows desktop icons">
+                            <Grid Width="17" Height="17">
+                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                      StrokeThickness="1.4"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M 1,9 C 3.6,4.7 6.4,3 9,3 C 11.6,3 14.4,4.7 17,9 C 14.4,13.3 11.6,15 9,15 C 6.4,15 3.6,13.3 1,9 Z" />
+                                <Ellipse Width="4.2"
+                                         Height="4.2"
+                                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                                <Path x:Name="EyeSlash"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                      StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M 3,15.5 L 15,2.5">
+                                    <Path.Style>
+                                        <Style TargetType="{x:Type Path}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
+                                                             Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Grid>
+                        </ToggleButton>
+
+                        <Button Style="{StaticResource IconButton}"
+                                Width="32"
+                                Height="32"
+                                Margin="2,0,0,0"
+                                Click="SettingsButton_Click"
+                                ToolTip="Settings">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE713;"
+                                       FontSize="15" />
+                        </Button>
+
+                        <Border Width="1"
+                                Height="16"
+                                Background="#1AFFFFFF"
+                                Margin="5,0" />
+
+                        <Button Style="{StaticResource IconButton}"
+                                Width="32"
+                                Height="32"
+                                Click="MinimizeButton_Click"
+                                ToolTip="Minimize">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE921;"
+                                       FontSize="10" />
+                        </Button>
+
+                        <Button x:Name="CloseButton"
+                                Style="{StaticResource CloseButton}"
+                                Width="32"
+                                Height="32"
+                                Margin="2,0,0,0"
+                                Click="CloseButton_Click"
+                                ToolTip="Close to tray">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE8BB;"
+                                       FontSize="10" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1"
+                  Margin="14,4,14,2">
+                <Grid x:Name="PageArea"
+                      Background="Transparent"
+                      ClipToBounds="True"
+                      PreviewMouseWheel="PageArea_PreviewMouseWheel">
+                    <ListBox x:Name="PageList"
+                             ItemsSource="{Binding VisibleItems}"
+                             ItemTemplate="{StaticResource DesktopItemTemplate}"
+                             ItemContainerStyle="{StaticResource DesktopListItem}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             SelectionMode="Extended"
+                             SelectionChanged="PageList_SelectionChanged"
+                             MouseDoubleClick="PageList_MouseDoubleClick"
+                             PreviewMouseLeftButtonDown="PageList_PreviewMouseLeftButtonDown"
+                             PreviewMouseMove="PageList_PreviewMouseMove"
+                             PreviewMouseRightButtonDown="PageList_PreviewMouseRightButtonDown"
+                             KeyDown="PageList_KeyDown"
+                             FocusVisualStyle="{x:Null}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="{Binding Columns}" Rows="{Binding Rows}" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+
+                    <StackPanel x:Name="EmptyState"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="False"
+                                Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   Text="&#xE8B7;"
+                                   FontSize="52"
+                                   Foreground="#2EFFFFFF" />
+                        <TextBlock x:Name="EmptyTitle"
+                                   Text="Nothing here yet"
+                                   FontFamily="{StaticResource DisplayFont}"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,12,0,0" />
+                        <TextBlock x:Name="EmptySubtitle"
+                                   Text="New files on your desktop will show up here."
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <Border x:Name="ToastHost"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,16"
+                            Padding="14,9"
+                            Background="#F5191D27"
+                            BorderBrush="#2AFFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="20" ShadowDepth="6" Opacity="0.45" Color="#000000" />
+                        </Border.Effect>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE946;"
+                                       FontSize="13"
+                                       Foreground="{StaticResource AccentLightBrush}"
+                                       Margin="0,0,8,0" />
+                            <TextBlock x:Name="ToastText"
+                                       Text=""
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Border x:Name="FooterBar"
+                    Grid.Row="2"
+                    Background="Transparent"
+                    BorderThickness="0">
+                <Grid Margin="16,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding ItemSummary}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Background="#A60B0E16"
+                            BorderBrush="#3DFFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="18"
+                            Padding="9,3">
+                        <StackPanel Orientation="Horizontal">
+                        <Button x:Name="PrevButton"
+                                Style="{StaticResource IconButton}"
+                                Width="28"
+                                Height="28"
+                                IsEnabled="False"
+                                Click="PrevPage_Click"
+                                ToolTip="Previous page (PageUp)">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE76B;"
+                                       FontSize="11" />
+                        </Button>
+                        <TextBlock Text="{Binding CurrentPageLabel}"
+                                   FontSize="10.5"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="9,0"
+                                   VerticalAlignment="Center" />
+                        <ItemsControl ItemsSource="{Binding PageDots}"
+                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource PageDotButton}"
+                                            Content="{Binding Label}"
+                                            ToolTip="{Binding Tooltip}"
+                                            Tag="{Binding Index}"
+                                            Click="PageDot_Click" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button x:Name="NextButton"
+                                Style="{StaticResource IconButton}"
+                                Width="28"
+                                Height="28"
+                                Margin="4,0,0,0"
+                                IsEnabled="False"
+                                Click="NextPage_Click"
+                                ToolTip="Next page (PageDown)">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE76C;"
+                                       FontSize="11" />
+                        </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Grid.Column="2"
+                               Text="Scroll or use PgUp / PgDn"
+                               FontSize="10.5"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="SettingsOverlay"
+              Visibility="Collapsed"
+              Panel.ZIndex="20">
+            <Border x:Name="SettingsBackdrop"
+                    Background="#8C000000"
+                    MouseDown="SettingsBackdrop_MouseDown" />
+
+            <Border x:Name="SettingsPanel"
+                    Width="404"
+                    HorizontalAlignment="Right"
+                    Background="#F5161A23"
+                    BorderBrush="#22FFFFFF"
+                    BorderThickness="1,0,0,1"
+                    CornerRadius="18,0,0,18">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="36" ShadowDepth="-8" Opacity="0.5" Color="#000000" />
+                </Border.Effect>
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="SettingsTranslate" X="404" />
+                </Border.RenderTransform>
+
+                <Grid Margin="26,22,20,18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="Assets/app.png"
+                                   Width="30"
+                                   Height="30"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Settings"
+                                           FontFamily="{StaticResource DisplayFont}"
+                                           FontSize="18"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="Desktop Drawer"
+                                           FontSize="10.5"
+                                           Foreground="{StaticResource TextMutedBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button HorizontalAlignment="Right"
+                                Style="{StaticResource IconButton}"
+                                Click="SettingsCloseButton_Click"
+                                ToolTip="Close settings">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE8BB;"
+                                       FontSize="11" />
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1"
+                                  Margin="0,18,4,0"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,0,6,10">
+
+                            <TextBlock Text="APPEARANCE" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="Icon size" Style="{StaticResource SettingTitle}" />
+                            <TextBlock Text="Choose how large desktop items appear. Smaller tiles fit more items on each page."
+                                       Style="{StaticResource SettingDescription}" />
+                            <Border Background="#0FFFFFFF"
+                                    BorderBrush="{StaticResource StrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="2"
+                                    Margin="0,10,10,0"
+                                    HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="CompactRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="Compact"
+                                                 Tag="Compact"
+                                                 Checked="DensityRadio_Checked" />
+                                    <RadioButton x:Name="CozyRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="Cozy"
+                                                 Tag="Cozy"
+                                                 Checked="DensityRadio_Checked" />
+                                    <RadioButton x:Name="LargeRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="Large"
+                                                 Tag="Large"
+                                                 Checked="DensityRadio_Checked" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+
+                            <TextBlock Text="LAYOUT" Style="{StaticResource SectionLabel}" />
+
+                            <Grid Margin="0,0,10,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Folders first" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Keep folders above files when sorting."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="FoldersFirstToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="FoldersFirstToggle_Changed"
+                                          Unchecked="FoldersFirstToggle_Changed" />
+                            </Grid>
+
+                            <Grid Margin="0,0,10,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Show hidden files" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Include hidden and system items from the desktop."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="ShowHiddenToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="ShowHiddenToggle_Changed"
+                                          Unchecked="ShowHiddenToggle_Changed" />
+                            </Grid>
+
+                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+
+                            <TextBlock Text="BEHAVIOR" Style="{StaticResource SectionLabel}" />
+
+                            <Grid Margin="0,0,10,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Close to tray" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Keep Desktop Drawer running when the window is closed."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="CloseToTrayToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="CloseToTrayToggle_Changed"
+                                          Unchecked="CloseToTrayToggle_Changed" />
+                            </Grid>
+
+                            <Grid Margin="0,0,10,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Start with Windows" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Open Desktop Drawer automatically after sign-in."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="StartWithWindowsToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="StartWithWindowsToggle_Changed"
+                                          Unchecked="StartWithWindowsToggle_Changed" />
+                            </Grid>
+
+                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+
+                            <TextBlock Text="WINDOWS DESKTOP" Style="{StaticResource SectionLabel}" />
+
+                            <Grid Margin="0,0,10,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Hide desktop icons now" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Temporarily hide the icons on the Windows desktop while you use Desktop Drawer."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="HideIconsSettingsToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="HideIconsSettingsToggle_Changed"
+                                          Unchecked="HideIconsSettingsToggle_Changed" />
+                            </Grid>
+
+                            <Grid Margin="0,8,10,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Hide icons on launch" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Automatically hide the Windows icons whenever Desktop Drawer starts."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="HideIconsOnLaunchToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="HideIconsOnLaunchToggle_Changed"
+                                          Unchecked="HideIconsOnLaunchToggle_Changed" />
+                            </Grid>
+
+                            <TextBlock Text="Desktop icon visibility is restored when Desktop Drawer exits."
+                                       Style="{StaticResource SettingDescription}"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,0,10,12" />
+
+                            <WrapPanel Margin="0,0,10,0">
+                                <Button Style="{StaticResource GhostButton}"
+                                        Content="Open Desktop folder"
+                                        Margin="0,0,8,8"
+                                        Click="OpenDesktopFolderButton_Click" />
+                                <Button Style="{StaticResource GhostButton}"
+                                        Content="Refresh icons"
+                                        Margin="0,0,8,8"
+                                        Click="RefreshIconsButton_Click" />
+                            </WrapPanel>
+
+                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+
+                            <TextBlock Text="ABOUT" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="Desktop Drawer 1.0"
+                                       Style="{StaticResource SettingTitle}" />
+                            <TextBlock Text="Your desktop files, spread across calm, page-sized views. Files stay exactly where they are."
+                                       Style="{StaticResource SettingDescription}" />
+                            <WrapPanel Margin="0,12,10,0">
+                                <Button Style="{StaticResource GhostButton}"
+                                        Content="Open data folder"
+                                        Margin="0,0,8,8"
+                                        Click="OpenDataFolderButton_Click" />
+                                <Button Style="{StaticResource GhostButton}"
+                                        Content="Exit Desktop Drawer"
+                                        Foreground="{StaticResource DangerBrush}"
+                                        Margin="0,0,8,8"
+                                        Click="ExitApplicationButton_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="2"
+                               Text="Changes are saved automatically."
+                               FontSize="10.5"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,12,10,0" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

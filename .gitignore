@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+publish/
+artifacts/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+
+# Local app data
+*.log
+settings.json
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
