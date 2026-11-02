@@ -31,7 +31,7 @@
 
 | 操作 | 方式 |
 | --- | --- |
-| 翻页 | 鼠标滚轮、`PageUp` / `PageDown`、`Alt+←` / `Alt+→`、底部圆点 |
+| 翻页 | 鼠标滚轮、触控板双指横滑 / 竖滑、`PageUp` / `PageDown`、`Alt+←` / `Alt+→`、底部圆点 |
 | 第一页 / 最后一页 | `Ctrl+Home` / `Ctrl+End` |
 | 搜索 | `Ctrl+F` |
 | 打开 | 双击，或选中后按 `Enter` |

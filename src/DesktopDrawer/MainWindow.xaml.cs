@@ -102,6 +102,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _wheelAccumulator;
     private DateTime _lastWheel;
     private DateTime _lastPageFlip;
+    private DateTime _lastHorizontalWheel;
+    private double _horizontalAccumulator;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -254,6 +256,50 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             handle,
             NativeMethods.GwlExStyle,
             new IntPtr(exStyle | NativeMethods.WsExToolWindow));
+
+        HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
+    }
+
+    private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int WmMouseHWheel = 0x020E;
+
+        if (message == WmMouseHWheel && !_settingsOpen)
+        {
+            // Two-finger horizontal swipes on a touchpad arrive here.
+            int delta = (short)((long)wParam >> 16);
+            HandleHorizontalWheel(delta);
+            handled = true;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private void HandleHorizontalWheel(int delta)
+    {
+        if (_cleanedUp || _pageCount <= 1)
+        {
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 300)
+        {
+            _horizontalAccumulator = 0;
+        }
+
+        _lastHorizontalWheel = now;
+        _horizontalAccumulator += delta;
+
+        if (Math.Abs(_horizontalAccumulator) < 110)
+        {
+            return;
+        }
+
+        // Scrolling right moves the view backwards, exactly like a browser.
+        int step = _horizontalAccumulator > 0 ? -1 : 1;
+        _horizontalAccumulator = 0;
+        GoToPage(_pageIndex + step);
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -800,9 +846,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        int direction = target > _pageIndex ? 1 : -1;
         _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage();
+        AnimatePageFlip(direction);
+    }
+
+    private void AnimatePageFlip(int direction)
+    {
+        if (PageList.RenderTransform is not TranslateTransform transform)
+        {
+            transform = new TranslateTransform();
+            PageList.RenderTransform = transform;
+        }
+
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        transform.X = direction * 40;
+
+        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
     private void RecalculateGrid(bool force = false)
