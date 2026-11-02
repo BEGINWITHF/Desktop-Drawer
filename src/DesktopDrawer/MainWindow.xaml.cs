@@ -68,6 +68,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int _embedAttempts;
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
+    private DateTime _lastWatchdogCheck = DateTime.UtcNow;
 
     private static readonly TimeSpan ChromeIdleDelay = TimeSpan.FromSeconds(2.4);
 
@@ -807,6 +808,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_cleanedUp)
         {
             return;
+        }
+
+        if (DateTime.UtcNow - _lastWatchdogCheck >= TimeSpan.FromSeconds(30))
+        {
+            _lastWatchdogCheck = DateTime.UtcNow;
+            IconWatchdog.EnsureRunning();
         }
 
         Point cursor = Mouse.GetPosition(this);

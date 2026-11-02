@@ -133,6 +133,10 @@ internal static class NativeMethods
     public static extern bool IsWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
     public static extern uint GetDpiForWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]

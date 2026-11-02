@@ -14,6 +14,8 @@ public static class IconWatchdog
     private const string SwitchName = "--restore-desktop-icons";
     private const string WatchdogFileName = "DesktopDrawer.Watchdog.exe";
 
+    private static Process? _watchdog;
+
     public static void Start()
     {
         try
@@ -45,7 +47,8 @@ public static class IconWatchdog
 
             startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
 
-            using Process? watchdog = Process.Start(startInfo);
+            Process? watchdog = Process.Start(startInfo);
+            _watchdog = watchdog;
             AppLog.Write(watchdog is null
                 ? "Could not start the desktop icon watchdog."
                 : $"Desktop icon watchdog started (pid {watchdog.Id}).");
@@ -54,6 +57,26 @@ public static class IconWatchdog
         {
             AppLog.Write(ex, "Could not start the desktop icon watchdog");
         }
+    }
+
+    /// <summary>
+    /// Restarts the watchdog if it disappeared while the app is still running.
+    /// </summary>
+    public static void EnsureRunning()
+    {
+        try
+        {
+            if (_watchdog is { HasExited: false })
+            {
+                return;
+            }
+        }
+        catch
+        {
+            // Fall through and start a fresh watchdog.
+        }
+
+        Start();
     }
 
     /// <summary>
