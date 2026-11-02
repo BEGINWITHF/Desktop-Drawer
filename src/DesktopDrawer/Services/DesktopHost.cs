@@ -24,7 +24,6 @@ public static class DesktopHost
         IntPtr host = FindIconView();
         if (host == IntPtr.Zero)
         {
-            AppLog.Write("Could not find the desktop icon view; running as a normal window.");
             return false;
         }
 

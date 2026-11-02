@@ -28,6 +28,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _toastTimer;
     private readonly DispatcherTimer _resizeTimer;
     private readonly DispatcherTimer _chromeTimer;
+    private readonly DispatcherTimer _embedTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -64,6 +65,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _chromeVisible = true;
     private bool _iconsRestoredForTray;
     private bool _embeddedInDesktop;
+    private int _embedAttempts;
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
 
@@ -99,6 +101,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _resizeTimer.Tick += ResizeTimer_Tick;
         _chromeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         _chromeTimer.Tick += ChromeTimer_Tick;
+        _embedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _embedTimer.Tick += EmbedTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -249,7 +253,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         await RefreshAsync();
 
         // Become part of the desktop itself instead of a floating window.
-        _embeddedInDesktop = DesktopHost.TryEmbed(this);
+        StartDesktopEmbedding();
 
         _initialized = true;
         _lastCursorPosition = Mouse.GetPosition(this);
@@ -261,6 +265,40 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _settings.HasLaunched = true;
             SaveSettings();
             ShowToast("Move the mouse to show controls. Scroll or press PageDown to flip pages.");
+        }
+    }
+
+    private void StartDesktopEmbedding()
+    {
+        if (DesktopHost.TryEmbed(this))
+        {
+            _embeddedInDesktop = true;
+            return;
+        }
+
+        // Explorer may not have created its desktop view yet right after sign-in.
+        _embedTimer.Start();
+    }
+
+    private void EmbedTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_cleanedUp || _embeddedInDesktop)
+        {
+            _embedTimer.Stop();
+            return;
+        }
+
+        if (DesktopHost.TryEmbed(this))
+        {
+            _embeddedInDesktop = true;
+            _embedTimer.Stop();
+            return;
+        }
+
+        if (++_embedAttempts >= 20)
+        {
+            _embedTimer.Stop();
+            AppLog.Write("Could not attach to the desktop; running as a normal window.");
         }
     }
 
@@ -903,6 +941,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _cleanedUp = true;
         _prefetchCts?.Cancel();
         _chromeTimer.Stop();
+        _embedTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();
