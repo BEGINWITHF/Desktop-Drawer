@@ -30,9 +30,20 @@ public partial class MainWindow
         menu.Items.Add(new Separator());
         AddCheckableItem(menu, "Folders first", _settings.FoldersFirst, ToggleFoldersFirst);
         AddCheckableItem(menu, "Show hidden files", _settings.ShowHidden, ToggleShowHidden);
+        menu.Items.Add(BuildGroupByMenu());
         menu.Items.Add(new Separator());
         AddMenuItem(menu, "Refresh", "\uE72C", "F5", () => _ = RefreshAsync());
 
+        return menu;
+    }
+
+    private MenuItem BuildGroupByMenu()
+    {
+        var menu = new MenuItem { Header = "Group by" };
+        AddCheckableItem(menu.Items, "None", _settings.GroupMode == GroupMode.None, () => SetGroupMode(GroupMode.None));
+        AddCheckableItem(menu.Items, "Type", _settings.GroupMode == GroupMode.Type, () => SetGroupMode(GroupMode.Type));
+        AddCheckableItem(menu.Items, "Name", _settings.GroupMode == GroupMode.Name, () => SetGroupMode(GroupMode.Name));
+        AddCheckableItem(menu.Items, "Date modified", _settings.GroupMode == GroupMode.Date, () => SetGroupMode(GroupMode.Date));
         return menu;
     }
 
@@ -46,6 +57,24 @@ public partial class MainWindow
         PageList.UnselectAll();
         UpdatePage();
     }
+
+    private void SetGroupMode(GroupMode mode)
+    {
+        _settings.GroupMode = mode;
+        SaveSettings();
+        _pageIndex = 0;
+        PageList.UnselectAll();
+        UpdatePage();
+        ShowToast(mode == GroupMode.None ? "Grouping off" : $"Grouped by {DescribeGroupMode(mode)}");
+    }
+
+    private static string DescribeGroupMode(GroupMode mode) => mode switch
+    {
+        GroupMode.Type => "type",
+        GroupMode.Name => "name",
+        GroupMode.Date => "date modified",
+        _ => "nothing"
+    };
 
     private void ToggleFoldersFirst()
     {
@@ -129,6 +158,7 @@ public partial class MainWindow
         AddMenuItem(menu, "Refresh", "\uE72C", "F5", () => _ = RefreshAsync());
         menu.Items.Add(new Separator());
         AddCheckableItem(menu, "Show hidden files", _settings.ShowHidden, ToggleShowHidden);
+        menu.Items.Add(BuildGroupByMenu());
         AddCheckableItem(
             menu,
             "Hide Windows desktop icons",
@@ -149,6 +179,11 @@ public partial class MainWindow
 
     private void AddCheckableItem(ContextMenu menu, string header, bool isChecked, Action action)
     {
+        AddCheckableItem(menu.Items, header, isChecked, action);
+    }
+
+    private void AddCheckableItem(ItemCollection items, string header, bool isChecked, Action action)
+    {
         var item = new MenuItem
         {
             Header = header,
@@ -157,7 +192,7 @@ public partial class MainWindow
         };
 
         item.Click += (_, _) => action();
-        menu.Items.Add(item);
+        items.Add(item);
     }
 
     private MenuItem AddMenuItem(

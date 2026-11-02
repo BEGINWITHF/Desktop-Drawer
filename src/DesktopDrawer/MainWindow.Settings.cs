@@ -35,6 +35,7 @@ public partial class MainWindow
         StartWithWindowsToggle.IsChecked = _settings.StartWithWindows;
         HideIconsOnLaunchToggle.IsChecked = _settings.HideIconsOnLaunch;
         HideIconsSettingsToggle.IsChecked = _desktopIconsService.AreHidden();
+        LayoutEditToggle.IsChecked = _layoutEditing;
 
         UpdateSortLabel();
         CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
@@ -146,6 +147,24 @@ public partial class MainWindow
     private void HideIconsToggle_Click(object sender, RoutedEventArgs e)
     {
         SetDesktopIconsHidden(HideIconsToggle.IsChecked == true);
+    }
+
+    private void LayoutEditToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializingSettings)
+        {
+            return;
+        }
+
+        SetLayoutEditing(LayoutEditToggle.IsChecked == true);
+    }
+
+    private void ResetLayoutButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.Layout.Clear();
+        SaveSettings();
+        ApplyChromeLayout();
+        ShowToast("Layout positions reset.");
     }
 
     private void HideIconsSettingsToggle_Changed(object sender, RoutedEventArgs e)

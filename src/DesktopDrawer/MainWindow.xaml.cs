@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -35,6 +36,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
+    private List<PageSlice> _pages = [];
 
     private int _pageIndex;
     private int _pageCount = 1;
@@ -50,6 +52,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private string _itemSummary = "Reading desktop...";
     private string _currentPageLabel = "Page 1 of 1";
     private bool _showPageDots;
+    private string _currentGroupText = string.Empty;
+    private bool _showGroupBadge;
 
     private bool _initialized;
     private bool _hasLoadedOnce;
@@ -67,6 +71,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _trayHintShown;
     private bool _chromeVisible = true;
     private bool _iconsRestoredForTray;
+    private bool _layoutEditing;
+    private FrameworkElement? _dragElement;
+    private Point _dragStartPoint;
+    private Thickness _dragStartMargin;
+    private readonly Dictionary<FrameworkElement, string> _chromeElements = new();
+    private readonly Dictionary<FrameworkElement, ChromeOutlineAdorner> _chromeAdorners = new();
     private bool _embeddedInDesktop;
     private int _embedAttempts;
 
@@ -127,6 +137,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageList.ContextMenu = BuildEmptyAreaMenu();
         UpdateSortLabel();
         CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
+        InitializeChromeLayout();
 
         PreviewMouseDown += Window_PreviewMouseActivity;
         StateChanged += Window_StateChanged;
@@ -219,6 +230,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         private set => SetField(ref _showPageDots, value);
     }
 
+    public string CurrentGroupText
+    {
+        get => _currentGroupText;
+        private set => SetField(ref _currentGroupText, value);
+    }
+
+    public bool ShowGroupBadge
+    {
+        get => _showGroupBadge;
+        private set => SetField(ref _showGroupBadge, value);
+    }
+
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -270,6 +293,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         UpdateLayout();
+        ApplyChromeLayout();
         RecalculateGrid(force: true);
         await RefreshAsync();
 
@@ -550,14 +574,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         string? selectPath = null)
     {
         int capacity = Math.Max(1, Columns * Rows);
-        int pageCount = Math.Max(1, (_filteredItems.Count + capacity - 1) / capacity);
+        _pages = BuildPages(capacity);
+
+        int pageCount = Math.Max(1, _pages.Count);
         _pageCount = pageCount;
         _pageIndex = Math.Clamp(_pageIndex, 0, pageCount - 1);
 
-        List<DesktopItem> pageItems = _filteredItems
-            .Skip(_pageIndex * capacity)
-            .Take(capacity)
-            .ToList();
+        PageSlice slice = _pages.Count > 0 ? _pages[_pageIndex] : new PageSlice();
+        List<DesktopItem> pageItems = slice.Items;
+
+        CurrentGroupText = string.IsNullOrEmpty(slice.Group)
+            ? string.Empty
+            : $"{slice.Group} · {slice.GroupTotal}";
+        ShowGroupBadge = !string.IsNullOrEmpty(slice.Group);
 
         _updatingPage = true;
         try
@@ -599,26 +628,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         PageDots.Clear();
-        ShowPageDots = pageCount > 1 && pageCount <= 10;
+        ShowPageDots = pageCount > 1 && pageCount <= 12;
 
         if (ShowPageDots)
         {
             for (int i = 0; i < pageCount; i++)
             {
-                int start = i * capacity + 1;
-                int end = Math.Min((i + 1) * capacity, _filteredItems.Count);
-
+                PageSlice dot = _pages[i];
                 PageDots.Add(new PageDot
                 {
                     Index = i,
                     Label = (i + 1).ToString(),
                     IsCurrent = i == _pageIndex,
-                    Tooltip = $"Page {i + 1} - items {start} to {end}"
+                    Tooltip = string.IsNullOrEmpty(dot.Group)
+                        ? $"Page {i + 1} - {dot.Items.Count} items"
+                        : $"{dot.Group} - page {dot.GroupPage} of {dot.GroupPages}"
                 });
             }
         }
 
-        CurrentPageLabel = pageCount <= 1 ? "1 page" : $"Page {_pageIndex + 1} of {pageCount}";
+        CurrentPageLabel = BuildPageLabel(slice, pageCount);
         PrevButton.IsEnabled = _pageIndex > 0;
         NextButton.IsEnabled = _pageIndex < pageCount - 1;
         UpdateEmptyState(pageItems.Count);
@@ -898,10 +927,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         if (_settingsOpen ||
+            _layoutEditing ||
             SearchBox.IsKeyboardFocusWithin ||
             _renamingItem is not null ||
             HeaderBar.IsMouseOver ||
-            FooterBar.IsMouseOver)
+            PagerBar.IsMouseOver ||
+            SummaryText.IsMouseOver ||
+            HintText.IsMouseOver ||
+            GroupBadge.IsMouseOver)
         {
             _lastChromeActivity = DateTime.UtcNow;
             return;
@@ -929,7 +962,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _chromeVisible = true;
         HeaderBar.IsHitTestVisible = true;
-        FooterBar.IsHitTestVisible = true;
         AnimateChrome(1);
     }
 
@@ -942,7 +974,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _chromeVisible = false;
         HeaderBar.IsHitTestVisible = false;
-        FooterBar.IsHitTestVisible = true;
         AnimateChrome(0);
     }
 
@@ -967,13 +998,354 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         };
         footerFade.Completed += (_, _) =>
         {
-            FooterBar.BeginAnimation(OpacityProperty, null);
-            FooterBar.Opacity = footerTarget;
+            foreach (FrameworkElement element in new FrameworkElement[] { PagerBar, SummaryText, HintText })
+            {
+                element.BeginAnimation(OpacityProperty, null);
+                element.Opacity = footerTarget;
+            }
         };
 
         HeaderBar.BeginAnimation(OpacityProperty, headerFade, HandoffBehavior.SnapshotAndReplace);
-        FooterBar.BeginAnimation(OpacityProperty, footerFade, HandoffBehavior.SnapshotAndReplace);
+        foreach (FrameworkElement element in new FrameworkElement[] { PagerBar, SummaryText, HintText })
+        {
+            element.BeginAnimation(OpacityProperty, footerFade, HandoffBehavior.SnapshotAndReplace);
+        }
     }
+
+    private void InitializeChromeLayout()
+    {
+        _chromeElements[HeaderBar] = "header";
+        _chromeElements[PagerBar] = "pager";
+        _chromeElements[SummaryText] = "summary";
+        _chromeElements[HintText] = "hint";
+        _chromeElements[GroupBadge] = "groups";
+
+        foreach (FrameworkElement element in _chromeElements.Keys)
+        {
+            element.PreviewMouseLeftButtonDown += Chrome_PreviewMouseDown;
+            element.PreviewMouseMove += Chrome_PreviewMouseMove;
+            element.PreviewMouseLeftButtonUp += Chrome_PreviewMouseUp;
+        }
+
+        RootGrid.SizeChanged += (_, _) => ApplyChromeLayout();
+    }
+
+    private void ApplyChromeLayout()
+    {
+        double width = RootGrid.ActualWidth;
+        double height = RootGrid.ActualHeight;
+        if (width < 10 || height < 10)
+        {
+            return;
+        }
+
+        foreach ((FrameworkElement element, string key) in _chromeElements)
+        {
+            double elementWidth = element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width;
+            double elementHeight = element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height;
+
+            double x;
+            double y;
+
+            if (_settings.Layout.TryGetValue(key, out ChromePosition? saved) &&
+                saved.X.HasValue &&
+                saved.Y.HasValue)
+            {
+                x = saved.X.Value * width;
+                y = saved.Y.Value * height;
+            }
+            else
+            {
+                (x, y) = key switch
+                {
+                    "pager" => ((width - elementWidth) / 2, height - elementHeight - 10),
+                    "summary" => (16, height - elementHeight - 12),
+                    "hint" => (width - elementWidth - 16, height - elementHeight - 12),
+                    "groups" => (16, 62),
+                    _ => (0d, 0d)
+                };
+            }
+
+            x = Math.Clamp(x, 0, Math.Max(0, width - elementWidth));
+            y = Math.Clamp(y, 0, Math.Max(0, height - elementHeight));
+            element.Margin = new Thickness(x, y, 0, 0);
+        }
+    }
+
+    private void Chrome_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_layoutEditing || sender is not FrameworkElement element)
+        {
+            return;
+        }
+
+        _dragElement = element;
+        _dragStartPoint = e.GetPosition(RootGrid);
+        _dragStartMargin = element.Margin;
+        element.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void Chrome_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_layoutEditing || _dragElement is null || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        Point point = e.GetPosition(RootGrid);
+        double width = RootGrid.ActualWidth;
+        double height = RootGrid.ActualHeight;
+        double elementWidth = _dragElement.ActualWidth;
+        double elementHeight = _dragElement.ActualHeight;
+
+        double x = _dragStartMargin.Left + (point.X - _dragStartPoint.X);
+        double y = _dragStartMargin.Top + (point.Y - _dragStartPoint.Y);
+
+        if (_dragElement == HeaderBar)
+        {
+            // The header spans the whole width, so only vertical movement matters.
+            x = 0;
+        }
+
+        x = Math.Clamp(x, 0, Math.Max(0, width - elementWidth));
+        y = Math.Clamp(y, 0, Math.Max(0, height - elementHeight));
+        _dragElement.Margin = new Thickness(x, y, 0, 0);
+        e.Handled = true;
+    }
+
+    private void Chrome_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_dragElement is null)
+        {
+            return;
+        }
+
+        FrameworkElement element = _dragElement;
+        _dragElement = null;
+        element.ReleaseMouseCapture();
+
+        if (!_layoutEditing)
+        {
+            return;
+        }
+
+        if (_chromeElements.TryGetValue(element, out string? key))
+        {
+            double width = Math.Max(1, RootGrid.ActualWidth);
+            double height = Math.Max(1, RootGrid.ActualHeight);
+
+            if (!_settings.Layout.TryGetValue(key, out ChromePosition? position))
+            {
+                position = new ChromePosition();
+                _settings.Layout[key] = position;
+            }
+
+            position.X = element.Margin.Left / width;
+            position.Y = element.Margin.Top / height;
+            SaveSettings();
+        }
+
+        e.Handled = true;
+    }
+
+    private void SetLayoutEditing(bool enabled)
+    {
+        if (_layoutEditing == enabled)
+        {
+            return;
+        }
+
+        _layoutEditing = enabled;
+
+        foreach (FrameworkElement element in _chromeElements.Keys)
+        {
+            AdornerLayer? layer = AdornerLayer.GetAdornerLayer(element);
+
+            if (enabled)
+            {
+                element.Cursor = Cursors.SizeAll;
+                if (layer is not null && !_chromeAdorners.ContainsKey(element))
+                {
+                    var adorner = new ChromeOutlineAdorner(element);
+                    layer.Add(adorner);
+                    _chromeAdorners[element] = adorner;
+                }
+            }
+            else
+            {
+                element.Cursor = Cursors.Arrow;
+                if (_chromeAdorners.Remove(element, out ChromeOutlineAdorner? adorner))
+                {
+                    layer?.Remove(adorner);
+                }
+            }
+        }
+
+        ShowChrome();
+
+        if (LayoutEditToggle.IsChecked != enabled)
+        {
+            LayoutEditToggle.IsChecked = enabled;
+        }
+
+        if (enabled)
+        {
+            ShowToast("Drag the header, pager, summary and hint. Press Esc when done.");
+        }
+    }
+
+    private string BuildPageLabel(PageSlice slice, int pageCount)
+    {
+        if (!string.IsNullOrEmpty(slice.Group))
+        {
+            return slice.GroupPages > 1
+                ? $"{slice.Group} · {slice.GroupPage}/{slice.GroupPages}"
+                : slice.Group;
+        }
+
+        return pageCount <= 1 ? "1 page" : $"Page {_pageIndex + 1} of {pageCount}";
+    }
+
+    private List<PageSlice> BuildPages(int capacity)
+    {
+        var pages = new List<PageSlice>();
+
+        if (_settings.GroupMode == GroupMode.None)
+        {
+            for (int i = 0; i < _filteredItems.Count; i += capacity)
+            {
+                var items = _filteredItems.Skip(i).Take(capacity).ToList();
+                pages.Add(new PageSlice { Items = items, GroupTotal = _filteredItems.Count });
+            }
+
+            return pages;
+        }
+
+        List<IGrouping<string, DesktopItem>> groups = _filteredItems.GroupBy(GetGroupName).ToList();
+
+        IEnumerable<IGrouping<string, DesktopItem>> ordered = _settings.GroupMode switch
+        {
+            GroupMode.Type => groups.OrderBy(group => TypeGroupOrder(group.Key)).ThenBy(group => group.Key),
+            GroupMode.Name => groups.OrderBy(group => group.Key, StringComparer.CurrentCultureIgnoreCase),
+            GroupMode.Date => groups.OrderBy(group => DateGroupOrder(group.Key)),
+            _ => groups
+        };
+
+        foreach (IGrouping<string, DesktopItem> group in ordered)
+        {
+            List<DesktopItem> items = group.ToList();
+            int groupPages = Math.Max(1, (items.Count + capacity - 1) / capacity);
+
+            for (int page = 0; page < groupPages; page++)
+            {
+                pages.Add(new PageSlice
+                {
+                    Group = group.Key,
+                    Items = items.Skip(page * capacity).Take(capacity).ToList(),
+                    GroupPage = page + 1,
+                    GroupPages = groupPages,
+                    GroupTotal = items.Count
+                });
+            }
+        }
+
+        return pages;
+    }
+
+    private string GetGroupName(DesktopItem item) => _settings.GroupMode switch
+    {
+        GroupMode.Type => GetTypeGroup(item),
+        GroupMode.Name => GetNameGroup(item),
+        GroupMode.Date => GetDateGroup(item),
+        _ => string.Empty
+    };
+
+    private static string GetTypeGroup(DesktopItem item)
+    {
+        if (item.IsFolder)
+        {
+            return "Folders";
+        }
+
+        return Path.GetExtension(item.Name).ToLowerInvariant() switch
+        {
+            ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".webp" or ".svg" or ".ico" or ".psd" or ".tif" or ".tiff" => "Images",
+            ".mp4" or ".mkv" or ".avi" or ".mov" or ".wmv" or ".webm" or ".flv" or ".m4v" => "Videos",
+            ".mp3" or ".wav" or ".flac" or ".aac" or ".ogg" or ".m4a" or ".wma" => "Audio",
+            ".zip" or ".rar" or ".7z" or ".tar" or ".gz" or ".xz" or ".bz2" or ".iso" => "Archives",
+            ".doc" or ".docx" or ".pdf" or ".txt" or ".md" or ".xls" or ".xlsx" or ".ppt" or ".pptx" or ".csv" or ".rtf" or ".odt" => "Documents",
+            ".exe" or ".msi" or ".bat" or ".cmd" or ".ps1" or ".lnk" => "Programs",
+            _ => "Other"
+        };
+    }
+
+    private static int TypeGroupOrder(string name) => name switch
+    {
+        "Folders" => 0,
+        "Documents" => 1,
+        "Images" => 2,
+        "Videos" => 3,
+        "Audio" => 4,
+        "Archives" => 5,
+        "Programs" => 6,
+        _ => 7
+    };
+
+    private static string GetNameGroup(DesktopItem item)
+    {
+        string name = item.DisplayName.TrimStart('.');
+        if (name.Length == 0)
+        {
+            return "#";
+        }
+
+        char first = char.ToUpperInvariant(name[0]);
+        if (char.IsDigit(first))
+        {
+            return "#";
+        }
+
+        return char.IsLetter(first) ? first.ToString() : "…";
+    }
+
+    private static string GetDateGroup(DesktopItem item)
+    {
+        DateTime today = DateTime.Today;
+        DateTime date = item.Modified.Date;
+
+        if (date >= today)
+        {
+            return "Today";
+        }
+
+        if (date >= today.AddDays(-1))
+        {
+            return "Yesterday";
+        }
+
+        if (date >= today.AddDays(-7))
+        {
+            return "This week";
+        }
+
+        if (date >= today.AddDays(-31))
+        {
+            return "This month";
+        }
+
+        return date >= today.AddDays(-366) ? "This year" : "Earlier";
+    }
+
+    private static int DateGroupOrder(string name) => name switch
+    {
+        "Today" => 0,
+        "Yesterday" => 1,
+        "This week" => 2,
+        "This month" => 3,
+        "This year" => 4,
+        _ => 5
+    };
 
     private void ResizeTimer_Tick(object? sender, EventArgs e)
     {
@@ -1055,4 +1427,53 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+}
+
+/// <summary>
+/// One visible page: a slice of a group (or of the whole list when grouping is off).
+/// </summary>
+internal sealed class PageSlice
+{
+    public string Group { get; init; } = string.Empty;
+    public List<DesktopItem> Items { get; init; } = new();
+    public int GroupPage { get; init; } = 1;
+    public int GroupPages { get; init; } = 1;
+    public int GroupTotal { get; init; }
+}
+
+/// <summary>
+/// Dashed rectangle shown around a chrome element while the layout editor is on.
+/// </summary>
+internal sealed class ChromeOutlineAdorner : Adorner
+{
+    private static readonly Pen OutlinePen = CreatePen();
+
+    public ChromeOutlineAdorner(UIElement adornedElement) : base(adornedElement)
+    {
+        IsHitTestVisible = false;
+    }
+
+    protected override void OnRender(DrawingContext drawingContext)
+    {
+        var bounds = new Rect(AdornedElement.RenderSize);
+        if (bounds.Width < 2 || bounds.Height < 2)
+        {
+            return;
+        }
+
+        drawingContext.DrawRoundedRectangle(null, OutlinePen, bounds, 10, 10);
+    }
+
+    private static Pen CreatePen()
+    {
+        var brush = new SolidColorBrush(Color.FromArgb(0xC0, 0x5A, 0xA0, 0xFF));
+        brush.Freeze();
+
+        var pen = new Pen(brush, 1)
+        {
+            DashStyle = new DashStyle(new double[] { 4, 3 }, 0)
+        };
+        pen.Freeze();
+        return pen;
+    }
 }

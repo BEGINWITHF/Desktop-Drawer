@@ -196,14 +196,10 @@
 
     <Grid x:Name="RootGrid" Background="#01FFFFFF">
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="58" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="54" />
-            </Grid.RowDefinitions>
-
             <Border x:Name="HeaderBar"
-                    Grid.Row="0"
+                    Height="58"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
                     Background="Transparent"
                     BorderThickness="0"
                     MouseLeftButtonDown="Header_MouseLeftButtonDown">
@@ -416,12 +412,11 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="1"
-                  Margin="14,4,14,2">
-                <Grid x:Name="PageArea"
-                      Background="Transparent"
-                      ClipToBounds="True"
-                      PreviewMouseWheel="PageArea_PreviewMouseWheel">
+            <Grid x:Name="PageArea"
+                  Margin="14,58,14,54"
+                  Background="Transparent"
+                  ClipToBounds="True"
+                  PreviewMouseWheel="PageArea_PreviewMouseWheel">
                     <ListBox x:Name="PageList"
                              ItemsSource="{Binding VisibleItems}"
                              ItemTemplate="{StaticResource DesktopItemTemplate}"
@@ -498,88 +493,90 @@
                         </StackPanel>
                     </Border>
                 </Grid>
-            </Grid>
 
-            <Border x:Name="FooterBar"
-                    Grid.Row="2"
-                    Background="Transparent"
-                    BorderThickness="0">
-                <Grid Margin="16,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding ItemSummary}"
-                               FontSize="11"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
-
-                    <Border Grid.Column="1"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Background="#A60B0E16"
-                            BorderBrush="#3DFFFFFF"
-                            BorderThickness="1"
-                            CornerRadius="18"
-                            Padding="9,3">
-                        <StackPanel Orientation="Horizontal">
-                        <Button x:Name="PrevButton"
-                                Style="{StaticResource IconButton}"
-                                Width="28"
-                                Height="28"
-                                IsEnabled="False"
-                                Click="PrevPage_Click"
-                                ToolTip="Previous page (PageUp)">
-                            <TextBlock Style="{StaticResource Glyph}"
-                                       Text="&#xE76B;"
-                                       FontSize="11" />
-                        </Button>
-                        <TextBlock Text="{Binding CurrentPageLabel}"
-                                   FontSize="10.5"
-                                   Foreground="{StaticResource TextMutedBrush}"
-                                   Margin="9,0"
-                                   VerticalAlignment="Center" />
-                        <ItemsControl ItemsSource="{Binding PageDots}"
-                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Style="{StaticResource PageDotButton}"
-                                            Content="{Binding Label}"
-                                            ToolTip="{Binding Tooltip}"
-                                            Tag="{Binding Index}"
-                                            Click="PageDot_Click" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Button x:Name="NextButton"
-                                Style="{StaticResource IconButton}"
-                                Width="28"
-                                Height="28"
-                                Margin="4,0,0,0"
-                                IsEnabled="False"
-                                Click="NextPage_Click"
-                                ToolTip="Next page (PageDown)">
-                            <TextBlock Style="{StaticResource Glyph}"
-                                       Text="&#xE76C;"
-                                       FontSize="11" />
-                        </Button>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Grid.Column="2"
-                               Text="Scroll or use PgUp / PgDn"
+            <Border x:Name="PagerBar"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="#A60B0E16"
+                    BorderBrush="#3DFFFFFF"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    Padding="9,3">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="PrevButton"
+                            Style="{StaticResource IconButton}"
+                            Width="28"
+                            Height="28"
+                            IsEnabled="False"
+                            Click="PrevPage_Click"
+                            ToolTip="Previous page (PageUp)">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   Text="&#xE76B;"
+                                   FontSize="11" />
+                    </Button>
+                    <TextBlock Text="{Binding CurrentPageLabel}"
                                FontSize="10.5"
                                Foreground="{StaticResource TextMutedBrush}"
+                               Margin="9,0"
                                VerticalAlignment="Center" />
-                </Grid>
+                    <ItemsControl ItemsSource="{Binding PageDots}"
+                                  Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource PageDotButton}"
+                                        Content="{Binding Label}"
+                                        ToolTip="{Binding Tooltip}"
+                                        Tag="{Binding Index}"
+                                        Click="PageDot_Click" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button x:Name="NextButton"
+                            Style="{StaticResource IconButton}"
+                            Width="28"
+                            Height="28"
+                            Margin="4,0,0,0"
+                            IsEnabled="False"
+                            Click="NextPage_Click"
+                            ToolTip="Next page (PageDown)">
+                        <TextBlock Style="{StaticResource Glyph}"
+                                   Text="&#xE76C;"
+                                   FontSize="11" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="SummaryText"
+                       Text="{Binding ItemSummary}"
+                       FontSize="11"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Top"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+
+            <TextBlock x:Name="HintText"
+                       Text="Scroll or use PgUp / PgDn"
+                       FontSize="10.5"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Top"
+                       Foreground="{StaticResource TextMutedBrush}" />
+
+            <Border x:Name="GroupBadge"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="#B30B0E16"
+                    BorderBrush="#33FFFFFF"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10,4"
+                    Visibility="{Binding ShowGroupBadge, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{Binding CurrentGroupText}"
+                           FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
             </Border>
         </Grid>
 
@@ -642,6 +639,33 @@
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="0,0,6,10">
+
+                            <TextBlock Text="LAYOUT" Style="{StaticResource SectionLabel}" />
+                            <Grid Margin="0,0,10,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Adjust layout" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Drag the header, pager, summary and hint anywhere on the desktop."
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="LayoutEditToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="LayoutEditToggle_Changed"
+                                          Unchecked="LayoutEditToggle_Changed" />
+                            </Grid>
+                            <Button Content="Reset positions"
+                                    Style="{StaticResource ToolbarButton}"
+                                    HorizontalAlignment="Left"
+                                    Padding="12,0"
+                                    Height="30"
+                                    FontSize="11.5"
+                                    Margin="0,6,0,4"
+                                    Click="ResetLayoutButton_Click" />
 
                             <TextBlock Text="APPEARANCE" Style="{StaticResource SectionLabel}" />
                             <TextBlock Text="Icon size" Style="{StaticResource SettingTitle}" />

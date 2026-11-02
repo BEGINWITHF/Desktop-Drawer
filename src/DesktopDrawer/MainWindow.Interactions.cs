@@ -35,7 +35,11 @@ public partial class MainWindow
 
         if (e.Key == Key.Escape)
         {
-            if (_settingsOpen)
+            if (_layoutEditing)
+            {
+                SetLayoutEditing(false);
+            }
+            else if (_settingsOpen)
             {
                 CloseSettings();
             }
