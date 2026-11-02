@@ -159,16 +159,7 @@
                                TextTrimming="CharacterEllipsis"
                                TextAlignment="Center"
                                LineHeight="16"
-                               Foreground="{StaticResource TextPrimaryBrush}">
-                        <TextBlock.Effect>
-                            <DropShadowEffect BlurRadius="7"
-                                              ShadowDepth="1.5"
-                                              Direction="270"
-                                              Opacity="0.9"
-                                              Color="#000000"
-                                              RenderingBias="Performance" />
-                        </TextBlock.Effect>
-                    </TextBlock>
+                               Foreground="{StaticResource TextPrimaryBrush}" />
 
                     <TextBox x:Name="RenameBox"
                              Grid.Row="1"
@@ -213,7 +204,7 @@
 
             <Border x:Name="HeaderBar"
                     Grid.Row="0"
-                    Background="{StaticResource ChromeTopBrush}"
+                    Background="Transparent"
                     BorderThickness="0"
                     MouseLeftButtonDown="Header_MouseLeftButtonDown">
                 <Grid Margin="12,0,8,0">
