@@ -418,6 +418,20 @@ public partial class MainWindow
 
         Show();
 
+        if (_iconsRestoredForTray)
+        {
+            _iconsRestoredForTray = false;
+            try
+            {
+                _desktopIconsService.SetHidden(true);
+                UpdateDesktopIconsUi();
+            }
+            catch (Exception ex)
+            {
+                AppLog.Write(ex, "Could not hide desktop icons after reopening");
+            }
+        }
+
         if (WindowState == WindowState.Minimized)
         {
             WindowState = WindowState.Normal;
@@ -432,6 +446,22 @@ public partial class MainWindow
     private void HideToTray()
     {
         Hide();
+
+        // The overlay is gone, so hand the native desktop back instead of leaving
+        // it empty behind a hidden window.
+        try
+        {
+            if (_desktopIconsService.AreHidden())
+            {
+                _desktopIconsService.SetHidden(false);
+                _iconsRestoredForTray = true;
+                UpdateDesktopIconsUi();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not restore desktop icons while hiding to the tray");
+        }
 
         if (!_trayHintShown && _trayIcon is not null)
         {

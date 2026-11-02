@@ -16,6 +16,12 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (Services.IconWatchdog.TryRun(e.Args))
+        {
+            Shutdown();
+            return;
+        }
+
         base.OnStartup(e);
 
         try

@@ -62,6 +62,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _settingsOpen;
     private bool _trayHintShown;
     private bool _chromeVisible = true;
+    private bool _iconsRestoredForTray;
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
 
@@ -89,6 +90,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _startupService = new StartupService();
 
         _initialIconsHidden = _desktopIconsService.AreHidden();
+        IconWatchdog.Start();
 
         _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.8) };
         _toastTimer.Tick += ToastTimer_Tick;
@@ -107,6 +109,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
 
         PreviewMouseDown += Window_PreviewMouseActivity;
+        StateChanged += Window_StateChanged;
 
         _desktopService.DesktopChanged += OnDesktopChanged;
         Application.Current.SessionEnding += OnSessionEnding;
@@ -198,11 +201,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        Rect workArea = SystemParameters.WorkArea;
-        Left = workArea.Left;
-        Top = workArea.Top;
-        Width = workArea.Width;
-        Height = workArea.Height;
+        ApplyWorkAreaBounds();
 
         ImageSource? backdrop = WallpaperService.LoadWallpaper();
         if (backdrop is not null)
@@ -260,6 +259,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             SaveSettings();
             ShowToast("Move the mouse to show controls. Scroll or press PageDown to flip pages.");
         }
+    }
+
+    private void ApplyWorkAreaBounds()
+    {
+        Rect workArea = SystemParameters.WorkArea;
+        WindowState = WindowState.Normal;
+        Left = workArea.Left;
+        Top = workArea.Top;
+        Width = workArea.Width;
+        Height = workArea.Height;
+    }
+
+    private void Window_StateChanged(object? sender, EventArgs e)
+    {
+        if (!_initialized || WindowState != WindowState.Maximized)
+        {
+            return;
+        }
+
+        ApplyWorkAreaBounds();
     }
 
     private void OnDesktopChanged(object? sender, EventArgs e)
@@ -922,16 +941,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         Application.Current.SessionEnding -= OnSessionEnding;
 
-        if (_desktopIconsChanged)
+        try
         {
-            try
-            {
-                _desktopIconsService.SetHidden(_initialIconsHidden);
-            }
-            catch (Exception ex)
-            {
-                AppLog.Write(ex, "Could not restore desktop icons on exit");
-            }
+            // Exiting always brings the native desktop back, even if the icons were
+            // hidden before this session started.
+            _desktopIconsService.SetHidden(false);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not restore desktop icons on exit");
         }
 
         DisposeTray();
