@@ -72,7 +72,7 @@ public partial class MainWindow
         {
             RebuildFilteredItems();
             _pageIndex = 0;
-            UpdatePage(animate: false);
+            UpdatePage();
         }
     }
 
@@ -326,7 +326,7 @@ public partial class MainWindow
             item.Icon = null;
         }
 
-        UpdatePage(animate: false);
+        UpdatePage();
         StartPrefetch();
         ShowToast("Icons refreshed");
     }

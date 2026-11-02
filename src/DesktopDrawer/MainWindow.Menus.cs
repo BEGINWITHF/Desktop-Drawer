@@ -44,7 +44,7 @@ public partial class MainWindow
         RebuildFilteredItems();
         _pageIndex = 0;
         PageList.UnselectAll();
-        UpdatePage(animate: false);
+        UpdatePage();
     }
 
     private void ToggleFoldersFirst()
@@ -59,7 +59,7 @@ public partial class MainWindow
         RebuildFilteredItems();
         _pageIndex = 0;
         PageList.UnselectAll();
-        UpdatePage(animate: false);
+        UpdatePage();
     }
 
     private void ToggleShowHidden()

@@ -173,7 +173,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 RebuildFilteredItems();
                 _pageIndex = 0;
-                UpdatePage(animate: false);
+                UpdatePage();
                 PageList.UnselectAll();
             }
         }
@@ -355,7 +355,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 }
             }
 
-            UpdatePage(animate: false, restoreSelection: selectedPaths, selectPath: selectPath);
+            UpdatePage(restoreSelection: selectedPaths, selectPath: selectPath);
             UpdateTrayText();
             StartPrefetch();
 
@@ -436,8 +436,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private void UpdatePage(
-        bool animate,
-        int direction = 1,
         ISet<string>? restoreSelection = null,
         string? selectPath = null)
     {
@@ -516,51 +514,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateEmptyState(pageItems.Count);
         UpdateSummary();
 
-        if (animate && _initialized)
-        {
-            AnimatePage(direction);
-        }
-        else
-        {
-            PageList.BeginAnimation(OpacityProperty, null);
-            PageList.Opacity = 1;
+        // Pages switch instantly. The old fade and slide animation could leave
+        // item labels blank for a moment, so the grid is always reset to a fully
+        // visible, untranslated state.
+        PageList.BeginAnimation(OpacityProperty, null);
+        PageList.Opacity = 1;
 
-            if (PageList.RenderTransform is TranslateTransform transform)
-            {
-                transform.BeginAnimation(TranslateTransform.XProperty, null);
-                transform.X = 0;
-            }
+        if (PageList.RenderTransform is TranslateTransform transform)
+        {
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
         }
 
         _ = LoadVisibleIconsAsync(pageItems);
-    }
-
-    private void AnimatePage(int direction)
-    {
-        PageList.BeginAnimation(OpacityProperty, null);
-        PageList.Opacity = 0;
-
-        if (PageList.RenderTransform is not TranslateTransform transform)
-        {
-            transform = new TranslateTransform();
-            PageList.RenderTransform = transform;
-        }
-
-        transform.BeginAnimation(TranslateTransform.XProperty, null);
-        transform.X = direction * 28;
-
-        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        var slide = new DoubleAnimation(direction * 28, 0, TimeSpan.FromMilliseconds(240))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        PageList.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
-        transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
     private async Task LoadVisibleIconsAsync(List<DesktopItem> items)
@@ -669,7 +635,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Title = $"Desktop Drawer - {_allItems.Count} items";
     }
 
-    private void GoToPage(int targetPage, bool animate)
+    private void GoToPage(int targetPage)
     {
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
@@ -677,10 +643,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        int direction = target > _pageIndex ? 1 : -1;
         _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
-        UpdatePage(animate, direction);
+        UpdatePage();
     }
 
     private void RecalculateGrid(bool force = false)
@@ -706,7 +671,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (_hasLoadedOnce)
         {
-            UpdatePage(animate: false);
+            UpdatePage();
         }
     }
 

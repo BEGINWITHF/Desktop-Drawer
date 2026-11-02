@@ -86,28 +86,28 @@ public partial class MainWindow
 
         if (_renamingItem is null && (e.Key == Key.PageDown || (alt && e.Key == Key.Right)))
         {
-            GoToPage(_pageIndex + 1, animate: true);
+            GoToPage(_pageIndex + 1);
             e.Handled = true;
             return;
         }
 
         if (_renamingItem is null && (e.Key == Key.PageUp || (alt && e.Key == Key.Left)))
         {
-            GoToPage(_pageIndex - 1, animate: true);
+            GoToPage(_pageIndex - 1);
             e.Handled = true;
             return;
         }
 
         if (_renamingItem is null && control && e.Key == Key.Home)
         {
-            GoToPage(0, animate: true);
+            GoToPage(0);
             e.Handled = true;
             return;
         }
 
         if (_renamingItem is null && control && e.Key == Key.End)
         {
-            GoToPage(_pageCount - 1, animate: true);
+            GoToPage(_pageCount - 1);
             e.Handled = true;
             return;
         }
@@ -202,25 +202,25 @@ public partial class MainWindow
 
         int direction = _wheelAccumulator > 0 ? -1 : 1;
         _wheelAccumulator = 0;
-        GoToPage(_pageIndex + direction, animate: true);
+        GoToPage(_pageIndex + direction);
         e.Handled = true;
     }
 
     private void PrevPage_Click(object sender, RoutedEventArgs e)
     {
-        GoToPage(_pageIndex - 1, animate: true);
+        GoToPage(_pageIndex - 1);
     }
 
     private void NextPage_Click(object sender, RoutedEventArgs e)
     {
-        GoToPage(_pageIndex + 1, animate: true);
+        GoToPage(_pageIndex + 1);
     }
 
     private void PageDot_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button button && button.Tag is not null)
         {
-            GoToPage(Convert.ToInt32(button.Tag), animate: true);
+            GoToPage(Convert.ToInt32(button.Tag));
         }
     }
 
