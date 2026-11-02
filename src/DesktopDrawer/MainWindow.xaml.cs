@@ -29,6 +29,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _resizeTimer;
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
+    private readonly DispatcherTimer _wallpaperTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -69,6 +70,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
     private DateTime _lastWatchdogCheck = DateTime.UtcNow;
+    private string? _wallpaperPath;
+    private DateTime _wallpaperStamp;
 
     private static readonly TimeSpan ChromeIdleDelay = TimeSpan.FromSeconds(2.4);
 
@@ -104,6 +107,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Tick += ChromeTimer_Tick;
         _embedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _embedTimer.Tick += EmbedTimer_Tick;
+        _wallpaperTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _wallpaperTimer.Tick += WallpaperTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -208,12 +213,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         ApplyWorkAreaBounds();
-
-        ImageSource? backdrop = WallpaperService.LoadWallpaper();
-        if (backdrop is not null)
-        {
-            BackdropImage.Source = backdrop;
-        }
+        RefreshWallpaper(force: true);
+        _wallpaperTimer.Start();
 
         InitializeTray();
 
@@ -267,6 +268,38 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             SaveSettings();
             ShowToast("Move the mouse to show controls. Scroll or press PageDown to flip pages.");
         }
+    }
+
+    private void RefreshWallpaper(bool force)
+    {
+        (string? path, DateTime stamp) = WallpaperService.GetWallpaperStamp();
+
+        if (!force && string.Equals(path, _wallpaperPath, StringComparison.OrdinalIgnoreCase) && stamp == _wallpaperStamp)
+        {
+            return;
+        }
+
+        ImageSource? wallpaper = WallpaperService.LoadWallpaper();
+        if (wallpaper is null)
+        {
+            return;
+        }
+
+        BackdropImage.Source = wallpaper;
+        _wallpaperPath = path;
+        _wallpaperStamp = stamp;
+        AppLog.Write($"Wallpaper refreshed ({path}).");
+    }
+
+    private void WallpaperTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_cleanedUp)
+        {
+            _wallpaperTimer.Stop();
+            return;
+        }
+
+        RefreshWallpaper(force: false);
     }
 
     private void StartDesktopEmbedding()
@@ -949,6 +982,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _prefetchCts?.Cancel();
         _chromeTimer.Stop();
         _embedTimer.Stop();
+        _wallpaperTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();

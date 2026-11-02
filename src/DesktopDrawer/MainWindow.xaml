@@ -26,14 +26,6 @@
         Activated="Window_Activated"
         PreviewKeyDown="Window_PreviewKeyDown">
 
-    <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="0"
-                      ResizeBorderThickness="6"
-                      GlassFrameThickness="0"
-                      CornerRadius="0"
-                      UseAeroCaptionButtons="False" />
-    </WindowChrome.WindowChrome>
-
     <Window.Resources>
         <Style x:Key="DesktopListItem" TargetType="{x:Type ListBoxItem}">
             <Setter Property="Background" Value="Transparent" />
@@ -213,19 +205,7 @@
     <Grid x:Name="RootGrid" Background="#0A0D14">
         <Image x:Name="BackdropImage"
                Stretch="UniformToFill"
-               Opacity="1"
                RenderOptions.BitmapScalingMode="HighQuality" />
-
-        <Border Background="{StaticResource WindowBackdropBrush}" />
-
-        <Border IsHitTestVisible="False">
-            <Border.Background>
-                <RadialGradientBrush Center="0.86,0.02" GradientOrigin="0.86,0.02" RadiusX="0.75" RadiusY="0.75">
-                    <GradientStop Color="#247C9CFF" Offset="0" />
-                    <GradientStop Color="#007C9CFF" Offset="1" />
-                </RadialGradientBrush>
-            </Border.Background>
-        </Border>
 
         <Grid>
             <Grid.RowDefinitions>

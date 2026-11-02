@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DesktopDrawer.Interop;
 
@@ -33,6 +34,8 @@ internal static class NativeMethods
 
     public const uint SwpNoActivate = 0x0010;
     public const uint SwpShowWindow = 0x0040;
+
+    public const uint SpiGetDesktopWallpaper = 0x0073;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct Rect
@@ -138,6 +141,10 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern uint GetDpiForWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SystemParametersInfo(uint action, uint param, StringBuilder value, uint winIni);
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
