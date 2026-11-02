@@ -236,13 +236,7 @@ public partial class MainWindow
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_embeddedInDesktop)
-        {
-            ShowToast("Desktop Drawer is part of the desktop. Exit it from the tray icon.");
-            return;
-        }
-
-        WindowState = WindowState.Minimized;
+        ShowToast("Desktop Drawer stays on the desktop. Exit it from the tray icon.");
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

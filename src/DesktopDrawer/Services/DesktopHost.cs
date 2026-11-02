@@ -72,6 +72,57 @@ public static class DesktopHost
 
     public static bool IsAlive(IntPtr host) => host != IntPtr.Zero && NativeMethods.IsWindow(host);
 
+    /// <summary>
+    /// Keeps a top-level window right above the desktop so "show desktop" does not
+    /// hide it behind Progman, while still letting normal windows cover it.
+    /// </summary>
+    public static void RaiseAboveDesktop(IntPtr window)
+    {
+        IntPtr progman = NativeMethods.FindWindow("Progman", null);
+        if (progman == IntPtr.Zero || window == IntPtr.Zero)
+        {
+            return;
+        }
+
+        // SetWindowPos inserts the window *below* the given handle, so use the
+        // window that currently sits directly above the desktop.
+        IntPtr insertAfter = NativeMethods.GetWindow(progman, NativeMethods.GwHwndPrev);
+        if (insertAfter == window)
+        {
+            return;
+        }
+
+        NativeMethods.SetWindowPos(
+            window,
+            insertAfter,
+            0,
+            0,
+            0,
+            0,
+            NativeMethods.SwpNoMove | NativeMethods.SwpNoSize | NativeMethods.SwpNoActivate);
+    }
+
+    public static bool IsDesktopWindowAt(int x, int y)
+    {
+        var point = new NativeMethods.Point { X = x, Y = y };
+        IntPtr window = NativeMethods.WindowFromPoint(point);
+        if (window == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        string? className = GetClassName(window);
+        return className is "Progman" or "SHELLDLL_DefView" or "SysListView32" or "WorkerW";
+    }
+
+    private static string? GetClassName(IntPtr window)
+    {
+        var buffer = new System.Text.StringBuilder(128);
+        return NativeMethods.GetClassName(window, buffer, buffer.Capacity) > 0
+            ? buffer.ToString()
+            : null;
+    }
+
     private static IntPtr FindIconView()
     {
         IntPtr progman = NativeMethods.FindWindow("Progman", null);

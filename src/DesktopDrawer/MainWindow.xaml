@@ -9,10 +9,11 @@
         MinHeight="520"
         WindowStyle="None"
         ResizeMode="NoResize"
+        AllowsTransparency="True"
         ShowInTaskbar="False"
         ShowActivated="False"
         WindowStartupLocation="Manual"
-        Background="#0A0D14"
+        Background="Transparent"
         Foreground="{StaticResource TextPrimaryBrush}"
         FontFamily="{StaticResource UiFont}"
         FontSize="13"
@@ -202,11 +203,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" Background="#0A0D14">
-        <Image x:Name="BackdropImage"
-               Stretch="UniformToFill"
-               RenderOptions.BitmapScalingMode="HighQuality" />
-
+    <Grid x:Name="RootGrid" Background="#01FFFFFF">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="58" />

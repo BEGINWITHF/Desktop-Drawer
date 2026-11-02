@@ -5,10 +5,12 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
+using DesktopDrawer.Interop;
 using DesktopDrawer.Models;
 using DesktopDrawer.Services;
 using Drawing = System.Drawing;
@@ -29,7 +31,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _resizeTimer;
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
-    private readonly DispatcherTimer _wallpaperTimer;
+    private readonly DispatcherTimer _desktopZOrderTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -67,11 +69,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _iconsRestoredForTray;
     private bool _embeddedInDesktop;
     private int _embedAttempts;
+
+    /// <summary>
+    /// Windows only composites per-pixel transparency for top-level windows, so
+    /// the transparent build cannot also be a child of the desktop icon view.
+    /// Going back to the embedded (opaque) desktop layer also requires the
+    /// opaque window setup that used to live in MainWindow.xaml: AllowsTransparency
+    /// off, a solid window background and a BackdropImage layer.
+    /// </summary>
+    private static readonly bool EmbedInDesktopLayer = false;
     private Point _lastCursorPosition;
     private DateTime _lastChromeActivity = DateTime.UtcNow;
     private DateTime _lastWatchdogCheck = DateTime.UtcNow;
-    private string? _wallpaperPath;
-    private DateTime _wallpaperStamp;
 
     private static readonly TimeSpan ChromeIdleDelay = TimeSpan.FromSeconds(2.4);
 
@@ -107,8 +116,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Tick += ChromeTimer_Tick;
         _embedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _embedTimer.Tick += EmbedTimer_Tick;
-        _wallpaperTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _wallpaperTimer.Tick += WallpaperTimer_Tick;
+        _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -210,11 +219,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         private set => SetField(ref _showPageDots, value);
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        IntPtr handle = new WindowInteropHelper(this).Handle;
+        long exStyle = NativeMethods.GetWindowLongPtr(handle, NativeMethods.GwlExStyle).ToInt64();
+        NativeMethods.SetWindowLongPtr(
+            handle,
+            NativeMethods.GwlExStyle,
+            new IntPtr(exStyle | NativeMethods.WsExToolWindow));
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         ApplyWorkAreaBounds();
-        RefreshWallpaper(force: true);
-        _wallpaperTimer.Start();
 
         InitializeTray();
 
@@ -255,7 +274,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         await RefreshAsync();
 
         // Become part of the desktop itself instead of a floating window.
-        StartDesktopEmbedding();
+        if (EmbedInDesktopLayer)
+        {
+            StartDesktopEmbedding();
+        }
+        else
+        {
+            _desktopZOrderTimer.Start();
+        }
 
         _initialized = true;
         _lastCursorPosition = Mouse.GetPosition(this);
@@ -270,36 +296,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void RefreshWallpaper(bool force)
+    private void DesktopZOrderTimer_Tick(object? sender, EventArgs e)
     {
-        (string? path, DateTime stamp) = WallpaperService.GetWallpaperStamp();
-
-        if (!force && string.Equals(path, _wallpaperPath, StringComparison.OrdinalIgnoreCase) && stamp == _wallpaperStamp)
+        if (_cleanedUp || !IsVisible || WindowState != WindowState.Normal)
         {
             return;
         }
 
-        ImageSource? wallpaper = WallpaperService.LoadWallpaper();
-        if (wallpaper is null)
+        try
         {
-            return;
+            Point center = PointToScreen(new Point(ActualWidth / 2, ActualHeight / 2));
+            if (!DesktopHost.IsDesktopWindowAt((int)center.X, (int)center.Y))
+            {
+                return;
+            }
+
+            DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
         }
-
-        BackdropImage.Source = wallpaper;
-        _wallpaperPath = path;
-        _wallpaperStamp = stamp;
-        AppLog.Write($"Wallpaper refreshed ({path}).");
-    }
-
-    private void WallpaperTimer_Tick(object? sender, EventArgs e)
-    {
-        if (_cleanedUp)
+        catch (Exception ex)
         {
-            _wallpaperTimer.Stop();
-            return;
+            AppLog.Write(ex, "Could not keep the drawer above the desktop");
+            _desktopZOrderTimer.Stop();
         }
-
-        RefreshWallpaper(force: false);
     }
 
     private void StartDesktopEmbedding()
@@ -348,12 +366,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Window_StateChanged(object? sender, EventArgs e)
     {
-        if (!_initialized || WindowState != WindowState.Maximized)
+        if (!_initialized)
         {
             return;
         }
 
-        ApplyWorkAreaBounds();
+        if (WindowState == WindowState.Maximized)
+        {
+            ApplyWorkAreaBounds();
+            return;
+        }
+
+        if (WindowState == WindowState.Minimized && !_isExiting && !_cleanedUp)
+        {
+            // "Show desktop" must not take the drawer away, so pop straight back.
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!_isExiting && !_cleanedUp && WindowState == WindowState.Minimized)
+                {
+                    WindowState = WindowState.Normal;
+                    ApplyWorkAreaBounds();
+                }
+            }));
+        }
     }
 
     private void OnDesktopChanged(object? sender, EventArgs e)
@@ -982,7 +1017,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _prefetchCts?.Cancel();
         _chromeTimer.Stop();
         _embedTimer.Stop();
-        _wallpaperTimer.Stop();
+        _desktopZOrderTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();
