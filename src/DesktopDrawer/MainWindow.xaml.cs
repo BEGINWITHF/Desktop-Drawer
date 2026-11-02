@@ -9,6 +9,7 @@ using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Interop;
@@ -33,6 +34,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
+    private readonly DispatcherTimer _snapshotTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -106,6 +108,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _horizontalAccumulator;
     private int _horizontalGestureSign;
     private DateTime _horizontalNextAllowed;
+    private ImageSource? _pageSnapshot;
+    private int _snapshotPageIndex = -1;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -133,6 +137,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
+        _snapshotTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(330) };
+        _snapshotTimer.Tick += SnapshotTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -760,6 +766,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _ = LoadVisibleIconsAsync(pageItems);
+
+        _snapshotTimer.Stop();
+        _snapshotTimer.Start();
     }
 
     private async Task LoadVisibleIconsAsync(List<DesktopItem> items)
@@ -877,20 +886,137 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         int direction = target > _pageIndex ? 1 : -1;
+        ImageSource? outgoing = _pageSnapshot;
+        bool canSlide = outgoing is not null && _snapshotPageIndex == _pageIndex;
+
         _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage();
-        AnimatePageFlip(direction);
+
+        if (canSlide && outgoing is not null)
+        {
+            AnimateFullPageSlide(outgoing, direction);
+        }
+        else
+        {
+            AnimatePageFlip(direction);
+        }
+
+        _pageSnapshot = null;
+        _snapshotPageIndex = -1;
+    }
+
+    private void SnapshotTimer_Tick(object? sender, EventArgs e)
+    {
+        _snapshotTimer.Stop();
+        CapturePageSnapshot();
+    }
+
+    private void CapturePageSnapshot()
+    {
+        if (_cleanedUp || PageList.ActualWidth < 40 || PageList.ActualHeight < 40)
+        {
+            return;
+        }
+
+        if (PageList.RenderTransform is TranslateTransform transform && Math.Abs(transform.X) > 0.5)
+        {
+            return;
+        }
+
+        try
+        {
+            DpiScale dpi = VisualTreeHelper.GetDpi(this);
+            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth * dpi.DpiScaleX));
+            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight * dpi.DpiScaleY));
+
+            var bitmap = new RenderTargetBitmap(
+                pixelWidth,
+                pixelHeight,
+                96 * dpi.DpiScaleX,
+                96 * dpi.DpiScaleY,
+                PixelFormats.Pbgra32);
+            bitmap.Render(PageList);
+            bitmap.Freeze();
+
+            _pageSnapshot = bitmap;
+            _snapshotPageIndex = _pageIndex;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not capture the page snapshot");
+        }
+    }
+
+    /// <summary>
+    /// Slides the outgoing page out and the incoming page in at the same time,
+    /// like a paged app switcher.
+    /// </summary>
+    private void AnimateFullPageSlide(ImageSource outgoing, int direction)
+    {
+        double width = PageArea.ActualWidth;
+        if (width < 80)
+        {
+            AnimatePageFlip(direction);
+            return;
+        }
+
+        PageSnapshotImage.Source = outgoing;
+        PageSnapshotImage.Width = PageList.ActualWidth;
+        PageSnapshotImage.Height = PageList.ActualHeight;
+        PageSnapshotImage.Visibility = Visibility.Visible;
+        PageSnapshotImage.IsHitTestVisible = false;
+
+        if (PageSnapshotImage.RenderTransform is not TranslateTransform snapshotTransform)
+        {
+            snapshotTransform = new TranslateTransform();
+            PageSnapshotImage.RenderTransform = snapshotTransform;
+        }
+
+        snapshotTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        snapshotTransform.X = 0;
+
+        TranslateTransform pageTransform = EnsurePageTransform();
+        pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        pageTransform.X = direction * width;
+
+        PageList.IsHitTestVisible = false;
+
+        TimeSpan duration = TimeSpan.FromMilliseconds(300);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
+        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = ease };
+
+        incomingSlide.Completed += (_, _) =>
+        {
+            PageSnapshotImage.Visibility = Visibility.Collapsed;
+            PageSnapshotImage.Source = null;
+            pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
+            pageTransform.X = 0;
+            PageList.IsHitTestVisible = true;
+        };
+
+        snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
+        pageTransform.BeginAnimation(TranslateTransform.XProperty, incomingSlide, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private TranslateTransform EnsurePageTransform()
+    {
+        if (PageList.RenderTransform is TranslateTransform transform)
+        {
+            return transform;
+        }
+
+        transform = new TranslateTransform();
+        PageList.RenderTransform = transform;
+        return transform;
     }
 
     private void AnimatePageFlip(int direction)
     {
-        if (PageList.RenderTransform is not TranslateTransform transform)
-        {
-            transform = new TranslateTransform();
-            PageList.RenderTransform = transform;
-        }
-
+        PageList.IsHitTestVisible = true;
+        TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = direction * 40;
 
@@ -1530,6 +1656,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Stop();
         _embedTimer.Stop();
         _desktopZOrderTimer.Stop();
+        _snapshotTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();

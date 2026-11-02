@@ -443,6 +443,13 @@
                         </ListBox.ItemsPanel>
                     </ListBox>
 
+                    <Image x:Name="PageSnapshotImage"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Stretch="Fill"
+                           Visibility="Collapsed"
+                           IsHitTestVisible="False" />
+
                     <StackPanel x:Name="EmptyState"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
