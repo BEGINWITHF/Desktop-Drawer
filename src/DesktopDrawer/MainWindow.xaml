@@ -153,12 +153,15 @@
                                    Visibility="Collapsed" />
                     </Grid>
 
-                    <Grid Grid.Row="1"
-                          Margin="0,7,0,0"
-                          Height="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                    <Canvas Grid.Row="1"
+                            Height="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                            Margin="0,7,0,0"
+                            ClipToBounds="False">
                         <TextBlock x:Name="NameText"
+                                   Canvas.Left="0"
+                                   Canvas.Top="0"
+                                   Width="{Binding ActualWidth, ElementName=Tile}"
                                    Text="{Binding DisplayName}"
-                                   VerticalAlignment="Top"
                                    FontSize="{Binding DataContext.TileFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                    MaxHeight="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                    TextWrapping="Wrap"
@@ -166,7 +169,7 @@
                                    TextAlignment="Center"
                                    LineHeight="16"
                                    Foreground="{StaticResource TextPrimaryBrush}" />
-                    </Grid>
+                    </Canvas>
 
                     <TextBox x:Name="RenameBox"
                              Grid.Row="1"
