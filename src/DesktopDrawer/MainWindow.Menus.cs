@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 using System.Windows.Media;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Models;
@@ -147,7 +148,35 @@ public partial class MainWindow
             delete.Foreground = (Brush)FindResource("DangerBrush");
         }
 
+        menu.Items.Add(new Separator());
+        AddMenuItem(menu, "More options...", "\uE712", "Shift+F10", ShowNativeContextMenu);
+
         return menu;
+    }
+
+    /// <summary>
+    /// Opens the native Windows menu, which has every installed shell extension.
+    /// </summary>
+    private void ShowNativeContextMenu()
+    {
+        List<DesktopItem> selected = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        bool shown = _shellContextMenu.Show(
+            new WindowInteropHelper(this).Handle,
+            selected.Select(item => item.FullPath).ToList(),
+            (int)_lastContextMenuPoint.X,
+            (int)_lastContextMenuPoint.Y);
+
+        if (!shown)
+        {
+            ShowToast("Windows could not open its menu for these items.");
+        }
+
+        _ = RefreshAsync();
     }
 
     private ContextMenu BuildEmptyAreaMenu()

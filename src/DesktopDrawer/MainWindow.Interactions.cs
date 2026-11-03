@@ -562,6 +562,8 @@ public partial class MainWindow
     {
         DesktopItem? item = GetItemFromSource(e.OriginalSource);
         bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+        bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
+        _lastContextMenuPoint = PointToScreen(e.GetPosition(this));
 
         if (item is null)
         {
@@ -581,9 +583,10 @@ public partial class MainWindow
                 PageList.SelectedItems.Add(item);
             }
 
-            // The native shell menu is shown on mouse up.
-            _shellMenuPending = true;
-            PageList.ContextMenu = null;
+            // Shift+right-click opens the native Windows menu, plain right-click
+            // opens the styled app menu.
+            _shellMenuPending = shift;
+            PageList.ContextMenu = shift ? null : BuildItemMenu();
         }
 
         if (PageList.ContextMenu is not null)
@@ -609,17 +612,14 @@ public partial class MainWindow
             return;
         }
 
-        Point position = PointToScreen(e.GetPosition(this));
         bool shown = _shellContextMenu.Show(
             new WindowInteropHelper(this).Handle,
             selected.Select(item => item.FullPath).ToList(),
-            (int)position.X,
-            (int)position.Y);
+            (int)_lastContextMenuPoint.X,
+            (int)_lastContextMenuPoint.Y);
 
         if (!shown && !_cleanedUp)
         {
-            // The native menu did not appear (the overlay is not the active
-            // window), so fall back to the in-app menu instead of doing nothing.
             PageList.ContextMenu = BuildItemMenu();
             PageList.ContextMenu.PlacementTarget = PageList;
             PageList.ContextMenu.Placement = PlacementMode.MousePoint;

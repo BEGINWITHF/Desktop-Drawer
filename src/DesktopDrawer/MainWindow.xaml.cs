@@ -104,6 +104,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _rubberBandActive;
     private Point _rubberBandOrigin;
     private bool _shellMenuPending;
+    private Point _lastContextMenuPoint;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
     private DateTime _lastWheel;
