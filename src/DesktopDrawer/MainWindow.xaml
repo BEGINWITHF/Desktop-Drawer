@@ -434,6 +434,7 @@
                              PreviewMouseLeftButtonUp="PageList_PreviewMouseLeftButtonUp"
                              LostMouseCapture="PageList_LostMouseCapture"
                              PreviewMouseRightButtonDown="PageList_PreviewMouseRightButtonDown"
+                             PreviewMouseRightButtonUp="PageList_PreviewMouseRightButtonUp"
                              KeyDown="PageList_KeyDown"
                              FocusVisualStyle="{x:Null}"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"

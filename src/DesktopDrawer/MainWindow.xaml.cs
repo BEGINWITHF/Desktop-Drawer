@@ -27,6 +27,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DesktopService _desktopService;
     private readonly IconService _iconService;
     private readonly ShellService _shellService;
+    private readonly ShellContextMenuService _shellContextMenu = new();
     private readonly DesktopIconsService _desktopIconsService;
     private readonly StartupService _startupService;
     private readonly DispatcherTimer _toastTimer;
@@ -102,6 +103,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DesktopItem? _dragCandidate;
     private bool _rubberBandActive;
     private Point _rubberBandOrigin;
+    private bool _shellMenuPending;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
     private DateTime _lastWheel;

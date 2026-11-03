@@ -565,6 +565,7 @@ public partial class MainWindow
 
         if (item is null)
         {
+            _shellMenuPending = false;
             PageList.UnselectAll();
             PageList.ContextMenu = BuildEmptyAreaMenu();
         }
@@ -580,7 +581,9 @@ public partial class MainWindow
                 PageList.SelectedItems.Add(item);
             }
 
-            PageList.ContextMenu = BuildItemMenu();
+            // The native shell menu is shown on mouse up.
+            _shellMenuPending = true;
+            PageList.ContextMenu = null;
         }
 
         if (PageList.ContextMenu is not null)
@@ -588,6 +591,42 @@ public partial class MainWindow
             PageList.ContextMenu.PlacementTarget = PageList;
             PageList.ContextMenu.Placement = PlacementMode.MousePoint;
         }
+    }
+
+    private void PageList_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_shellMenuPending)
+        {
+            return;
+        }
+
+        _shellMenuPending = false;
+        e.Handled = true;
+
+        List<DesktopItem> selected = PageList.SelectedItems.Cast<DesktopItem>().ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        Point position = PointToScreen(e.GetPosition(this));
+        bool shown = _shellContextMenu.Show(
+            new WindowInteropHelper(this).Handle,
+            selected.Select(item => item.FullPath).ToList(),
+            (int)position.X,
+            (int)position.Y);
+
+        if (!shown && !_cleanedUp)
+        {
+            // The native menu did not appear (the overlay is not the active
+            // window), so fall back to the in-app menu instead of doing nothing.
+            PageList.ContextMenu = BuildItemMenu();
+            PageList.ContextMenu.PlacementTarget = PageList;
+            PageList.ContextMenu.Placement = PlacementMode.MousePoint;
+            PageList.ContextMenu.IsOpen = true;
+        }
+
+        _ = RefreshAsync();
     }
 
     private void PageList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
