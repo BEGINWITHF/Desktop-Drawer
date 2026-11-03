@@ -160,6 +160,13 @@ public partial class MainWindow
             return;
         }
 
+        if (e.Key == Key.Apps || (shift && e.Key == Key.F10))
+        {
+            ShowNativeContextMenu();
+            e.Handled = true;
+            return;
+        }
+
         // File actions work no matter which chrome element has focus.
         if (alt && e.Key == Key.Enter)
         {

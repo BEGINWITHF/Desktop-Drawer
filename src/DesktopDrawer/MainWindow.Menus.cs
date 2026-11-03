@@ -165,11 +165,19 @@ public partial class MainWindow
             return;
         }
 
+        Point position = _lastContextMenuPoint;
+
+        if (position.X <= 0 && position.Y <= 0 &&
+            PageList.ItemContainerGenerator.ContainerFromItem(selected[0]) is ListBoxItem container)
+        {
+            position = container.PointToScreen(new Point(container.ActualWidth - 8, container.ActualHeight / 2));
+        }
+
         bool shown = _shellContextMenu.Show(
             new WindowInteropHelper(this).Handle,
             selected.Select(item => item.FullPath).ToList(),
-            (int)_lastContextMenuPoint.X,
-            (int)_lastContextMenuPoint.Y);
+            (int)position.X,
+            (int)position.Y);
 
         if (!shown)
         {
