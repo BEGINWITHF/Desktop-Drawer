@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Interop;
-
 namespace DesktopDrawer.Services;
 
 /// <summary>
@@ -61,6 +60,7 @@ internal sealed class ShellContextMenuService
 
             SetForegroundWindow(owner);
             ForceForeground(owner);
+            DarkMode.AllowWindow(owner);
 
             if (contextMenu2 is not null || contextMenu3 is not null)
             {

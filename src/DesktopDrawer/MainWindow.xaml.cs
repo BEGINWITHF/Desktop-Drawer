@@ -271,6 +271,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             new IntPtr(exStyle | NativeMethods.WsExToolWindow));
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
+        DarkMode.Enable(handle);
     }
 
     private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
