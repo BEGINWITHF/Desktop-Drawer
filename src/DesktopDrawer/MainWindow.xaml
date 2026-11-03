@@ -56,6 +56,7 @@
                                 <Setter TargetName="Card" Property="BorderBrush" Value="#18FFFFFF" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Panel.ZIndex" Value="10" />
                                 <Setter TargetName="Card" Property="Background" Value="{StaticResource AccentSoftBrush}" />
                                 <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource AccentBorderBrush}" />
                             </Trigger>
@@ -152,17 +153,20 @@
                                    Visibility="Collapsed" />
                     </Grid>
 
-                    <TextBlock x:Name="NameText"
-                               Grid.Row="1"
-                               Text="{Binding DisplayName}"
-                               Margin="0,7,0,0"
-                               FontSize="{Binding DataContext.TileFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                               MaxHeight="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                               TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis"
-                               TextAlignment="Center"
-                               LineHeight="16"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <Grid Grid.Row="1"
+                          Margin="0,7,0,0"
+                          Height="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+                        <TextBlock x:Name="NameText"
+                                   Text="{Binding DisplayName}"
+                                   VerticalAlignment="Top"
+                                   FontSize="{Binding DataContext.TileFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                   MaxHeight="{Binding DataContext.TileNameHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextAlignment="Center"
+                                   LineHeight="16"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                    </Grid>
 
                     <TextBox x:Name="RenameBox"
                              Grid.Row="1"
@@ -182,6 +186,11 @@
                     <DataTrigger Binding="{Binding IsRenaming}" Value="True">
                         <Setter TargetName="NameText" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="RenameBox" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}"
+                                 Value="True">
+                        <Setter TargetName="NameText" Property="MaxHeight" Value="480" />
+                        <Setter TargetName="NameText" Property="TextTrimming" Value="None" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding HasIcon}" Value="False">
                         <Setter TargetName="FileGlyph" Property="Visibility" Value="Visible" />
@@ -461,22 +470,6 @@
                                 BorderThickness="1"
                                 Background="#335AA0FF"
                                 Visibility="Collapsed" />
-                    </Canvas>
-
-                    <Canvas x:Name="NamePeekLayer" IsHitTestVisible="False" ClipToBounds="True">
-                        <Border x:Name="NamePeek"
-                                Visibility="Collapsed"
-                                Background="#F20B0E16"
-                                BorderBrush="#3DFFFFFF"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="9,5"
-                                MaxWidth="420">
-                            <TextBlock x:Name="NamePeekText"
-                                       TextWrapping="Wrap"
-                                       FontSize="12"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
-                        </Border>
                     </Canvas>
 
                     <StackPanel x:Name="EmptyState"
