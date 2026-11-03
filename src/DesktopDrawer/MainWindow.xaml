@@ -48,7 +48,7 @@
                                 BorderThickness="1"
                                 CornerRadius="14"
                                 SnapsToDevicePixels="True">
-                            <ContentPresenter />
+                            <ContentPresenter x:Name="ContentHost" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">

@@ -373,6 +373,12 @@ public partial class MainWindow
                 previousCard.Margin = new Thickness(4);
             }
 
+            if (_expandedContainer.Template?.FindName("ContentHost", _expandedContainer) is FrameworkElement previousHost)
+            {
+                previousHost.Margin = new Thickness(0);
+                previousHost.VerticalAlignment = VerticalAlignment.Stretch;
+            }
+
             _expandedContainer = null;
         }
 
@@ -407,7 +413,17 @@ public partial class MainWindow
             return;
         }
 
-        card.Margin = new Thickness(4, 4, 4, -overflow);
+        card.Margin = new Thickness(4, 4, 4, -(overflow + 6));
+
+        // Keep the icon and label anchored to the top of the box instead of
+        // re-centring them inside the taller box.
+        if (container.Template?.FindName("ContentHost", container) is FrameworkElement host)
+        {
+            Point hostTop = host.TranslatePoint(new Point(0, 0), card);
+            host.VerticalAlignment = VerticalAlignment.Top;
+            host.Margin = new Thickness(0, Math.Max(0, hostTop.Y), 0, 0);
+        }
+
         _expandedContainer = container;
     }
 
