@@ -19,12 +19,20 @@ public partial class MainWindow
 {
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (DesktopKeyForwarder.IsForwarding)
+        {
+            // Injected keys that bounce back into the drawer must not trigger a
+            // second forward.
+            e.Handled = true;
+            return;
+        }
+
         ShowChrome();
 
         bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
         bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
-        bool win = (Keyboard.Modifiers & ModifierKeys.Windows) != 0;
+        bool win = (Keyboard.Modifiers & ModifierKeys.Windows) != 0 || DesktopKeyForwarder.IsWinDown;
         bool editingText = Keyboard.FocusedElement is TextBoxBase;
         Key actualKey = e.Key == Key.System ? e.SystemKey : e.Key;
 
@@ -238,8 +246,13 @@ public partial class MainWindow
                 : null;
 
             int virtualKey = KeyInterop.VirtualKeyFromKey(actualKey);
-            if (virtualKey > 0 &&
-                DesktopKeyForwarder.TryForward(
+            if (virtualKey <= 0)
+            {
+                AppLog.Write($"Cannot forward {actualKey}: no virtual key");
+                return;
+            }
+
+            if (DesktopKeyForwarder.TryForward(
                     new WindowInteropHelper(this).Handle,
                     path,
                     (byte)virtualKey,
@@ -250,11 +263,42 @@ public partial class MainWindow
             {
                 e.Handled = true;
             }
+            else
+            {
+                AppLog.Write($"Could not forward {actualKey} (0x{virtualKey:X2}) to the desktop");
+            }
         }
     }
 
-    private void SetDensityFromShortcut(TileDensity density)
+    /// <summary>
+    /// Windows key combinations never reach WPF, so the keyboard hook hands them
+    /// over here and they are replayed on the focused desktop.
+    /// </summary>
+    private void ForwardWinChord(WinChord chord)
     {
+        if (_cleanedUp || _settingsOpen || _renamingItem is not null)
+        {
+            return;
+        }
+
+        ShowChrome();
+
+        string? path = PageList.SelectedItems.Count == 1 &&
+                       PageList.SelectedItems[0] is DesktopItem single
+            ? single.FullPath
+            : null;
+
+        DesktopKeyForwarder.TryForward(
+            new WindowInteropHelper(this).Handle,
+            path,
+            chord.Key,
+            chord.Control,
+            chord.Shift,
+            chord.Alt,
+            win: true);
+    }
+
+    private void SetDensityFromShortcut(TileDensity density)    {
         _settings.IconSize = 0;
         ApplyDensity(density);
         SaveSettings();

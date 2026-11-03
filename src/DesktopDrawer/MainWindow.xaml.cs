@@ -83,6 +83,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, ChromeOutlineAdorner> _chromeAdorners = new();
     private bool _embeddedInDesktop;
     private int _embedAttempts;
+    private GlobalShortcutHook? _shortcutHook;
 
     /// <summary>
     /// Windows only composites per-pixel transparency for top-level windows, so
@@ -275,6 +276,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
+
+        _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
+        _shortcutHook.Install();
     }
 
     private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -1663,6 +1667,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _cleanedUp = true;
+        _shortcutHook?.Dispose();
+        _shortcutHook = null;
         _prefetchCts?.Cancel();
         _chromeTimer.Stop();
         _embedTimer.Stop();
