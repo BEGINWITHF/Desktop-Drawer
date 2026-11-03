@@ -27,8 +27,9 @@ internal static class DesktopKeyForwarder
     private const byte VkShift = 0x10;
     private const byte VkControl = 0x11;
     private const byte VkMenu = 0x12;
+    private const byte VkLWin = 0x5B;
 
-    public static bool TryForward(string path, byte virtualKey, bool control, bool shift, bool alt)
+    public static bool TryForward(IntPtr owner, string? path, byte virtualKey, bool control, bool shift, bool alt, bool win)
     {
         IntPtr list = FindIconList();
         if (list == IntPtr.Zero)
@@ -36,15 +37,24 @@ internal static class DesktopKeyForwarder
             return false;
         }
 
-        int index = FindIndex(list, Path.GetFileName(path));
-        if (index < 0)
+        IntPtr progman = FindWindow("Progman", null);
+
+        int index = -1;
+        if (!string.IsNullOrEmpty(path))
         {
-            return false;
+            index = FindIndex(list, Path.GetFileName(path));
         }
 
         try
         {
-            SelectOnly(list, index);
+            if (index >= 0)
+            {
+                SelectOnly(list, index);
+            }
+
+            // Let the shortcut run while the desktop is the foreground window, the
+            // same state it would be in if the user pressed it on the desktop.
+            bool switched = progman != IntPtr.Zero && ForceForeground(progman);
 
             var modifiers = new List<byte>();
             if (control)
@@ -62,6 +72,11 @@ internal static class DesktopKeyForwarder
                 modifiers.Add(VkMenu);
             }
 
+            if (win)
+            {
+                modifiers.Add(VkLWin);
+            }
+
             foreach (byte modifier in modifiers)
             {
                 PostMessage(list, WmKeyDown, (IntPtr)modifier, IntPtr.Zero);
@@ -75,12 +90,45 @@ internal static class DesktopKeyForwarder
                 PostMessage(list, WmKeyUp, (IntPtr)modifiers[i], IntPtr.Zero);
             }
 
+            if (switched)
+            {
+                Thread.Sleep(80);
+
+                if (owner != IntPtr.Zero)
+                {
+                    SetForegroundWindow(owner);
+                }
+            }
+
             return true;
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not forward the shortcut to the desktop");
             return false;
+        }
+    }
+
+    private static bool ForceForeground(IntPtr window)
+    {
+        IntPtr foreground = GetForegroundWindow();
+        uint foregroundThread = GetWindowThreadProcessId(foreground, out _);
+        uint currentThread = GetCurrentThreadId();
+
+        bool attached = foregroundThread != 0 &&
+                        foregroundThread != currentThread &&
+                        AttachThreadInput(foregroundThread, currentThread, true);
+
+        try
+        {
+            return SetForegroundWindow(window);
+        }
+        finally
+        {
+            if (attached)
+            {
+                AttachThreadInput(foregroundThread, currentThread, false);
+            }
         }
     }
 
@@ -175,4 +223,19 @@ internal static class DesktopKeyForwarder
 
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hWnd, int message, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool attach);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 }

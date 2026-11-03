@@ -24,6 +24,7 @@ public partial class MainWindow
         bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
         bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
+        bool win = (Keyboard.Modifiers & ModifierKeys.Windows) != 0;
         bool editingText = Keyboard.FocusedElement is TextBoxBase;
         Key actualKey = e.Key == Key.System ? e.SystemKey : e.Key;
 
@@ -221,17 +222,31 @@ public partial class MainWindow
             return;
         }
 
-        // Anything else with Ctrl or Alt is handed to the real desktop icon list,
-        // where shell extensions and third-party tools can react with their own
-        // windows.
-        if ((control || alt) &&
-            actualKey is not (Key.F4 or Key.Tab or Key.Escape) &&
-            PageList.SelectedItems.Count == 1 &&
-            PageList.SelectedItems[0] is DesktopItem selected)
+        // Anything else with Ctrl, Alt or Win is handed to the real desktop icon
+        // list, where shell extensions and third-party tools can react with their
+        // own windows.
+        if ((control || alt || win) &&
+            actualKey is not (Key.F4 or Key.Tab or Key.Escape or
+                              Key.LWin or Key.RWin or
+                              Key.LeftCtrl or Key.RightCtrl or
+                              Key.LeftAlt or Key.RightAlt or
+                              Key.LeftShift or Key.RightShift))
         {
+            string? path = PageList.SelectedItems.Count == 1 &&
+                           PageList.SelectedItems[0] is DesktopItem single
+                ? single.FullPath
+                : null;
+
             int virtualKey = KeyInterop.VirtualKeyFromKey(actualKey);
             if (virtualKey > 0 &&
-                DesktopKeyForwarder.TryForward(selected.FullPath, (byte)virtualKey, control, shift, alt))
+                DesktopKeyForwarder.TryForward(
+                    new WindowInteropHelper(this).Handle,
+                    path,
+                    (byte)virtualKey,
+                    control,
+                    shift,
+                    alt,
+                    win))
             {
                 e.Handled = true;
             }
