@@ -413,15 +413,23 @@ public partial class MainWindow
             return;
         }
 
+        double contentOffset = 0;
+
+        if (container.Template?.FindName("ContentHost", container) is FrameworkElement host &&
+            VisualTreeHelper.GetChildrenCount(host) > 0 &&
+            VisualTreeHelper.GetChild(host, 0) is FrameworkElement content)
+        {
+            contentOffset = content.TranslatePoint(new Point(0, 0), card).Y;
+        }
+
         card.Margin = new Thickness(4, 4, 4, -(overflow + 6));
 
-        // Keep the icon and label anchored to the top of the box instead of
-        // re-centring them inside the taller box.
-        if (container.Template?.FindName("ContentHost", container) is FrameworkElement host)
+        // Keep the icon and label where they are: the extra height is added only
+        // below them, so the content stays anchored at its normal offset.
+        if (container.Template?.FindName("ContentHost", container) is FrameworkElement contentHost)
         {
-            Point hostTop = host.TranslatePoint(new Point(0, 0), card);
-            host.VerticalAlignment = VerticalAlignment.Top;
-            host.Margin = new Thickness(0, Math.Max(0, hostTop.Y), 0, 0);
+            contentHost.VerticalAlignment = VerticalAlignment.Top;
+            contentHost.Margin = new Thickness(0, Math.Max(0, contentOffset), 0, 0);
         }
 
         _expandedContainer = container;
