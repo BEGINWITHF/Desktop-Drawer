@@ -356,6 +356,59 @@ public partial class MainWindow
         {
             UpdateSummary();
         }
+
+        UpdateExpandedLabel();
+    }
+
+    /// <summary>
+    /// Grows the selected tile downwards so its selection box covers the full
+    /// (wrapped) file name instead of clipping it at the normal label height.
+    /// </summary>
+    private void UpdateExpandedLabel()
+    {
+        if (_expandedContainer is not null)
+        {
+            if (_expandedContainer.Template?.FindName("Card", _expandedContainer) is Border previousCard)
+            {
+                previousCard.Margin = new Thickness(4);
+            }
+
+            _expandedContainer = null;
+        }
+
+        if (_cleanedUp || _updatingPage || PageList.SelectedItems.Count != 1 ||
+            PageList.SelectedItems[0] is not DesktopItem item)
+        {
+            return;
+        }
+
+        if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+            container.Template?.FindName("Card", container) is not Border card)
+        {
+            return;
+        }
+
+        double labelWidth = Math.Max(40, container.ActualWidth - 8);
+
+        var probe = new TextBlock
+        {
+            Text = item.DisplayName,
+            FontFamily = FontFamily,
+            FontSize = TileFontSize,
+            LineHeight = 16,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        probe.Measure(new Size(labelWidth, double.PositiveInfinity));
+        double overflow = probe.DesiredSize.Height - TileNameHeight;
+
+        if (overflow <= 1)
+        {
+            return;
+        }
+
+        card.Margin = new Thickness(4, 4, 4, -overflow);
+        _expandedContainer = container;
     }
 
     private void PageList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
