@@ -385,14 +385,14 @@
     </Style>
 
     <Style x:Key="SearchBoxBorder" TargetType="{x:Type Border}">
-        <Setter Property="Background" Value="#66101420" />
-        <Setter Property="BorderBrush" Value="#30FFFFFF" />
+        <Setter Property="Background" Value="#8C101420" />
+        <Setter Property="BorderBrush" Value="#3DFFFFFF" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="10" />
         <Style.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                <Setter Property="BorderBrush" Value="{StaticResource AccentBorderBrush}" />
-                <Setter Property="Background" Value="#8C101420" />
+                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                <Setter Property="Background" Value="#B3101420" />
             </Trigger>
         </Style.Triggers>
     </Style>

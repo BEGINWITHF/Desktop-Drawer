@@ -28,6 +28,16 @@ internal static class NativeMethods
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern int SHFileOperation(ref ShFileOpStruct fileOp);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SHObjectProperties(
+        IntPtr hwnd,
+        uint objectType,
+        string objectName,
+        string? propertyPage);
+
+    public const uint ShopFilePath = 0x00000002;
+
     public const uint ShgfiIcon = 0x000000100;
     public const uint ShgfiLargeIcon = 0x000000000;
     public const uint ShgfiDisplayName = 0x000000200;

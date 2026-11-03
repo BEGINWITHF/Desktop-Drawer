@@ -52,13 +52,16 @@ public sealed class ShellService
         Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{item.FullPath}\"") { UseShellExecute = true });
     }
 
-    public void ShowProperties(DesktopItem item)
+    public void ShowProperties(DesktopItem item, IntPtr ownerWindow)
     {
-        Process.Start(new ProcessStartInfo(item.FullPath)
+        if (!NativeMethods.SHObjectProperties(
+                ownerWindow,
+                NativeMethods.ShopFilePath,
+                item.FullPath,
+                null))
         {
-            UseShellExecute = true,
-            Verb = "properties"
-        });
+            throw new ShellOperationException("Windows could not open the properties for this item.");
+        }
     }
 
     public void CopyPaths(IEnumerable<DesktopItem> items)

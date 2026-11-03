@@ -100,6 +100,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DesktopItem? _renamingItem;
     private Point _dragStart;
     private DesktopItem? _dragCandidate;
+    private bool _rubberBandActive;
+    private Point _rubberBandOrigin;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
     private DateTime _lastWheel;
@@ -673,6 +675,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ISet<string>? restoreSelection = null,
         string? selectPath = null)
     {
+        EndRubberBand();
+
         int capacity = Math.Max(1, Columns * Rows);
         _pages = BuildPages(capacity);
 

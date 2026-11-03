@@ -431,6 +431,8 @@
                              MouseDoubleClick="PageList_MouseDoubleClick"
                              PreviewMouseLeftButtonDown="PageList_PreviewMouseLeftButtonDown"
                              PreviewMouseMove="PageList_PreviewMouseMove"
+                             PreviewMouseLeftButtonUp="PageList_PreviewMouseLeftButtonUp"
+                             LostMouseCapture="PageList_LostMouseCapture"
                              PreviewMouseRightButtonDown="PageList_PreviewMouseRightButtonDown"
                              KeyDown="PageList_KeyDown"
                              FocusVisualStyle="{x:Null}"
@@ -449,6 +451,16 @@
                            Stretch="Fill"
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
+
+                    <Canvas x:Name="SelectionCanvas"
+                            IsHitTestVisible="False"
+                            ClipToBounds="True">
+                        <Border x:Name="SelectionRect"
+                                BorderBrush="#FF5AA0FF"
+                                BorderThickness="1"
+                                Background="#335AA0FF"
+                                Visibility="Collapsed" />
+                    </Canvas>
 
                     <StackPanel x:Name="EmptyState"
                                 HorizontalAlignment="Center"

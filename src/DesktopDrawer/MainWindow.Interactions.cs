@@ -36,7 +36,11 @@ public partial class MainWindow
 
         if (e.Key == Key.Escape)
         {
-            if (_layoutEditing)
+            if (_rubberBandActive)
+            {
+                EndRubberBand();
+            }
+            else if (_layoutEditing)
             {
                 SetLayoutEditing(false);
             }
@@ -372,6 +376,13 @@ public partial class MainWindow
             PageList.UnselectAll();
             _dragCandidate = null;
             PageList.Focus();
+
+            if (!_layoutEditing && !_settingsOpen)
+            {
+                StartRubberBand(e.GetPosition(PageList));
+                e.Handled = true;
+            }
+
             return;
         }
 
@@ -379,8 +390,123 @@ public partial class MainWindow
         _dragStart = e.GetPosition(PageList);
     }
 
+    private void StartRubberBand(Point origin)
+    {
+        _rubberBandActive = true;
+        _rubberBandOrigin = origin;
+
+        SelectionRect.Visibility = Visibility.Visible;
+        SelectionRect.Width = 0;
+        SelectionRect.Height = 0;
+        UpdateRubberBand(origin);
+
+        PageList.CaptureMouse();
+    }
+
+    private void UpdateRubberBand(Point current)
+    {
+        double x = Math.Min(_rubberBandOrigin.X, current.X);
+        double y = Math.Min(_rubberBandOrigin.Y, current.Y);
+        double width = Math.Abs(current.X - _rubberBandOrigin.X);
+        double height = Math.Abs(current.Y - _rubberBandOrigin.Y);
+
+        Canvas.SetLeft(SelectionRect, x);
+        Canvas.SetTop(SelectionRect, y);
+        SelectionRect.Width = width;
+        SelectionRect.Height = height;
+
+        if (width < 2 && height < 2)
+        {
+            return;
+        }
+
+        var area = new Rect(x, y, width, height);
+        var hits = new List<DesktopItem>();
+
+        foreach (DesktopItem item in VisibleItems)
+        {
+            if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+                !container.IsVisible)
+            {
+                continue;
+            }
+
+            Point topLeft = container.TransformToAncestor(PageList).Transform(new Point(0, 0));
+            var bounds = new Rect(topLeft, container.RenderSize);
+
+            if (area.IntersectsWith(bounds))
+            {
+                hits.Add(item);
+            }
+        }
+
+        var selected = PageList.SelectedItems.Cast<DesktopItem>().ToHashSet();
+        if (selected.SetEquals(hits))
+        {
+            return;
+        }
+
+        PageList.UnselectAll();
+        foreach (DesktopItem hit in hits)
+        {
+            PageList.SelectedItems.Add(hit);
+        }
+    }
+
+    private void EndRubberBand()
+    {
+        if (!_rubberBandActive)
+        {
+            return;
+        }
+
+        _rubberBandActive = false;
+        SelectionRect.Visibility = Visibility.Collapsed;
+        SelectionRect.Width = 0;
+        SelectionRect.Height = 0;
+
+        if (PageList.IsMouseCaptured)
+        {
+            PageList.ReleaseMouseCapture();
+        }
+    }
+
+    private void PageList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_rubberBandActive)
+        {
+            return;
+        }
+
+        EndRubberBand();
+        e.Handled = true;
+    }
+
+    private void PageList_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_rubberBandActive)
+        {
+            EndRubberBand();
+        }
+    }
+
     private void PageList_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (_rubberBandActive)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                UpdateRubberBand(e.GetPosition(PageList));
+            }
+            else
+            {
+                EndRubberBand();
+            }
+
+            e.Handled = true;
+            return;
+        }
+
         if (e.LeftButton != MouseButtonState.Pressed)
         {
             _dragCandidate = null;
@@ -563,7 +689,7 @@ public partial class MainWindow
 
         try
         {
-            _shellService.ShowProperties(item);
+            _shellService.ShowProperties(item, new WindowInteropHelper(this).Handle);
         }
         catch (Exception ex)
         {
@@ -945,7 +1071,24 @@ public partial class MainWindow
             }
 
             textBox.Focus();
-            textBox.SelectAll();
+
+            // Windows keeps the extension out of the selection, so typing replaces
+            // only the name.
+            string text = textBox.Text;
+            int selectionLength = text.Length;
+
+            if (textBox.DataContext is DesktopItem item && !item.IsFolder)
+            {
+                string extension = Path.GetExtension(item.Name);
+                if (extension.Length > 0 &&
+                    text.EndsWith(extension, StringComparison.OrdinalIgnoreCase) &&
+                    text.Length > extension.Length)
+                {
+                    selectionLength = text.Length - extension.Length;
+                }
+            }
+
+            textBox.Select(0, selectionLength);
         }));
     }
 
