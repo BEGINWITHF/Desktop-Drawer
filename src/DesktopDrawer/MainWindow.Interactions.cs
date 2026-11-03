@@ -396,6 +396,12 @@ public partial class MainWindow
 
         double labelWidth = Math.Max(40, container.ActualWidth - 8);
 
+        TextBlock? label = FindLabel(container);
+        if (label is not null && label.ActualWidth > 10)
+        {
+            labelWidth = label.ActualWidth;
+        }
+
         var probe = new TextBlock
         {
             Text = item.DisplayName,
@@ -413,26 +419,50 @@ public partial class MainWindow
             return;
         }
 
-        double contentOffset = 0;
+        double contentHeight = IconSize + 7 + TileNameHeight;
+        double cardHeight = Math.Max(1, container.ActualHeight - 8);
+        double innerHeight = Math.Max(1, cardHeight - 2);
+        double hostMargin = Math.Max(0, (innerHeight - contentHeight) / 2);
+        double topGap = hostMargin + 1;
 
-        if (container.Template?.FindName("ContentHost", container) is FrameworkElement host &&
-            VisualTreeHelper.GetChildrenCount(host) > 0 &&
-            VisualTreeHelper.GetChild(host, 0) is FrameworkElement content)
-        {
-            contentOffset = content.TranslatePoint(new Point(0, 0), card).Y;
-        }
+        double textHeight = TileNameHeight + overflow;
+        double textBottom = topGap + IconSize + 7 + textHeight;
+        double extension = Math.Max(0, textBottom + topGap - cardHeight);
 
-        card.Margin = new Thickness(4, 4, 4, -(overflow + 6));
+        card.Margin = new Thickness(4, 4, 4, -extension);
 
         // Keep the icon and label where they are: the extra height is added only
-        // below them, so the content stays anchored at its normal offset.
+        // below them, with the same padding as above.
         if (container.Template?.FindName("ContentHost", container) is FrameworkElement contentHost)
         {
             contentHost.VerticalAlignment = VerticalAlignment.Top;
-            contentHost.Margin = new Thickness(0, Math.Max(0, contentOffset), 0, 0);
+            contentHost.Margin = new Thickness(0, hostMargin, 0, 0);
         }
 
         _expandedContainer = container;
+    }
+
+    private static TextBlock? FindLabel(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is TextBlock { Name: "NameText" } text)
+            {
+                return text;
+            }
+
+            TextBlock? nested = FindLabel(child);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 
     private void PageList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
