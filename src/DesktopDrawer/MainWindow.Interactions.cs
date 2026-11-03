@@ -356,6 +356,99 @@ public partial class MainWindow
         {
             UpdateSummary();
         }
+
+        UpdateNamePeek();
+    }
+
+    /// <summary>
+    /// Shows the full file name under a single selected item when its label was
+    /// cut off by the tile.
+    /// </summary>
+    private void UpdateNamePeek()
+    {
+        NamePeek.Visibility = Visibility.Collapsed;
+
+        if (_cleanedUp || _settingsOpen || _rubberBandActive || PageList.SelectedItems.Count != 1)
+        {
+            return;
+        }
+
+        if (PageList.SelectedItems[0] is not DesktopItem item ||
+            PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+            !container.IsVisible)
+        {
+            return;
+        }
+
+        TextBlock? nameText = FindNameText(container);
+        if (nameText is null || !IsLabelTruncated(nameText, item.DisplayName))
+        {
+            return;
+        }
+
+        NamePeekText.Text = item.DisplayName;
+        NamePeek.Measure(new Size(420, double.PositiveInfinity));
+        Size size = NamePeek.DesiredSize;
+
+        Point topLeft = container.TransformToAncestor(PageArea).Transform(new Point(0, 0));
+        double x = topLeft.X + ((container.ActualWidth - size.Width) / 2);
+        double y = topLeft.Y + container.ActualHeight + 2;
+
+        double maxX = PageArea.ActualWidth - size.Width;
+        double maxY = PageArea.ActualHeight - size.Height;
+
+        if (y > maxY)
+        {
+            y = topLeft.Y - size.Height - 2;
+        }
+
+        Canvas.SetLeft(NamePeek, Math.Clamp(x, 0, Math.Max(0, maxX)));
+        Canvas.SetTop(NamePeek, Math.Clamp(y, 0, Math.Max(0, maxY)));
+        NamePeek.Visibility = Visibility.Visible;
+    }
+
+    private static bool IsLabelTruncated(TextBlock label, string text)
+    {
+        if (label.ActualWidth <= 0 || double.IsNaN(label.MaxHeight) || label.MaxHeight <= 0)
+        {
+            return false;
+        }
+
+        var probe = new TextBlock
+        {
+            Text = text,
+            FontFamily = label.FontFamily,
+            FontSize = label.FontSize,
+            FontWeight = label.FontWeight,
+            LineHeight = label.LineHeight,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        probe.Measure(new Size(label.ActualWidth, double.PositiveInfinity));
+        return probe.DesiredSize.Height > label.MaxHeight + 0.5;
+    }
+
+    private static TextBlock? FindNameText(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is TextBlock { Name: "NameText" } text)
+            {
+                return text;
+            }
+
+            TextBlock? nested = FindNameText(child);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 
     private void PageList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
