@@ -106,6 +106,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _shellMenuPending;
     private Point _lastContextMenuPoint;
     private ListBoxItem? _expandedContainer;
+    private string _typeAhead = string.Empty;
+    private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
     private DateTime _lastWheel;

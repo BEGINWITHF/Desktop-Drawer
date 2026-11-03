@@ -28,7 +28,8 @@
         Closed="Window_Closed"
         SizeChanged="Window_SizeChanged"
         Activated="Window_Activated"
-        PreviewKeyDown="Window_PreviewKeyDown">
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewTextInput="Window_PreviewTextInput">
 
     <Window.Resources>
         <Style x:Key="DesktopListItem" TargetType="{x:Type ListBoxItem}">

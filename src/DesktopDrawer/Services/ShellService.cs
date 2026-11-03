@@ -126,7 +126,7 @@ public sealed class ShellService
         }
     }
 
-    public void DeleteToRecycleBin(IEnumerable<DesktopItem> items)
+    public void Delete(IEnumerable<DesktopItem> items, bool permanent)
     {
         var errors = new List<string>();
 
@@ -134,24 +134,22 @@ public sealed class ShellService
         {
             try
             {
+                RecycleOption option = permanent
+                    ? RecycleOption.DeletePermanently
+                    : RecycleOption.SendToRecycleBin;
+
                 if (Directory.Exists(item.FullPath))
                 {
-                    FileSystem.DeleteDirectory(
-                        item.FullPath,
-                        UIOption.OnlyErrorDialogs,
-                        RecycleOption.SendToRecycleBin);
+                    FileSystem.DeleteDirectory(item.FullPath, UIOption.OnlyErrorDialogs, option);
                 }
                 else if (File.Exists(item.FullPath))
                 {
-                    FileSystem.DeleteFile(
-                        item.FullPath,
-                        UIOption.OnlyErrorDialogs,
-                        RecycleOption.SendToRecycleBin);
+                    FileSystem.DeleteFile(item.FullPath, UIOption.OnlyErrorDialogs, option);
                 }
             }
             catch (Exception ex)
             {
-                AppLog.Write(ex, $"Could not recycle {item.FullPath}");
+                AppLog.Write(ex, $"Could not delete {item.FullPath}");
                 errors.Add(item.DisplayName);
             }
         }
@@ -160,8 +158,8 @@ public sealed class ShellService
         {
             throw new ShellOperationException(
                 errors.Count == 1
-                    ? $"Could not move \"{errors[0]}\" to the Recycle Bin."
-                    : $"Could not move {errors.Count} items to the Recycle Bin.");
+                    ? $"Could not delete \"{errors[0]}\"."
+                    : $"Could not delete {errors.Count} items.");
         }
     }
 

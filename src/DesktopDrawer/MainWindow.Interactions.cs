@@ -25,7 +25,6 @@ public partial class MainWindow
         bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
         bool editingText = Keyboard.FocusedElement is TextBoxBase;
-        bool pageListFocused = PageList.IsKeyboardFocusWithin;
 
         if (control && e.Key == Key.F)
         {
@@ -156,21 +155,48 @@ public partial class MainWindow
             return;
         }
 
-        if (editingText || _renamingItem is not null || !pageListFocused)
+        if (editingText || _renamingItem is not null)
         {
             return;
         }
 
-        if (e.Key == Key.Enter)
+        // File actions work no matter which chrome element has focus.
+        if (alt && e.Key == Key.Enter)
         {
-            OpenSelectedItems();
+            ShowSelectedProperties();
+            e.Handled = true;
+            return;
+        }
+
+        if (control && shift && e.Key is Key.D1 or Key.D2 or Key.D3)
+        {
+            SetDensityFromShortcut(e.Key switch
+            {
+                Key.D1 => TileDensity.Compact,
+                Key.D2 => TileDensity.Cozy,
+                _ => TileDensity.Large
+            });
+            e.Handled = true;
+            return;
+        }
+
+        if (shift && e.Key == Key.Delete)
+        {
+            DeleteSelectedItems(permanent: true);
             e.Handled = true;
             return;
         }
 
         if (e.Key == Key.Delete)
         {
-            DeleteSelectedItems();
+            DeleteSelectedItems(permanent: false);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            OpenSelectedItems();
             e.Handled = true;
             return;
         }
@@ -184,14 +210,93 @@ public partial class MainWindow
             }
 
             e.Handled = true;
+        }
+    }
+
+    private void SetDensityFromShortcut(TileDensity density)
+    {
+        _settings.IconSize = 0;
+        ApplyDensity(density);
+        SaveSettings();
+        RecalculateGrid(force: true);
+
+        _initializingSettings = true;
+        CompactRadio.IsChecked = density == TileDensity.Compact;
+        CozyRadio.IsChecked = density == TileDensity.Cozy;
+        LargeRadio.IsChecked = density == TileDensity.Large;
+        IconSizeSlider.Value = _requestedIconSize;
+        IconSizeValueText.Text = $"{_requestedIconSize:0} px";
+        _initializingSettings = false;
+    }
+
+    private void Window_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (_settingsOpen || _renamingItem is not null || Keyboard.FocusedElement is TextBoxBase)
+        {
             return;
         }
+
+        string text = e.Text;
+        if (string.IsNullOrEmpty(text) || text.Length == 0 || char.IsControl(text[0]))
+        {
+            return;
+        }
+
+        DateTime now = DateTime.UtcNow;
+        if ((now - _typeAheadTime).TotalMilliseconds > 900)
+        {
+            _typeAhead = string.Empty;
+        }
+
+        _typeAheadTime = now;
+        _typeAhead += text;
+
+        DesktopItem? match = VisibleItems.FirstOrDefault(
+                                item => item.DisplayName.StartsWith(_typeAhead, StringComparison.CurrentCultureIgnoreCase))
+                            ?? VisibleItems.FirstOrDefault(
+                                item => item.DisplayName.Contains(_typeAhead, StringComparison.CurrentCultureIgnoreCase));
+
+        if (match is null)
+        {
+            return;
+        }
+
+        PageList.SelectedItems.Clear();
+        PageList.SelectedItems.Add(match);
+        PageList.ScrollIntoView(match);
+        e.Handled = true;
     }
 
     private void PageArea_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (_settingsOpen)
         {
+            return;
+        }
+
+        if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
+        {
+            // Ctrl+wheel switches the icon size, like Explorer's view zoom.
+            TileDensity next = e.Delta > 0
+                ? _settings.Density switch
+                {
+                    TileDensity.Compact => TileDensity.Cozy,
+                    TileDensity.Cozy => TileDensity.Large,
+                    _ => TileDensity.Large
+                }
+                : _settings.Density switch
+                {
+                    TileDensity.Large => TileDensity.Cozy,
+                    TileDensity.Cozy => TileDensity.Compact,
+                    _ => TileDensity.Compact
+                };
+
+            if (next != _settings.Density)
+            {
+                SetDensityFromShortcut(next);
+            }
+
+            e.Handled = true;
             return;
         }
 
@@ -1071,32 +1176,40 @@ public partial class MainWindow
         return sameVolume ? DragDropEffects.Move : DragDropEffects.Copy;
     }
 
-    private void DeleteSelectedItems()
+    private void DeleteSelectedItems(bool permanent)
     {
         List<DesktopItem> items = PageList.SelectedItems.Cast<DesktopItem>().ToList();
-        DeleteItems(items);
+        DeleteItems(items, permanent);
     }
 
-    private async void DeleteItems(IReadOnlyList<DesktopItem> items)
+    private async void DeleteItems(IReadOnlyList<DesktopItem> items, bool permanent = false)
     {
         if (items.Count == 0)
         {
             return;
         }
 
-        string message = items.Count == 1
-            ? $"Moved \"{items[0].DisplayName}\" to the Recycle Bin"
-            : $"Moved {items.Count} items to the Recycle Bin";
+        string message = permanent
+            ? items.Count == 1
+                ? $"Deleted \"{items[0].DisplayName}\" permanently"
+                : $"Deleted {items.Count} items permanently"
+            : items.Count == 1
+                ? $"Moved \"{items[0].DisplayName}\" to the Recycle Bin"
+                : $"Moved {items.Count} items to the Recycle Bin";
 
         try
         {
-            _shellService.DeleteToRecycleBin(items);
+            _shellService.Delete(items, permanent);
             ShowToast(message);
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Delete failed");
-            ShowToast(ex is ShellOperationException ? ex.Message : "Could not move the items to the Recycle Bin.");
+            ShowToast(ex is ShellOperationException
+                ? ex.Message
+                : permanent
+                    ? "Could not delete the items."
+                    : "Could not move the items to the Recycle Bin.");
         }
         finally
         {
