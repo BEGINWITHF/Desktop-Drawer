@@ -25,6 +25,7 @@ public partial class MainWindow
         bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
         bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
         bool editingText = Keyboard.FocusedElement is TextBoxBase;
+        Key actualKey = e.Key == Key.System ? e.SystemKey : e.Key;
 
         if (control && e.Key == Key.F)
         {
@@ -127,14 +128,14 @@ public partial class MainWindow
             return;
         }
 
-        if (_renamingItem is null && (e.Key == Key.PageDown || (alt && e.Key == Key.Right)))
+        if (_renamingItem is null && (e.Key == Key.PageDown || (alt && actualKey == Key.Right)))
         {
             GoToPage(_pageIndex + 1);
             e.Handled = true;
             return;
         }
 
-        if (_renamingItem is null && (e.Key == Key.PageUp || (alt && e.Key == Key.Left)))
+        if (_renamingItem is null && (e.Key == Key.PageUp || (alt && actualKey == Key.Left)))
         {
             GoToPage(_pageIndex - 1);
             e.Handled = true;
@@ -168,7 +169,7 @@ public partial class MainWindow
         }
 
         // File actions work no matter which chrome element has focus.
-        if (alt && e.Key == Key.Enter)
+        if (!editingText && _renamingItem is null && alt && actualKey == Key.Enter)
         {
             ShowSelectedProperties();
             e.Handled = true;
@@ -217,6 +218,23 @@ public partial class MainWindow
             }
 
             e.Handled = true;
+            return;
+        }
+
+        // Anything else with Ctrl or Alt is handed to the real desktop icon list,
+        // where shell extensions and third-party tools can react with their own
+        // windows.
+        if ((control || alt) &&
+            actualKey is not (Key.F4 or Key.Tab or Key.Escape) &&
+            PageList.SelectedItems.Count == 1 &&
+            PageList.SelectedItems[0] is DesktopItem selected)
+        {
+            int virtualKey = KeyInterop.VirtualKeyFromKey(actualKey);
+            if (virtualKey > 0 &&
+                DesktopKeyForwarder.TryForward(selected.FullPath, (byte)virtualKey, control, shift, alt))
+            {
+                e.Handled = true;
+            }
         }
     }
 
