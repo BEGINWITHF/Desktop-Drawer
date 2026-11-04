@@ -1,7 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows.Automation;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
 
@@ -95,34 +94,50 @@ internal static class DesktopKeyForwarder
 
         try
         {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             if (!string.IsNullOrEmpty(path))
             {
-                SelectDesktopItem(list, path);
+                DesktopSelection.TrySelect(path);
             }
 
+            long selectTime = stopwatch.ElapsedMilliseconds;
             HashSet<IntPtr> desktopWindows = SnapshotDesktopWindows(progman);
 
             // Tools such as PowerToys Peek only accept their hotkey while the
             // desktop owns the foreground, so it is focused before the replay.
             bool focusedDesktop = ForceForeground(progman);
+            long focusTime = stopwatch.ElapsedMilliseconds;
 
-            if (focusedDesktop)
+            bool signaled = false;
+
+            if (focusedDesktop && PeekIntegration.IsPeekHotkey(control, shift, alt, win, virtualKey))
             {
-                // Let the shell finish the activation before the chord arrives,
-                // otherwise the Start menu can still steal the key.
-                Thread.Sleep(80);
+                signaled = PeekIntegration.TryShow();
             }
 
-            _ignoreUntil = DateTime.UtcNow.AddMilliseconds(500);
-            bool injected = SendChord(virtualKey, control, shift, alt, win);
+            bool injected = false;
 
-            if (!injected)
+            if (!signaled)
             {
-                // Injection was refused; at least let view level handlers see it.
-                PostChord(list, virtualKey, control, shift, alt, win);
+                if (focusedDesktop)
+                {
+                    // Let the shell finish the activation before the chord arrives,
+                    // otherwise the Start menu can still steal the key.
+                    Thread.Sleep(20);
+                }
+
+                _ignoreUntil = DateTime.UtcNow.AddMilliseconds(500);
+                injected = SendChord(virtualKey, control, shift, alt, win);
+
+                if (!injected)
+                {
+                    // Injection was refused; at least let view level handlers see it.
+                    PostChord(list, virtualKey, control, shift, alt, win);
+                }
             }
 
-            AppLog.Write($"Forwarded 0x{virtualKey:X2} (desktop focused: {focusedDesktop}, injected: {injected})");
+            AppLog.Write($"Forwarded 0x{virtualKey:X2} (desktop focused: {focusedDesktop}, peek: {signaled}, injected: {injected}, select {selectTime} ms, focus {focusTime - selectTime} ms, send {stopwatch.ElapsedMilliseconds - focusTime} ms)");
             WatchAfterForward(owner, progman, desktopWindows, focusedDesktop);
             return true;
         }
@@ -130,41 +145,6 @@ internal static class DesktopKeyForwarder
         {
             AppLog.Write(ex, "Could not forward the shortcut to the desktop");
             return false;
-        }
-    }
-
-    /// <summary>
-    /// Selects the icon in Explorer's list view through UI Automation. Writing list
-    /// view structures directly from this process would make Explorer read a
-    /// pointer of ours and crash, so the shell's own automation interface is used.
-    /// </summary>
-    private static void SelectDesktopItem(IntPtr list, string path)
-    {
-        string name = Path.GetFileName(path);
-
-        try
-        {
-            AutomationElement root = AutomationElement.FromHandle(list);
-
-            var condition = new AndCondition(
-                new PropertyCondition(AutomationElement.NameProperty, name),
-                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
-
-            AutomationElement? item = root.FindFirst(TreeScope.Descendants, condition);
-            if (item is null)
-            {
-                return;
-            }
-
-            if (item.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern) &&
-                pattern is SelectionItemPattern selection)
-            {
-                selection.Select();
-            }
-        }
-        catch (Exception ex)
-        {
-            AppLog.Write(ex, "Could not select the desktop icon");
         }
     }
 
@@ -211,25 +191,29 @@ internal static class DesktopKeyForwarder
             releases.Add(KeyInput(pressedModifiers[i], up: true));
         }
 
-        // The shell needs to see the modifiers held for a moment before the key:
-        // when everything arrives in one batch Windows treats the Windows key as a
-        // bare tap and opens Start instead of the chord.
+        // The shell treats a Windows key press without another key as a Start menu
+        // tap, so the modifier has to be held visibly before the key arrives. Other
+        // chords are sent in one batch, which is much faster.
         bool ok = true;
 
-        if (downs.Count > 1)
+        if (win)
         {
-            ok &= Send(downs.Take(downs.Count - 1).ToArray());
-            Thread.Sleep(40);
+            var modifiersOnly = downs.Take(downs.Count - 1).ToArray();
+            if (modifiersOnly.Length > 0)
+            {
+                ok &= Send(modifiersOnly);
+                Thread.Sleep(20);
+            }
+
+            ok &= Send(new[] { downs[^1] });
+            Thread.Sleep(12);
+            ok &= Send(releases.ToArray());
         }
-
-        ok &= Send(new[] { downs[^1] });
-        Thread.Sleep(30);
-        ok &= Send(new[] { releases[0] });
-
-        if (releases.Count > 1)
+        else
         {
-            Thread.Sleep(15);
-            ok &= Send(releases.Skip(1).ToArray());
+            ok &= Send(downs.ToArray());
+            Thread.Sleep(12);
+            ok &= Send(releases.ToArray());
         }
 
         return ok;
@@ -318,6 +302,7 @@ internal static class DesktopKeyForwarder
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         int tick = 0;
         var reported = new HashSet<IntPtr>();
+        IntPtr lastForeground = IntPtr.Zero;
 
         timer.Tick += (_, _) =>
         {
@@ -326,7 +311,11 @@ internal static class DesktopKeyForwarder
             try
             {
                 IntPtr current = GetForegroundWindow();
-                AppLog.Write($"Forward watch: foreground {Describe(current)}");
+                if (current != lastForeground)
+                {
+                    lastForeground = current;
+                    AppLog.Write($"Forward watch: foreground {Describe(current)}");
+                }
 
                 foreach (IntPtr window in SnapshotDesktopWindows(progman))
                 {
@@ -337,19 +326,10 @@ internal static class DesktopKeyForwarder
                     }
                 }
 
-                if (tick >= 3)
+                if (tick >= 5)
                 {
                     timer.Stop();
-
-                    // Keep the focus on anything the shortcut opened; only take it
-                    // back when the desktop is still in front.
-                    IntPtr foreground = GetForegroundWindow();
-                    if (focusedDesktop && owner != IntPtr.Zero &&
-                        (foreground == progman || foreground == IntPtr.Zero))
-                    {
-                        ForceForeground(owner);
-                    }
-
+                    FinishForward(owner, progman, focusedDesktop, before);
                     _ignoreUntil = DateTime.MinValue;
                 }
             }
@@ -361,6 +341,85 @@ internal static class DesktopKeyForwarder
             }
         };
         timer.Start();
+    }
+
+    /// <summary>
+    /// Tools started by the shortcut do not always manage to activate their own
+    /// window, because this process still owns the foreground privilege. Whatever
+    /// they opened is brought forward explicitly; if nothing appeared, the drawer
+    /// takes the focus back.
+    /// </summary>
+    private static void FinishForward(IntPtr owner, IntPtr progman, bool focusedDesktop, HashSet<IntPtr> before)
+    {
+        IntPtr foreground = GetForegroundWindow();
+        bool desktopInFront = foreground == progman || foreground == IntPtr.Zero;
+
+        if (!desktopInFront && foreground != owner)
+        {
+            // Something (the user, another tool) already took the focus; leave it.
+            return;
+        }
+
+        IntPtr target = FindOpenedWindow(before, progman);
+
+        // A tool that could not activate its own window is brought forward here.
+        if (target != IntPtr.Zero)
+        {
+            ForceForeground(target);
+            AppLog.Write($"Forward watch: brought {Describe(target)} to the front");
+            return;
+        }
+
+        if (focusedDesktop && desktopInFront && owner != IntPtr.Zero)
+        {
+            ForceForeground(owner);
+        }
+    }
+
+    private static IntPtr FindOpenedWindow(HashSet<IntPtr> before, IntPtr progman)
+    {
+        IntPtr best = IntPtr.Zero;
+        long bestArea = 0;
+
+        EnumWindows((window, _) =>
+        {
+            if (!IsWindowVisible(window) || window == progman || before.Contains(window))
+            {
+                return true;
+            }
+
+            GetWindowThreadProcessId(window, out uint processId);
+            if (processId == (uint)Environment.ProcessId)
+            {
+                return true;
+            }
+
+            if (WindowText(window).Length == 0)
+            {
+                return true;
+            }
+
+            if (!GetWindowRect(window, out Rect rect))
+            {
+                return true;
+            }
+
+            long area = (long)(rect.Right - rect.Left) * (rect.Bottom - rect.Top);
+            if (area <= 0 || rect.Right - rect.Left < 120 || rect.Bottom - rect.Top < 80)
+            {
+                return true;
+            }
+
+            if (area > bestArea)
+            {
+                bestArea = area;
+                best = window;
+            }
+
+            return true;
+        }, IntPtr.Zero);
+
+        return best;
     }
 
     private static HashSet<IntPtr> SnapshotDesktopWindows(IntPtr progman)
@@ -464,9 +523,9 @@ internal static class DesktopKeyForwarder
             {
                 SetForegroundWindow(window);
 
-                for (int i = 0; i < 8 && GetForegroundWindow() != window; i++)
+                for (int i = 0; i < 12 && GetForegroundWindow() != window; i++)
                 {
-                    Thread.Sleep(15);
+                    Thread.Sleep(5);
                 }
 
                 if (GetForegroundWindow() == window)
