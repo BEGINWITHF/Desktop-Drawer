@@ -155,6 +155,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
 
+        BuildAccentSwatches();
+        ThemeService.ApplyAccent(_settings.AccentColor);
+        ApplyWallpaperDim();
+
         PageList.RenderTransform = new TranslateTransform();
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();
@@ -1293,6 +1297,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (cursor != _lastCursorPosition)
         {
             _lastCursorPosition = cursor;
+            ShowChrome();
+            return;
+        }
+
+        if (_settings.AlwaysShowChrome)
+        {
             ShowChrome();
             return;
         }

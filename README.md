@@ -63,9 +63,12 @@
 
 - **Icon size**：Compact / Cozy / Large 三个预设，控制每页能放多少图标
 - **Custom icon size**：滑杆自定义图标大小（24–160 px），拖动后自动覆盖预设
+- **Accent color**：主题色，8 个预设色 + 自定义十六进制（如 `#4CC9F0`）；选中框、焦点环、页码、按钮高亮会一起变色
+- **Wallpaper dim**：0–60% 压暗壁纸（只影响桌面层，不影响其它窗口）
 - **Fit to window / Columns / Rows**：关掉自适应后可以指定每页的列数（2–16）和行数（1–16）；格子放不下时图标会自动缩小到合适尺寸
 - **Folders first**：文件夹排在文件前面
 - **Show hidden files**：显示桌面上的隐藏/系统项目
+- **Always show controls**：顶栏和页码栏常驻，不再自动淡出
 - **Close to tray**：点关闭按钮时留在托盘而不是退出
 - **Start with Windows**：开机自启
 - **Hide desktop icons now**：立刻隐藏 / 恢复 Windows 原生桌面图标

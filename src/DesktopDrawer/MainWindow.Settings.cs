@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Models;
+using DesktopDrawer.Services;
 using Drawing = System.Drawing;
 using WinForms = System.Windows.Forms;
 
@@ -16,6 +18,159 @@ public partial class MainWindow
 {
     private WinForms.ContextMenuStrip? _trayMenu;
     private Drawing.Icon? _trayIconImage;
+
+    private static readonly string[] AccentPresets =
+    {
+        "#7C9CFF",
+        "#8B7CF6",
+        "#4CC9F0",
+        "#34D399",
+        "#F6C453",
+        "#FF8A65",
+        "#F472B6",
+        "#9AA4B8"
+    };
+
+    private readonly List<(Border Swatch, string Hex)> _accentSwatches = new();
+
+    private void BuildAccentSwatches()
+    {
+        AccentSwatchesPanel.Children.Clear();
+        _accentSwatches.Clear();
+
+        foreach (string hex in AccentPresets)
+        {
+            ThemeService.TryParse(hex, out Color color);
+
+            var swatch = new Border
+            {
+                Width = 26,
+                Height = 26,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(color),
+                BorderThickness = new Thickness(2),
+                BorderBrush = Brushes.Transparent,
+                Margin = new Thickness(0, 0, 8, 0),
+                Cursor = Cursors.Hand,
+                ToolTip = hex
+            };
+
+            AutomationProperties.SetName(swatch, $"Accent {hex}");
+            swatch.MouseLeftButtonDown += AccentSwatch_Click;
+            _accentSwatches.Add((swatch, hex));
+            AccentSwatchesPanel.Children.Add(swatch);
+        }
+
+        UpdateAccentSelection();
+    }
+
+    private void AccentSwatch_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border { ToolTip: string hex })
+        {
+            ApplyAccent(hex, save: true);
+            e.Handled = true;
+        }
+    }
+
+    private void AccentHexBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        ApplyCustomAccent();
+        e.Handled = true;
+    }
+
+    private void AccentHexBox_LostFocus(object sender, RoutedEventArgs e) => ApplyCustomAccent();
+
+    private void AccentApplyButton_Click(object sender, RoutedEventArgs e) => ApplyCustomAccent();
+
+    private void ApplyCustomAccent()
+    {
+        if (_initializingSettings)
+        {
+            return;
+        }
+
+        if (ThemeService.TryParse(AccentHexBox.Text, out _))
+        {
+            ApplyAccent(AccentHexBox.Text, save: true);
+            return;
+        }
+
+        AccentHexBox.Text = CurrentAccentHex;
+        ShowToast("Enter a color like #4CC9F0");
+    }
+
+    private void ApplyAccent(string hex, bool save)
+    {
+        Color accent = ThemeService.ApplyAccent(hex);
+        _settings.AccentColor = $"#{accent.R:X2}{accent.G:X2}{accent.B:X2}";
+
+        _initializingSettings = true;
+        AccentHexBox.Text = _settings.AccentColor;
+        _initializingSettings = false;
+
+        UpdateAccentSelection();
+
+        if (save)
+        {
+            SaveSettings();
+        }
+    }
+
+    private string CurrentAccentHex =>
+        ThemeService.TryParse(_settings.AccentColor, out Color color)
+            ? $"#{color.R:X2}{color.G:X2}{color.B:X2}"
+            : ThemeService.DefaultAccent;
+
+    private void UpdateAccentSelection()
+    {
+        string current = CurrentAccentHex;
+
+        foreach ((Border swatch, string hex) in _accentSwatches)
+        {
+            bool selected = string.Equals(hex, current, StringComparison.OrdinalIgnoreCase);
+            swatch.BorderBrush = selected ? (Brush)FindResource("TextPrimaryBrush") : Brushes.Transparent;
+        }
+    }
+
+    private void AlwaysShowChromeToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializingSettings)
+        {
+            return;
+        }
+
+        _settings.AlwaysShowChrome = AlwaysShowChromeToggle.IsChecked == true;
+        SaveSettings();
+
+        if (_settings.AlwaysShowChrome)
+        {
+            ShowChrome();
+        }
+    }
+
+    private void WallpaperDimSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || WallpaperDimValueText is null)
+        {
+            return;
+        }
+
+        _settings.WallpaperDim = (int)Math.Round(e.NewValue);
+        WallpaperDimValueText.Text = $"{_settings.WallpaperDim}%";
+        ApplyWallpaperDim();
+        SaveSettings();
+    }
+
+    private void ApplyWallpaperDim()
+    {
+        WallpaperDimLayer.Opacity = Math.Clamp(_settings.WallpaperDim, 0, 60) / 100.0;
+    }
 
     private void SyncSettingsUi()
     {
@@ -52,10 +207,17 @@ public partial class MainWindow
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
         CloseToTrayToggle.IsChecked = _settings.CloseToTray;
+        AlwaysShowChromeToggle.IsChecked = _settings.AlwaysShowChrome;
         StartWithWindowsToggle.IsChecked = _settings.StartWithWindows;
         HideIconsOnLaunchToggle.IsChecked = _settings.HideIconsOnLaunch;
         HideIconsSettingsToggle.IsChecked = _desktopIconsService.AreHidden();
         LayoutEditToggle.IsChecked = _layoutEditing;
+
+        AccentHexBox.Text = CurrentAccentHex;
+        WallpaperDimSlider.Value = Math.Clamp(_settings.WallpaperDim, 0, 60);
+        WallpaperDimValueText.Text = $"{(int)WallpaperDimSlider.Value}%";
+        UpdateAccentSelection();
+        ApplyWallpaperDim();
 
         UpdateSortLabel();
         CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
