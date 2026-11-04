@@ -295,6 +295,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ref disableTransitions,
             sizeof(int));
 
+        // Owned by the desktop window: "show desktop" then leaves the drawer alone,
+        // and Windows keeps owned windows above their owner automatically.
+        IntPtr progman = NativeMethods.FindWindow("Progman", null);
+        if (progman != IntPtr.Zero)
+        {
+            NativeMethods.SetWindowLongPtr(handle, NativeMethods.GwlpHwndParent, progman);
+        }
+
         _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
         _shortcutHook.Install();
 

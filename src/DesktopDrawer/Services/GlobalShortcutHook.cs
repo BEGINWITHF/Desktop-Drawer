@@ -157,6 +157,15 @@ internal sealed class GlobalShortcutHook : IDisposable
 
     private bool IsOwnerActive()
     {
+        // The drawer is owned by the desktop window, so GetForegroundWindow can
+        // report Progman while the drawer is the active window. The keyboard focus
+        // of our own UI thread is the reliable signal, since the hook runs there.
+        IntPtr focus = GetFocus();
+        if (focus != IntPtr.Zero && (focus == _owner || IsChild(_owner, focus)))
+        {
+            return true;
+        }
+
         IntPtr foreground = GetForegroundWindow();
 
         if (foreground == _owner)
@@ -209,6 +218,12 @@ internal sealed class GlobalShortcutHook : IDisposable
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetFocus();
+
+    [DllImport("user32.dll")]
+    private static extern bool IsChild(IntPtr parent, IntPtr child);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandle(string? moduleName);

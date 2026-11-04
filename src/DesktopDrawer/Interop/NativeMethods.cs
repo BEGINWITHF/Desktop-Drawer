@@ -53,6 +53,7 @@ internal static class NativeMethods
 
     public const int GwlStyle = -16;
     public const int GwlExStyle = -20;
+    public const int GwlpHwndParent = -8;
 
     public const long WsChild = 0x40000000L;
     public const long WsPopup = unchecked((long)0x80000000);
