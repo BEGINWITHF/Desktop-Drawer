@@ -326,7 +326,7 @@ internal static class DesktopKeyForwarder
                     }
                 }
 
-                if (tick >= 5)
+                if (tick >= 8)
                 {
                     timer.Stop();
                     FinishForward(owner, progman, focusedDesktop, before);
@@ -354,19 +354,27 @@ internal static class DesktopKeyForwarder
         IntPtr foreground = GetForegroundWindow();
         bool desktopInFront = foreground == progman || foreground == IntPtr.Zero;
 
-        if (!desktopInFront && foreground != owner)
-        {
-            // Something (the user, another tool) already took the focus; leave it.
-            return;
-        }
-
         IntPtr target = FindOpenedWindow(before, progman);
 
-        // A tool that could not activate its own window is brought forward here.
+        // A tool that could not keep the focus (or never activated itself) is
+        // brought forward here. The drawer only returns when nothing appeared.
         if (target != IntPtr.Zero)
         {
-            ForceForeground(target);
-            AppLog.Write($"Forward watch: brought {Describe(target)} to the front");
+            if (foreground == owner || desktopInFront)
+            {
+                bool raised = ForceForeground(target);
+
+                if (!raised)
+                {
+                    // Last resort: the same call Alt+Tab uses, which ignores the
+                    // foreground lock.
+                    SwitchToThisWindow(target, true);
+                    raised = GetForegroundWindow() == target;
+                }
+
+                AppLog.Write($"Forward watch: brought {Describe(target)} to the front: {raised}");
+            }
+
             return;
         }
 
@@ -683,6 +691,9 @@ internal static class DesktopKeyForwarder
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern void SwitchToThisWindow(IntPtr hWnd, bool altTab);
 
     [DllImport("user32.dll")]
     private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
