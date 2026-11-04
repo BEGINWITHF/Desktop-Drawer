@@ -29,10 +29,13 @@ internal sealed class GlobalShortcutHook : IDisposable
     private const int VkRWin = 0x5C;
 
     /// <summary>
-    /// Combinations Windows itself owns. They are left alone so system behaviour
-    /// stays untouched; everything else with the Windows key is replayed.
+    /// The Windows key is swallowed while the drawer is active so the shell never
+    /// opens Start or takes the input away; every combination is replayed on the
+    /// desktop instead. A bare tap opens Start again through an injected tap.
     /// </summary>
-    private static readonly HashSet<byte> SystemKeys = BuildSystemKeys();
+    private bool _winDown;
+    private bool _chordPressed;
+    private DateTime _winExpiry = DateTime.MinValue;
 
     private readonly IntPtr _owner;
     private readonly Dispatcher _dispatcher;
@@ -92,27 +95,62 @@ internal sealed class GlobalShortcutHook : IDisposable
             return CallNextHookEx(_hook, code, wParam, lParam);
         }
 
+        byte key = (byte)data.vkCode;
+
         if (up)
         {
-            return _suppressed.Remove((byte)data.vkCode)
-                ? new IntPtr(1)
-                : CallNextHookEx(_hook, code, wParam, lParam);
+            if (!_suppressed.Remove(key))
+            {
+                return CallNextHookEx(_hook, code, wParam, lParam);
+            }
+
+            if (key is VkLWin or VkRWin)
+            {
+                bool tapped = !_chordPressed;
+                _winDown = false;
+
+                if (tapped)
+                {
+                    // The user just pressed the Windows key; keep Start working.
+                    DesktopKeyForwarder.SendWinTap();
+                }
+            }
+
+            return new IntPtr(1);
         }
 
-        if (!IsOwnerActive() ||
-            !IsChordWithWin((byte)data.vkCode) ||
-            SystemKeys.Contains((byte)data.vkCode))
+        if (!IsOwnerActive())
+        {
+            return CallNextHookEx(_hook, code, wParam, lParam);
+        }
+
+        if (DateTime.UtcNow > _winExpiry)
+        {
+            _winDown = false;
+        }
+
+        if (key is VkLWin or VkRWin)
+        {
+            _suppressed.Add(key);
+            _winDown = true;
+            _chordPressed = false;
+            _winExpiry = DateTime.UtcNow.AddSeconds(3);
+            return new IntPtr(1);
+        }
+
+        if (!_winDown || key is VkShift or VkControl or VkMenu)
         {
             return CallNextHookEx(_hook, code, wParam, lParam);
         }
 
         var chord = new WinChord(
-            (byte)data.vkCode,
+            key,
             IsPressed(VkControl),
             IsPressed(VkShift),
             IsPressed(VkMenu));
 
-        _suppressed.Add((byte)data.vkCode);
+        _suppressed.Add(key);
+        _chordPressed = true;
         _dispatcher.BeginInvoke(DispatcherPriority.Input, () => _onChord(chord));
         return new IntPtr(1);
     }
@@ -129,52 +167,8 @@ internal sealed class GlobalShortcutHook : IDisposable
         return foreground != IntPtr.Zero && GetAncestor(foreground, GaRoot) == _owner;
     }
 
-    private static bool IsChordWithWin(byte key)
-    {
-        if (key is VkShift or VkControl or VkMenu or VkLWin or VkRWin or 0x5D or 0x90 or 0x91)
-        {
-            return false;
-        }
-
-        return IsPressed(VkLWin) || IsPressed(VkRWin);
-    }
-
-    private static bool IsPressed(int key)
-    {
+    private static bool IsPressed(int key)    {
         return (GetAsyncKeyState(key) & 0x8000) != 0;
-    }
-
-    private static HashSet<byte> BuildSystemKeys()
-    {
-        var keys = new HashSet<byte>();
-
-        for (byte key = 0x30; key <= 0x39; key++)
-        {
-            keys.Add(key); // 0-9
-        }
-
-        for (byte key = 0x41; key <= 0x5A; key++)
-        {
-            keys.Add(key); // A-Z
-        }
-
-        for (byte key = 0x70; key <= 0x87; key++)
-        {
-            keys.Add(key); // F1-F24
-        }
-
-        foreach (byte key in new byte[]
-                 {
-                     0x09, 0x0D, 0x1B, 0x20,
-                     0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
-                     0x2D, 0x2E,
-                     0xBA, 0xBB, 0xBC, 0xBE, 0xBF, 0xDB, 0xDD, 0xDE
-                 })
-        {
-            keys.Add(key);
-        }
-
-        return keys;
     }
 
     public void Dispose()

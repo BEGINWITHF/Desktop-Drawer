@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Automation;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
 
@@ -16,15 +17,6 @@ namespace DesktopDrawer.Services;
 /// </summary>
 internal static class DesktopKeyForwarder
 {
-    private const uint LvmFirst = 0x1000;
-    private const uint LvmFindItemW = LvmFirst + 83;
-    private const uint LvmSetItemState = LvmFirst + 43;
-
-    private const uint LvfiString = 0x0002;
-
-    private const uint LvisSelected = 0x0002;
-    private const uint LvisFocused = 0x0001;
-
     private const int WmKeyDown = 0x0100;
     private const int WmKeyUp = 0x0101;
 
@@ -59,6 +51,21 @@ internal static class DesktopKeyForwarder
         (GetAsyncKeyState(VkLWin) & 0x8000) != 0 ||
         (GetAsyncKeyState(VkRWin) & 0x8000) != 0;
 
+    /// <summary>
+    /// Keeps the keyboard hook from reacting to the app's own synthetic input.
+    /// </summary>
+    public static void SuspendCapture(int milliseconds)
+    {
+        _ignoreUntil = DateTime.UtcNow.AddMilliseconds(milliseconds);
+    }
+
+    /// <summary>Injects a plain Windows key tap so the Start menu still opens.</summary>
+    public static void SendWinTap()
+    {
+        SuspendCapture(400);
+        Send(new[] { KeyInput(VkLWin, up: false), KeyInput(VkLWin, up: true) });
+    }
+
     public static bool TryForward(
         IntPtr owner,
         string? path,
@@ -86,25 +93,25 @@ internal static class DesktopKeyForwarder
 
         IntPtr progman = FindWindow("Progman", null);
 
-        int index = -1;
-        if (!string.IsNullOrEmpty(path))
-        {
-            index = FindIndex(list, Path.GetFileName(path));
-        }
-
         try
         {
-            if (index >= 0)
+            if (!string.IsNullOrEmpty(path))
             {
-                SelectOnly(list, index);
+                SelectDesktopItem(list, path);
             }
 
             HashSet<IntPtr> desktopWindows = SnapshotDesktopWindows(progman);
 
-            // Best effort: if the desktop can own the foreground, tools that check
-            // the active window see the same state as a real desktop shortcut.
-            // Global hotkeys and hooks fire regardless, so this is not a gate.
+            // Tools such as PowerToys Peek only accept their hotkey while the
+            // desktop owns the foreground, so it is focused before the replay.
             bool focusedDesktop = ForceForeground(progman);
+
+            if (focusedDesktop)
+            {
+                // Let the shell finish the activation before the chord arrives,
+                // otherwise the Start menu can still steal the key.
+                Thread.Sleep(80);
+            }
 
             _ignoreUntil = DateTime.UtcNow.AddMilliseconds(500);
             bool injected = SendChord(virtualKey, control, shift, alt, win);
@@ -123,6 +130,41 @@ internal static class DesktopKeyForwarder
         {
             AppLog.Write(ex, "Could not forward the shortcut to the desktop");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Selects the icon in Explorer's list view through UI Automation. Writing list
+    /// view structures directly from this process would make Explorer read a
+    /// pointer of ours and crash, so the shell's own automation interface is used.
+    /// </summary>
+    private static void SelectDesktopItem(IntPtr list, string path)
+    {
+        string name = Path.GetFileName(path);
+
+        try
+        {
+            AutomationElement root = AutomationElement.FromHandle(list);
+
+            var condition = new AndCondition(
+                new PropertyCondition(AutomationElement.NameProperty, name),
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
+
+            AutomationElement? item = root.FindFirst(TreeScope.Descendants, condition);
+            if (item is null)
+            {
+                return;
+            }
+
+            if (item.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern) &&
+                pattern is SelectionItemPattern selection)
+            {
+                selection.Select();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not select the desktop icon");
         }
     }
 
@@ -151,7 +193,9 @@ internal static class DesktopKeyForwarder
             pressedModifiers.Add(VkMenu);
         }
 
-        if (win && !IsHeld(VkLWin))
+        // The Windows key is swallowed by the keyboard hook before the system sees
+        // it, so it always has to be synthesized.
+        if (win)
         {
             downs.Add(KeyInput(VkLWin, up: false));
             pressedModifiers.Add(VkLWin);
@@ -167,12 +211,28 @@ internal static class DesktopKeyForwarder
             releases.Add(KeyInput(pressedModifiers[i], up: true));
         }
 
-        Send(downs.ToArray());
+        // The shell needs to see the modifiers held for a moment before the key:
+        // when everything arrives in one batch Windows treats the Windows key as a
+        // bare tap and opens Start instead of the chord.
+        bool ok = true;
 
-        // Give polling tools (GetAsyncKeyState) a chance to see the key down.
-        Thread.Sleep(24);
+        if (downs.Count > 1)
+        {
+            ok &= Send(downs.Take(downs.Count - 1).ToArray());
+            Thread.Sleep(40);
+        }
 
-        return Send(releases.ToArray());
+        ok &= Send(new[] { downs[^1] });
+        Thread.Sleep(30);
+        ok &= Send(new[] { releases[0] });
+
+        if (releases.Count > 1)
+        {
+            Thread.Sleep(15);
+            ok &= Send(releases.Skip(1).ToArray());
+        }
+
+        return ok;
     }
 
     private static bool Send(Input[] inputs)
@@ -257,6 +317,7 @@ internal static class DesktopKeyForwarder
     {
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         int tick = 0;
+        var reported = new HashSet<IntPtr>();
 
         timer.Tick += (_, _) =>
         {
@@ -264,17 +325,19 @@ internal static class DesktopKeyForwarder
 
             try
             {
-                AppLog.Write($"Forward watch: foreground {Describe(GetForegroundWindow())}");
+                IntPtr current = GetForegroundWindow();
+                AppLog.Write($"Forward watch: foreground {Describe(current)}");
 
                 foreach (IntPtr window in SnapshotDesktopWindows(progman))
                 {
-                    if (!before.Contains(window) && IsWindowVisible(window))
+                    if (!before.Contains(window) && !reported.Contains(window) && IsWindowVisible(window))
                     {
+                        reported.Add(window);
                         AppLog.Write($"Forward watch: new window {Describe(window)} {DescribeSize(window)}");
                     }
                 }
 
-                if (tick >= 4)
+                if (tick >= 3)
                 {
                     timer.Stop();
 
@@ -370,6 +433,62 @@ internal static class DesktopKeyForwarder
         return buffer.ToString();
     }
 
+    private static bool ForceForeground(IntPtr window)
+    {
+        if (window == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (GetForegroundWindow() == window)
+        {
+            return true;
+        }
+
+        // Windows only lets the foreground process move the activation elsewhere.
+        // A zero-distance mouse move counts as user input without any visible
+        // effect, which unlocks that restriction.
+        NudgeMouse();
+
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            IntPtr foreground = GetForegroundWindow();
+            uint foregroundThread = GetWindowThreadProcessId(foreground, out _);
+            uint currentThread = GetCurrentThreadId();
+
+            bool attached = foregroundThread != 0 &&
+                            foregroundThread != currentThread &&
+                            AttachThreadInput(foregroundThread, currentThread, true);
+
+            try
+            {
+                SetForegroundWindow(window);
+
+                for (int i = 0; i < 8 && GetForegroundWindow() != window; i++)
+                {
+                    Thread.Sleep(15);
+                }
+
+                if (GetForegroundWindow() == window)
+                {
+                    return true;
+                }
+            }
+            finally
+            {
+                if (attached)
+                {
+                    AttachThreadInput(foregroundThread, currentThread, false);
+                }
+            }
+
+            Thread.Sleep(60);
+            NudgeMouse();
+        }
+
+        return false;
+    }
+
     private static void PostChord(IntPtr list, byte virtualKey, bool control, bool shift, bool alt, bool win)
     {
         var modifiers = new List<byte>();
@@ -407,51 +526,6 @@ internal static class DesktopKeyForwarder
         }
     }
 
-    private static bool ForceForeground(IntPtr window)
-    {
-        if (window == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        if (GetForegroundWindow() == window)
-        {
-            return true;
-        }
-
-        // Windows only lets the foreground process move the activation elsewhere.
-        // A zero-distance mouse move counts as user input without any visible
-        // effect, which unlocks that restriction.
-        NudgeMouse();
-
-        IntPtr foreground = GetForegroundWindow();
-        uint foregroundThread = GetWindowThreadProcessId(foreground, out _);
-        uint currentThread = GetCurrentThreadId();
-
-        bool attached = foregroundThread != 0 &&
-                        foregroundThread != currentThread &&
-                        AttachThreadInput(foregroundThread, currentThread, true);
-
-        try
-        {
-            SetForegroundWindow(window);
-
-            for (int i = 0; i < 12 && GetForegroundWindow() != window; i++)
-            {
-                Thread.Sleep(15);
-            }
-
-            return GetForegroundWindow() == window;
-        }
-        finally
-        {
-            if (attached)
-            {
-                AttachThreadInput(foregroundThread, currentThread, false);
-            }
-        }
-    }
-
     private static IntPtr FindIconList()
     {
         IntPtr progman = FindWindow("Progman", null);
@@ -469,65 +543,16 @@ internal static class DesktopKeyForwarder
         return FindWindowEx(view, IntPtr.Zero, "SysListView32", null);
     }
 
-    private static int FindIndex(IntPtr list, string name)
-    {
-        IntPtr text = Marshal.StringToHGlobalUni(name);
-
-        try
-        {
-            var info = new LvFindInfo
-            {
-                flags = LvfiString,
-                psz = text
-            };
-
-            return (int)SendMessage(list, LvmFindItemW, new IntPtr(-1), ref info);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(text);
-        }
-    }
-
-    private static void SelectOnly(IntPtr list, int index)
-    {
-        var clear = new LvItem { stateMask = LvisSelected | LvisFocused, state = 0 };
-        SendMessage(list, LvmSetItemState, new IntPtr(-1), ref clear);
-
-        var select = new LvItem
-        {
-            stateMask = LvisSelected | LvisFocused,
-            state = LvisSelected | LvisFocused
-        };
-
-        SendMessage(list, LvmSetItemState, (IntPtr)index, ref select);
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct LvFindInfo
-    {
-        public uint flags;
-        public IntPtr psz;
-        public IntPtr lParam;
-        public int x;
-        public int y;
-        public uint vkDirection;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
-    private struct LvItem
+    private struct Rect
     {
-        public uint mask;
-        public int iItem;
-        public int iSubItem;
-        public uint state;
-        public uint stateMask;
-        public IntPtr pszText;
-        public int cchTextMax;
-        public int iImage;
-        public IntPtr lParam;
-        public int iIndent;
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
+
+    private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input
@@ -567,28 +592,11 @@ internal static class DesktopKeyForwarder
         public IntPtr dwExtraInfo;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Rect
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
-
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindow(string? className, string? windowName);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr childAfter, string? className, string? windowName);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SendMessage(IntPtr hWnd, uint message, IntPtr wParam, ref LvFindInfo lParam);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SendMessage(IntPtr hWnd, uint message, IntPtr wParam, ref LvItem lParam);
 
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hWnd, int message, IntPtr wParam, IntPtr lParam);
