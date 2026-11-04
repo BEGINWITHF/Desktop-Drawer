@@ -98,7 +98,7 @@ internal static class DesktopKeyForwarder
 
             if (!string.IsNullOrEmpty(path))
             {
-                DesktopSelection.TrySelect(path);
+                DesktopSelection.TrySelect(list, path);
             }
 
             long selectTime = stopwatch.ElapsedMilliseconds;
@@ -137,7 +137,7 @@ internal static class DesktopKeyForwarder
                 }
             }
 
-            AppLog.Write($"Forwarded 0x{virtualKey:X2} (desktop focused: {focusedDesktop}, peek: {signaled}, injected: {injected}, select {selectTime} ms, focus {focusTime - selectTime} ms, send {stopwatch.ElapsedMilliseconds - focusTime} ms)");
+            AppLog.Write($"Forwarded 0x{virtualKey:X2} \"{Path.GetFileName(path)}\" (desktop focused: {focusedDesktop}, peek: {signaled}, injected: {injected}, select {selectTime} ms, focus {focusTime - selectTime} ms, send {stopwatch.ElapsedMilliseconds - focusTime} ms)");
             WatchAfterForward(owner, progman, desktopWindows, focusedDesktop);
             return true;
         }

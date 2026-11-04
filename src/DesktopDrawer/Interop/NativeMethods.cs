@@ -177,6 +177,44 @@ internal static class NativeMethods
         uint flags);
 
     [DllImport("user32.dll")]
+    public static extern IntPtr SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        IntPtr module,
+        WinEventDelegate callback,
+        uint processId,
+        uint threadId,
+        uint flags);
+
+    [DllImport("user32.dll")]
+    public static extern bool UnhookWinEvent(IntPtr hook);
+
+    public delegate void WinEventDelegate(
+        IntPtr hook,
+        uint eventType,
+        IntPtr hwnd,
+        int idObject,
+        int idChild,
+        uint thread,
+        uint time);
+
+    public const uint EventObjectReorder = 0x8004;
+    public const uint WinEventOutOfContext = 0x0000;
+    public const uint WinEventSkipOwnProcess = 0x0002;
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hWnd, int command);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
+
+    public const int DwmwaTransitionsForceDisabled = 3;
+    public const int DwmwaExcludedFromPeek = 12;
+
+    public const int SwShowNoActivate = 4;
+    public const int SwRestore = 9;
+
+    [DllImport("user32.dll")]
     public static extern IntPtr WindowFromPoint(Point point);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

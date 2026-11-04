@@ -98,7 +98,8 @@
 
         <DataTemplate x:Key="DesktopItemTemplate">
             <Grid ToolTipService.InitialShowDelay="550"
-                  ToolTipService.ShowDuration="20000">
+                  ToolTipService.ShowDuration="20000"
+                  AutomationProperties.Name="{Binding DisplayName}">
                 <Grid.ToolTip>
                     <ToolTip>
                         <StackPanel MaxWidth="360">

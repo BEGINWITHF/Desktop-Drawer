@@ -84,6 +84,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _embeddedInDesktop;
     private int _embedAttempts;
     private GlobalShortcutHook? _shortcutHook;
+    private IntPtr _zOrderHook;
+    private NativeMethods.WinEventDelegate? _zOrderCallback;
+    private int _lastRaiseTick;
 
     /// <summary>
     /// Windows only composites per-pixel transparency for top-level windows, so
@@ -277,13 +280,69 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
 
+        // No fade/slide animation when "show desktop" hides and shows the drawer
+        // again: the transition used to be visible as a few translucent frames.
+        int disableTransitions = 1;
+        NativeMethods.DwmSetWindowAttribute(
+            handle,
+            NativeMethods.DwmwaTransitionsForceDisabled,
+            ref disableTransitions,
+            sizeof(int));
+
+        NativeMethods.DwmSetWindowAttribute(
+            handle,
+            NativeMethods.DwmwaExcludedFromPeek,
+            ref disableTransitions,
+            sizeof(int));
+
         _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
         _shortcutHook.Install();
+
+        // Re-pin the drawer the moment the shell reorders windows ("show desktop",
+        // app switches, WorkerW recreation) instead of waiting for the next tick.
+        _zOrderCallback = OnZOrderChanged;
+        _zOrderHook = NativeMethods.SetWinEventHook(
+            NativeMethods.EventObjectReorder,
+            NativeMethods.EventObjectReorder,
+            IntPtr.Zero,
+            _zOrderCallback,
+            0,
+            0,
+            NativeMethods.WinEventOutOfContext | NativeMethods.WinEventSkipOwnProcess);
     }
 
     private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         const int WmMouseHWheel = 0x020E;
+        const int WmSysCommand = 0x0112;
+        const int ScMinimize = 0xF020;
+        const int WmSize = 0x0005;
+        const int SizeMinimized = 1;
+
+        if (message == WmSysCommand && (wParam.ToInt32() & 0xFFF0) == ScMinimize)
+        {
+            // The drawer is part of the desktop; it has no business being minimized.
+            handled = true;
+            return IntPtr.Zero;
+        }
+
+        if (message == WmSize && wParam.ToInt32() == SizeMinimized && !_isExiting && !_cleanedUp)
+        {
+            // "Show desktop" minimizes every window. Restore as early as possible so
+            // no frame without the drawer is composed.
+            Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() =>
+            {
+                if (_isExiting || _cleanedUp || WindowState != WindowState.Minimized)
+                {
+                    return;
+                }
+
+                NativeMethods.ShowWindow(hwnd, NativeMethods.SwRestore);
+                WindowState = WindowState.Normal;
+                ApplyWorkAreaBounds();
+                DesktopHost.RaiseAboveDesktop(hwnd);
+            }));
+        }
 
         if (message == WmMouseHWheel && !_settingsOpen)
         {
@@ -294,6 +353,39 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         return IntPtr.Zero;
+    }
+
+    private void OnZOrderChanged(
+        IntPtr hook,
+        uint eventType,
+        IntPtr hwnd,
+        int idObject,
+        int idChild,
+        uint thread,
+        uint time)
+    {
+        if (_cleanedUp)
+        {
+            return;
+        }
+
+        int now = Environment.TickCount;
+        if (now - _lastRaiseTick < 16)
+        {
+            return;
+        }
+
+        _lastRaiseTick = now;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() =>
+        {
+            if (_cleanedUp)
+            {
+                return;
+            }
+
+            DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
+        }));
     }
 
     private void HandleHorizontalWheel(int delta)
@@ -517,7 +609,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (WindowState == WindowState.Minimized && !_isExiting && !_cleanedUp)
         {
             // "Show desktop" must not take the drawer away, so pop straight back.
-            Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() =>
             {
                 if (!_isExiting && !_cleanedUp && WindowState == WindowState.Minimized)
                 {
@@ -1669,6 +1761,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _cleanedUp = true;
         _shortcutHook?.Dispose();
         _shortcutHook = null;
+
+        if (_zOrderHook != IntPtr.Zero)
+        {
+            NativeMethods.UnhookWinEvent(_zOrderHook);
+            _zOrderHook = IntPtr.Zero;
+        }
+
         _prefetchCts?.Cancel();
         _chromeTimer.Stop();
         _embedTimer.Stop();
