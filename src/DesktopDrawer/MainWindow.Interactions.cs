@@ -578,10 +578,15 @@ public partial class MainWindow
         }
 
         if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
-            container.Template?.FindName("Card", container) is not Border card)
+            container.Template?.FindName("Card", container) is not Border card ||
+            container.Template?.FindName("ContentHost", container) is not FrameworkElement contentHost)
         {
             return;
         }
+
+        // The previous expansion (if it was this same tile) has just been reset;
+        // make sure the layout is back to its normal state before measuring.
+        container.UpdateLayout();
 
         double labelWidth = Math.Max(40, container.ActualWidth - 8);
 
@@ -608,25 +613,30 @@ public partial class MainWindow
             return;
         }
 
-        double contentHeight = IconSize + 7 + TileNameHeight;
-        double cardHeight = Math.Max(1, container.ActualHeight - 8);
-        double innerHeight = Math.Max(1, cardHeight - 2);
-        double hostMargin = Math.Max(0, (innerHeight - contentHeight) / 2);
-        double topGap = hostMargin + 1;
+        // Where the content actually sits right now, measured instead of computed:
+        // the card grows downwards and the content is pinned to this exact offset.
+        FrameworkElement? tile = FindTile(container);
 
-        double textHeight = TileNameHeight + overflow;
-        double textBottom = topGap + IconSize + 7 + textHeight;
-        double extension = Math.Max(0, textBottom + topGap - cardHeight);
+        double borderTop = card.BorderThickness.Top;
+        double contentHeight = tile?.ActualHeight ?? IconSize + 7 + TileNameHeight;
+        double contentTop = tile is null
+            ? borderTop
+            : tile.TranslatePoint(new Point(0, 0), card).Y;
+        double topGap = Math.Max(0, contentTop - borderTop);
+        double cardHeight = Math.Max(1, card.ActualHeight);
 
-        card.Margin = new Thickness(4, 4, 4, -extension);
+        // Room for the extra name lines plus the same gap at the bottom.
+        double needed = borderTop + card.BorderThickness.Bottom +
+                        topGap + contentHeight + overflow + topGap;
+        double extension = Math.Max(0, needed - cardHeight);
 
-        // Keep the icon and label where they are: the extra height is added only
-        // below them, with the same padding as above.
-        if (container.Template?.FindName("ContentHost", container) is FrameworkElement contentHost)
-        {
-            contentHost.VerticalAlignment = VerticalAlignment.Top;
-            contentHost.Margin = new Thickness(0, hostMargin, 0, 0);
-        }
+        card.Margin = new Thickness(4, 4, 4, 4 - extension);
+        contentHost.VerticalAlignment = VerticalAlignment.Top;
+
+        double hostTop = tile is null
+            ? topGap
+            : Math.Max(0, contentTop - borderTop - tile.Margin.Top);
+        contentHost.Margin = new Thickness(0, hostTop, 0, 0);
 
         _expandedContainer = container;
     }
@@ -645,6 +655,29 @@ public partial class MainWindow
             }
 
             TextBlock? nested = FindLabel(child);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static FrameworkElement? FindTile(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is FrameworkElement { Name: "Tile" } tile)
+            {
+                return tile;
+            }
+
+            FrameworkElement? nested = FindTile(child);
             if (nested is not null)
             {
                 return nested;
