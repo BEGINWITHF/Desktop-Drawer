@@ -84,6 +84,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _embeddedInDesktop;
     private int _embedAttempts;
     private GlobalShortcutHook? _shortcutHook;
+    private HorizontalWheelHook? _horizontalWheelHook;
     private IntPtr _zOrderHook;
     private NativeMethods.WinEventDelegate? _zOrderCallback;
     private int _lastRaiseTick;
@@ -118,8 +119,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastPageFlip;
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
-    private int _horizontalGestureSign;
-    private DateTime _horizontalNextAllowed;
+    private DateTime _lastHorizontalFlip;
     private ImageSource? _pageSnapshot;
     private int _snapshotPageIndex = -1;
     private WinForms.NotifyIcon? _trayIcon;
@@ -310,6 +310,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
         _shortcutHook.Install();
 
+        _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
+        _horizontalWheelHook.Install();
+
         // Re-pin the drawer the moment the shell reorders windows ("show desktop",
         // app switches, WorkerW recreation) instead of waiting for the next tick.
         _zOrderCallback = OnZOrderChanged;
@@ -358,10 +361,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (message == WmMouseHWheel && !_settingsOpen)
         {
-            // Two-finger horizontal swipes on a touchpad arrive here.
-            int delta = (short)((long)wParam >> 16);
-            HandleHorizontalWheel(delta);
-            handled = true;
+            // Two-finger horizontal swipes are handled by HorizontalWheelHook,
+            // which also receives them when the drawer is not focused.
         }
 
         return IntPtr.Zero;
@@ -402,45 +403,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
-        if (_cleanedUp || _pageCount <= 1)
+        if (_cleanedUp || _pageCount <= 1 || _settingsOpen)
         {
             return;
         }
 
         DateTime now = DateTime.UtcNow;
 
-        // A pause means the fingers left the pad; a new swipe can go either way.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 400)
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 450)
         {
             _horizontalAccumulator = 0;
-            _horizontalGestureSign = 0;
         }
 
         _lastHorizontalWheel = now;
-
-        int sign = Math.Sign(delta);
-        if (sign == 0)
-        {
-            return;
-        }
-
-        if (_horizontalGestureSign == 0)
-        {
-            _horizontalGestureSign = sign;
-        }
-
-        // Within one swipe the fingers travel back to their starting point. That
-        // return motion must not cancel the next swipe.
-        if (sign != _horizontalGestureSign)
-        {
-            return;
-        }
-
-        if (now < _horizontalNextAllowed)
-        {
-            return;
-        }
-
         _horizontalAccumulator += delta;
 
         if (Math.Abs(_horizontalAccumulator) < 110)
@@ -448,11 +423,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        _horizontalAccumulator = 0;
-        _horizontalNextAllowed = now.AddMilliseconds(260);
+        if ((now - _lastHorizontalFlip).TotalMilliseconds < 140)
+        {
+            return;
+        }
 
-        // Scrolling right moves the view backwards, exactly like a browser.
-        GoToPage(_pageIndex + (sign > 0 ? -1 : 1));
+        // Same feel as the vertical wheel: scrolling right moves to the previous
+        // page, like a browser.
+        int direction = _horizontalAccumulator > 0 ? -1 : 1;
+        _horizontalAccumulator = 0;
+        _lastHorizontalFlip = now;
+        GoToPage(_pageIndex + direction);
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -1779,6 +1760,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _cleanedUp = true;
         _shortcutHook?.Dispose();
         _shortcutHook = null;
+        _horizontalWheelHook?.Dispose();
+        _horizontalWheelHook = null;
 
         if (_zOrderHook != IntPtr.Zero)
         {
