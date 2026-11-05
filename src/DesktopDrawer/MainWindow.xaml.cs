@@ -122,6 +122,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
     private int _lastHorizontalLift = -1;
+    private DateTime _lastHorizontalFlip;
     private ImageSource? _pageSnapshot;
     private int _snapshotPageIndex = -1;
     private WinForms.NotifyIcon? _trayIcon;
@@ -552,11 +553,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // Small cooldown so a stray event right after a flip cannot turn another page.
+        if ((now - _lastHorizontalFlip).TotalMilliseconds < 100)
+        {
+            _horizontalAccumulator = 0;
+            return;
+        }
+
         // Swiping left (negative delta) turns back, swiping right turns forward.
         int direction = _horizontalAccumulator > 0 ? 1 : -1;
         _horizontalAccumulator = 0;
         _horizontalSwipeConsumed = true;
         _lastHorizontalLift = TouchpadMonitor.LiftCount;
+        _lastHorizontalFlip = now;
         GoToPage(_pageIndex + direction);
     }
 
