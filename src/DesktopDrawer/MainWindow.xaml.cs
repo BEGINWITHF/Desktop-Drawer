@@ -36,7 +36,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
-    private readonly DispatcherTimer _snapshotTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -123,8 +122,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _horizontalSwipeConsumed;
     private int _lastHorizontalLift = -1;
     private DateTime _lastHorizontalFlip;
-    private ImageSource? _pageSnapshot;
-    private int _snapshotPageIndex = -1;
+    private bool _pageTransitionActive;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -152,8 +150,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
-        _snapshotTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(330) };
-        _snapshotTimer.Tick += SnapshotTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -1016,9 +1012,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _ = LoadVisibleIconsAsync(pageItems);
-
-        _snapshotTimer.Stop();
-        _snapshotTimer.Start();
     }
 
     private async Task LoadVisibleIconsAsync(List<DesktopItem> items)
@@ -1136,14 +1129,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         int direction = target > _pageIndex ? 1 : -1;
-        ImageSource? outgoing = _pageSnapshot;
-        bool canSlide = outgoing is not null && _snapshotPageIndex == _pageIndex;
+
+        // Snapshot the page that is currently on screen, right before it is
+        // replaced. Doing it here (instead of on a timer) means the bitmap always
+        // matches the outgoing page and can never be stale.
+        ImageSource? outgoing = null;
+
+        if (!_pageTransitionActive)
+        {
+            TranslateTransform transform = EnsurePageTransform();
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
+            outgoing = CapturePageBitmap();
+        }
 
         _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage();
 
-        if (canSlide && outgoing is not null)
+        if (outgoing is not null)
         {
             AnimateFullPageSlide(outgoing, direction);
         }
@@ -1151,27 +1155,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             AnimatePageFlip(direction);
         }
-
-        _pageSnapshot = null;
-        _snapshotPageIndex = -1;
     }
 
-    private void SnapshotTimer_Tick(object? sender, EventArgs e)
-    {
-        _snapshotTimer.Stop();
-        CapturePageSnapshot();
-    }
-
-    private void CapturePageSnapshot()
+    private ImageSource? CapturePageBitmap()
     {
         if (_cleanedUp || PageList.ActualWidth < 40 || PageList.ActualHeight < 40)
         {
-            return;
-        }
-
-        if (PageList.RenderTransform is TranslateTransform transform && Math.Abs(transform.X) > 0.5)
-        {
-            return;
+            return null;
         }
 
         try
@@ -1188,13 +1178,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 PixelFormats.Pbgra32);
             bitmap.Render(PageList);
             bitmap.Freeze();
-
-            _pageSnapshot = bitmap;
-            _snapshotPageIndex = _pageIndex;
+            return bitmap;
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not capture the page snapshot");
+            return null;
         }
     }
 
@@ -1231,15 +1220,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         pageTransform.X = direction * width;
 
         PageList.IsHitTestVisible = false;
+        _pageTransitionActive = true;
 
-        // The common paging pattern (Material/iOS style): the old page accelerates
-        // away while the new one decelerates into place, both in ~300 ms.
+        // Both layers share the same curve and duration, so they always stay exactly
+        // adjacent: different curves would make them overlap (or leave a gap) in the
+        // middle of the slide.
         TimeSpan duration = TimeSpan.FromMilliseconds(300);
-        var incomingEase = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var outgoingEase = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
-        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = outgoingEase };
-        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = incomingEase };
+        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
+        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = ease };
 
         incomingSlide.Completed += (_, _) =>
         {
@@ -1248,6 +1238,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
             pageTransform.X = 0;
             PageList.IsHitTestVisible = true;
+            _pageTransitionActive = false;
         };
 
         snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
@@ -1268,14 +1259,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void AnimatePageFlip(int direction)
     {
+        // Never leave a previous snapshot on screen: it would sit on top of the new
+        // page and look like overlapping icons.
+        PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotImage.Visibility = Visibility.Collapsed;
+        PageSnapshotImage.Source = null;
+
         PageList.IsHitTestVisible = true;
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = direction * 40;
 
+        _pageTransitionActive = true;
+
         var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(260))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        slide.Completed += (_, _) =>
+        {
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
+            _pageTransitionActive = false;
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
@@ -1926,7 +1932,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Stop();
         _embedTimer.Stop();
         _desktopZOrderTimer.Stop();
-        _snapshotTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();
