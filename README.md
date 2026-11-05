@@ -25,6 +25,8 @@
 %LocalAppData%\DesktopDrawer\DesktopDrawer.exe
 ```
 
+同时会在开始菜单里创建（并每次刷新）一个 **Desktop Drawer** 快捷方式，所以按 `Win` 打开应用列表或直接搜索名字都能找到它。
+
 程序是单实例的，重复启动不会叠出第二个桌面。
 
 ## 操作速查

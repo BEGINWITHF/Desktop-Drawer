@@ -38,4 +38,20 @@ if ($current) {
     Write-Host 'Updated the startup entry.'
 }
 
+# A Start menu shortcut is what makes the app show up in the Windows key app
+# list and in Start search.
+$programs = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+New-Item -ItemType Directory -Force -Path $programs | Out-Null
+
+$shortcutPath = Join-Path $programs 'Desktop Drawer.lnk'
+$shell = New-Object -ComObject WScript.Shell
+$shortcut = $shell.CreateShortcut($shortcutPath)
+$shortcut.TargetPath = $exe
+$shortcut.WorkingDirectory = $target
+$shortcut.IconLocation = "$exe,0"
+$shortcut.Description = 'A paged desktop'
+$shortcut.WindowStyle = 7
+$shortcut.Save()
+Write-Host "Start menu shortcut: $shortcutPath"
+
 Write-Host "Done: $exe"
