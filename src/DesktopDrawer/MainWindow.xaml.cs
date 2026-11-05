@@ -1215,8 +1215,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         PageList.IsHitTestVisible = false;
 
-        TimeSpan duration = TimeSpan.FromMilliseconds(300);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        // A slower, eased slide: starts gently, coasts, and settles instead of
+        // snapping into place.
+        TimeSpan duration = TimeSpan.FromMilliseconds(420);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
         var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
         var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = ease };
@@ -1253,9 +1255,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = direction * 40;
 
-        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(220))
+        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(320))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
