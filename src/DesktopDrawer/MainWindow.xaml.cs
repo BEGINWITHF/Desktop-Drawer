@@ -119,7 +119,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastPageFlip;
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
-    private DateTime _lastHorizontalFlip;
+    private bool _horizontalSwipeConsumed;
     private ImageSource? _pageSnapshot;
     private int _snapshotPageIndex = -1;
     private WinForms.NotifyIcon? _trayIcon;
@@ -410,12 +410,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         DateTime now = DateTime.UtcNow;
 
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 450)
+        // A gap means the fingers left the pad: a new swipe, which may flip again.
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 400)
         {
             _horizontalAccumulator = 0;
+            _horizontalSwipeConsumed = false;
         }
 
         _lastHorizontalWheel = now;
+
+        // One page per swipe: the rest of the gesture (including the inertia tail)
+        // is ignored until the fingers are lifted.
+        if (_horizontalSwipeConsumed)
+        {
+            return;
+        }
+
         _horizontalAccumulator += delta;
 
         if (Math.Abs(_horizontalAccumulator) < 110)
@@ -423,16 +433,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 140)
-        {
-            return;
-        }
-
-        // Same feel as the vertical wheel: scrolling right moves to the previous
-        // page, like a browser.
-        int direction = _horizontalAccumulator > 0 ? -1 : 1;
+        // Swiping left (negative delta) turns back, swiping right turns forward.
+        int direction = _horizontalAccumulator > 0 ? 1 : -1;
         _horizontalAccumulator = 0;
-        _lastHorizontalFlip = now;
+        _horizontalSwipeConsumed = true;
         GoToPage(_pageIndex + direction);
     }
 
