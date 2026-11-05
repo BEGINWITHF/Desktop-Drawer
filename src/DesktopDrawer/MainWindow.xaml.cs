@@ -121,6 +121,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
+    private int _lastHorizontalLift = -1;
     private ImageSource? _pageSnapshot;
     private int _snapshotPageIndex = -1;
     private WinForms.NotifyIcon? _trayIcon;
@@ -336,9 +337,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         const int WmSize = 0x0005;
         const int SizeMinimized = 1;
 
-        if (message == NativeMethods.WmInput && InputDiagnostics.IsRecording)
+        if (message == NativeMethods.WmInput)
         {
-            LogRawMouseInput(lParam);
+            HandleRawInput(lParam);
             return IntPtr.Zero;
         }
 
@@ -380,7 +381,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            var device = new NativeMethods.RawInputDevice
+            var mouse = new NativeMethods.RawInputDevice
             {
                 UsagePage = 0x01,          // generic desktop
                 Usage = 0x02,              // mouse / touchpad
@@ -388,12 +389,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Target = handle
             };
 
-            bool ok = NativeMethods.RegisterRawInputDevices(
-                new[] { device },
+            bool mouseOk = NativeMethods.RegisterRawInputDevices(
+                new[] { mouse },
                 1,
                 (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
 
-            AppLog.Write($"Raw mouse input for diagnostics: {(ok ? "enabled" : "failed " + Marshal.GetLastWin32Error())}");
+            var touchpad = new NativeMethods.RawInputDevice
+            {
+                UsagePage = 0x0D,          // digitizer
+                Usage = 0x05,              // touchpad
+                Flags = NativeMethods.RidevInputSink,
+                Target = handle
+            };
+
+            bool touchOk = NativeMethods.RegisterRawInputDevices(
+                new[] { touchpad },
+                1,
+                (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
+
+            AppLog.Write(
+                $"Raw mouse input: {(mouseOk ? "enabled" : "failed " + Marshal.GetLastWin32Error())}, " +
+                $"touchpad contact: {(touchOk ? "enabled" : "unavailable " + Marshal.GetLastWin32Error())}");
         }
         catch (Exception ex)
         {
@@ -402,11 +418,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Logs what the touchpad actually reports while a diagnostic recording runs.
-    /// Horizontal swipes are normally delivered as WM_MOUSEHWHEEL, but some drivers
-    /// report nothing at all, which is what this makes visible.
+    /// Handles raw input: digitizer reports tell us whether fingers are on the
+    /// touchpad, mouse wheel reports are logged while a diagnostic recording runs.
     /// </summary>
-    private static void LogRawMouseInput(IntPtr rawInput)
+    private static void HandleRawInput(IntPtr rawInput)
     {
         uint size = 0;
         uint headerSize = (uint)Marshal.SizeOf<NativeMethods.RawInputHeader>();
@@ -427,7 +442,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             var header = Marshal.PtrToStructure<NativeMethods.RawInputHeader>(buffer);
-            if (header.Type != 0)
+
+            // Digitizer reports arrive continuously while the pad is touched, even
+            // without movement, so a pause in them means the fingers were lifted.
+            if (header.Type == 2)
+            {
+                TouchpadMonitor.NoteReport(header.Device, header.Size);
+                return;
+            }
+
+            if (header.Type != 0 || !InputDiagnostics.IsRecording)
             {
                 return;
             }
@@ -493,11 +517,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         DateTime now = DateTime.UtcNow;
 
-        // A short gap means the fingers were lifted: the next event starts a new
-        // swipe, which may flip again. Within one swipe the deltas arrive every
-        // 5-60 ms, so 150 ms is already a clear separation.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
+        // A new swipe starts when the fingers come back onto the pad. While the
+        // touchpad reports contact, a pause without movement does not count.
+        if (TouchpadMonitor.Supported)
         {
+            if (TouchpadMonitor.LiftCount != _lastHorizontalLift)
+            {
+                _horizontalAccumulator = 0;
+                _horizontalSwipeConsumed = false;
+            }
+        }
+        else if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
+        {
+            // Fallback for touchpads without digitizer reports.
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
         }
@@ -524,6 +556,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int direction = _horizontalAccumulator > 0 ? 1 : -1;
         _horizontalAccumulator = 0;
         _horizontalSwipeConsumed = true;
+        _lastHorizontalLift = TouchpadMonitor.LiftCount;
         GoToPage(_pageIndex + direction);
     }
 
