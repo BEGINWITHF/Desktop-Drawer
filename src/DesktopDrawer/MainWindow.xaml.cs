@@ -1215,13 +1215,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         PageList.IsHitTestVisible = false;
 
-        // A slower, eased slide: starts gently, coasts, and settles instead of
-        // snapping into place.
-        TimeSpan duration = TimeSpan.FromMilliseconds(420);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        // The common paging pattern (Material/iOS style): the old page accelerates
+        // away while the new one decelerates into place, both in ~300 ms.
+        TimeSpan duration = TimeSpan.FromMilliseconds(300);
+        var incomingEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var outgoingEase = new CubicEase { EasingMode = EasingMode.EaseIn };
 
-        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
-        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = ease };
+        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = outgoingEase };
+        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = incomingEase };
 
         incomingSlide.Completed += (_, _) =>
         {
@@ -1255,9 +1256,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = direction * 40;
 
-        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(320))
+        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(260))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
