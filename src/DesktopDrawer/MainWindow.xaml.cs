@@ -163,6 +163,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyWallpaperDim();
 
         PageList.RenderTransform = new TranslateTransform();
+        DotsHost.SizeChanged += DotsHost_SizeChanged;
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();
         UpdateSortLabel();
@@ -960,25 +961,41 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _updatingPage = false;
         }
 
-        PageDots.Clear();
         ShowPageDots = pageCount > 1 && pageCount <= 12;
 
         if (ShowPageDots)
         {
+            if (PageDots.Count != pageCount)
+            {
+                PageDots.Clear();
+
+                for (int i = 0; i < pageCount; i++)
+                {
+                    PageDots.Add(new PageDot
+                    {
+                        Index = i,
+                        Label = (i + 1).ToString()
+                    });
+                }
+            }
+
             for (int i = 0; i < pageCount; i++)
             {
                 PageSlice dot = _pages[i];
-                PageDots.Add(new PageDot
-                {
-                    Index = i,
-                    Label = (i + 1).ToString(),
-                    IsCurrent = i == _pageIndex,
-                    Tooltip = string.IsNullOrEmpty(dot.Group)
-                        ? $"Page {i + 1} - {dot.Items.Count} items"
-                        : $"{dot.Group} - page {dot.GroupPage} of {dot.GroupPages}"
-                });
+                PageDots[i].IsCurrent = i == _pageIndex;
+                PageDots[i].Tooltip = string.IsNullOrEmpty(dot.Group)
+                    ? $"Page {i + 1} - {dot.Items.Count} items"
+                    : $"{dot.Group} - page {dot.GroupPage} of {dot.GroupPages}";
             }
         }
+        else
+        {
+            PageDots.Clear();
+        }
+
+        int pagerPreviousIndex = _pagerLastIndex;
+        _pagerLastIndex = _pageIndex;
+        SchedulePagerUpdate(pagerPreviousIndex);
 
         CurrentPageLabel = BuildPageLabel(slice, pageCount);
         PrevButton.IsEnabled = _pageIndex > 0;

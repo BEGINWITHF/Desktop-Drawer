@@ -566,23 +566,41 @@
                                Foreground="{StaticResource TextMutedBrush}"
                                Margin="9,0"
                                VerticalAlignment="Center" />
-                    <ItemsControl ItemsSource="{Binding PageDots}"
-                                  Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource PageDotButton}"
-                                        Content="{Binding Label}"
-                                        ToolTip="{Binding Tooltip}"
-                                        Tag="{Binding Index}"
-                                        Click="PageDot_Click" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Grid x:Name="DotsHost" VerticalAlignment="Center">
+                        <Canvas x:Name="IndicatorCanvas"
+                                IsHitTestVisible="False"
+                                Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                            <Border x:Name="PageIndicator"
+                                    Width="26"
+                                    Height="26"
+                                    CornerRadius="13"
+                                    Background="{DynamicResource AccentBrush}"
+                                    Visibility="Collapsed">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="IndicatorTransform" />
+                                </Border.RenderTransform>
+                            </Border>
+                        </Canvas>
+
+                        <ItemsControl x:Name="PageItems"
+                                      ItemsSource="{Binding PageDots}"
+                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource PageDotButton}"
+                                            Content="{Binding Label}"
+                                            ToolTip="{Binding Tooltip}"
+                                            Tag="{Binding Index}"
+                                            Click="PageDot_Click" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
                     <Button x:Name="NextButton"
                             Style="{StaticResource IconButton}"
                             Width="28"
