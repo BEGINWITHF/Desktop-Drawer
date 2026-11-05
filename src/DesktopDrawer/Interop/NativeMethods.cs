@@ -262,6 +262,56 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool DestroyIcon(IntPtr hIcon);
+
+    public const int WmInput = 0x00FF;
+    public const uint RidInput = 0x10000003;
+    public const uint RidevInputSink = 0x00000100;
+    public const uint RiMouseWheel = 0x0400;
+    public const uint RiMouseHWheel = 0x0800;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawInputDevice
+    {
+        public ushort UsagePage;
+        public ushort Usage;
+        public uint Flags;
+        public IntPtr Target;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawInputHeader
+    {
+        public uint Type;
+        public uint Size;
+        public IntPtr Device;
+        public IntPtr WParam;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawMouse
+    {
+        public ushort Flags;
+        public ushort ButtonFlags;
+        public ushort ButtonData;
+        public uint RawButtons;
+        public int LastX;
+        public int LastY;
+        public uint ExtraInformation;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool RegisterRawInputDevices(
+        RawInputDevice[] devices,
+        uint count,
+        uint size);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetRawInputData(
+        IntPtr rawInput,
+        uint command,
+        IntPtr data,
+        ref uint size,
+        uint headerSize);
 }
 
 [ComImport]

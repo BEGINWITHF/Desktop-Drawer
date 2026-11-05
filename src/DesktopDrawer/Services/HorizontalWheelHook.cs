@@ -14,6 +14,7 @@ internal sealed class HorizontalWheelHook : IDisposable
 {
     private const int WhMouseLl = 14;
     private const int WmMouseHWheel = 0x020E;
+    private const int WmMouseWheel = 0x020A;
     private const int GaRoot = 2;
 
     private readonly IntPtr _owner;
@@ -46,7 +47,16 @@ internal sealed class HorizontalWheelHook : IDisposable
 
     private IntPtr OnMouseMessage(int code, IntPtr wParam, IntPtr lParam)
     {
-        if (code < 0 || wParam.ToInt32() != WmMouseHWheel)
+        if (code < 0)
+        {
+            return CallNextHookEx(_hook, code, wParam, lParam);
+        }
+
+        int message = wParam.ToInt32();
+        bool horizontal = message == WmMouseHWheel;
+        bool vertical = message == WmMouseWheel;
+
+        if (!horizontal && !vertical)
         {
             return CallNextHookEx(_hook, code, wParam, lParam);
         }
@@ -54,7 +64,15 @@ internal sealed class HorizontalWheelHook : IDisposable
         var data = Marshal.PtrToStructure<MouseHookStruct>(lParam);
         int delta = (short)((data.MouseData >> 16) & 0xFFFF);
 
-        if (delta == 0 || !IsOverDrawer(data.PointX, data.PointY))
+        if (InputDiagnostics.IsRecording)
+        {
+            bool over = IsOverDrawer(data.PointX, data.PointY);
+            InputDiagnostics.Write(
+                $"HOOK {(horizontal ? "hwheel" : "wheel")} delta={delta} over={over} " +
+                $"injected={(data.Flags & 1) != 0} at={data.PointX},{data.PointY}");
+        }
+
+        if (!horizontal || delta == 0 || !IsOverDrawer(data.PointX, data.PointY))
         {
             return CallNextHookEx(_hook, code, wParam, lParam);
         }

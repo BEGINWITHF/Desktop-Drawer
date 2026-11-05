@@ -542,6 +542,29 @@ public partial class MainWindow
         ShowChrome();
     }
 
+    private void RecordTouchpadButton_Click(object sender, RoutedEventArgs e)
+    {
+        InputDiagnostics.Start(20);
+        ShowToast($"Recording input for 20 seconds - swipe now.\nLog: {InputDiagnostics.LogPath}");
+    }
+
+    private void OpenDiagnosticFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(
+                "explorer.exe",
+                $"/select,\"{InputDiagnostics.LogPath}\"")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not open the diagnostic log");
+        }
+    }
+
     private void OpenDesktopFolderButton_Click(object sender, RoutedEventArgs e)
     {
         try

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -283,6 +284,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
+        RegisterTouchpadDiagnostics(handle);
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.
@@ -334,6 +336,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         const int WmSize = 0x0005;
         const int SizeMinimized = 1;
 
+        if (message == NativeMethods.WmInput && InputDiagnostics.IsRecording)
+        {
+            LogRawMouseInput(lParam);
+            return IntPtr.Zero;
+        }
+
         if (message == WmSysCommand && (wParam.ToInt32() & 0xFFF0) == ScMinimize)
         {
             // The drawer is part of the desktop; it has no business being minimized.
@@ -366,6 +374,81 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         return IntPtr.Zero;
+    }
+
+    private void RegisterTouchpadDiagnostics(IntPtr handle)
+    {
+        try
+        {
+            var device = new NativeMethods.RawInputDevice
+            {
+                UsagePage = 0x01,          // generic desktop
+                Usage = 0x02,              // mouse / touchpad
+                Flags = NativeMethods.RidevInputSink,
+                Target = handle
+            };
+
+            bool ok = NativeMethods.RegisterRawInputDevices(
+                new[] { device },
+                1,
+                (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
+
+            AppLog.Write($"Raw mouse input for diagnostics: {(ok ? "enabled" : "failed " + Marshal.GetLastWin32Error())}");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not register raw mouse input");
+        }
+    }
+
+    /// <summary>
+    /// Logs what the touchpad actually reports while a diagnostic recording runs.
+    /// Horizontal swipes are normally delivered as WM_MOUSEHWHEEL, but some drivers
+    /// report nothing at all, which is what this makes visible.
+    /// </summary>
+    private static void LogRawMouseInput(IntPtr rawInput)
+    {
+        uint size = 0;
+        uint headerSize = (uint)Marshal.SizeOf<NativeMethods.RawInputHeader>();
+
+        if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, IntPtr.Zero, ref size, headerSize) != 0 ||
+            size == 0)
+        {
+            return;
+        }
+
+        IntPtr buffer = Marshal.AllocHGlobal((int)size);
+
+        try
+        {
+            if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, buffer, ref size, headerSize) != size)
+            {
+                return;
+            }
+
+            var header = Marshal.PtrToStructure<NativeMethods.RawInputHeader>(buffer);
+            if (header.Type != 0)
+            {
+                return;
+            }
+
+            var mouse = Marshal.PtrToStructure<NativeMethods.RawMouse>(IntPtr.Add(buffer, (int)headerSize));
+            uint flags = mouse.ButtonFlags;
+
+            if ((flags & (NativeMethods.RiMouseWheel | NativeMethods.RiMouseHWheel)) == 0)
+            {
+                return;
+            }
+
+            InputDiagnostics.Write(
+                $"RAW wheel={(flags & NativeMethods.RiMouseWheel) != 0} " +
+                $"hwheel={(flags & NativeMethods.RiMouseHWheel) != 0} " +
+                $"data={(short)mouse.ButtonData} hwnd={header.WParam.ToInt64():X}");
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
     }
 
     private void OnZOrderChanged(
@@ -428,7 +511,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _horizontalAccumulator += delta;
 
-        if (Math.Abs(_horizontalAccumulator) < 110)
+        // A precision touchpad sends many small deltas (often 5-30 each), so the
+        // horizontal threshold is much lower than the 120 of a mouse wheel notch.
+        if (Math.Abs(_horizontalAccumulator) < 40)
         {
             return;
         }
