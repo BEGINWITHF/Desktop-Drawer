@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using DesktopDrawer.Helpers;
 
 namespace DesktopDrawer;
 
@@ -71,7 +72,8 @@ public partial class MainWindow
 
     private void AnimateIndicatorTo(double targetX, int previousIndex)
     {
-        double currentX = IndicatorTransform.X;
+        // Read the effective value (animations included), not the base value.
+        double currentX = (double)IndicatorTransform.GetValue(TranslateTransform.XProperty);
 
         if (Math.Abs(targetX - currentX) < 0.5)
         {
