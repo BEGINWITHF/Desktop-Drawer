@@ -200,10 +200,17 @@
                     <DataTrigger Binding="{Binding HasIcon}" Value="False">
                         <Setter TargetName="FileGlyph" Property="Visibility" Value="Visible" />
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding IsFolder}" Value="True">
+
+                    <!-- The placeholder folder glyph is only for folders without a
+                         real icon; drawing it over the icon leaves a white outline. -->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsFolder}" Value="True" />
+                            <Condition Binding="{Binding HasIcon}" Value="False" />
+                        </MultiDataTrigger.Conditions>
                         <Setter TargetName="FolderGlyph" Property="Visibility" Value="Visible" />
                         <Setter TargetName="FileGlyph" Property="Visibility" Value="Collapsed" />
-                    </DataTrigger>
+                    </MultiDataTrigger>
                     <DataTrigger Binding="{Binding IsHidden}" Value="True">
                         <Setter TargetName="Tile" Property="Opacity" Value="0.6" />
                     </DataTrigger>
