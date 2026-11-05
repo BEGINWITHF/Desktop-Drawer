@@ -493,8 +493,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         DateTime now = DateTime.UtcNow;
 
-        // A gap means the fingers left the pad: a new swipe, which may flip again.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 400)
+        // A short gap means the fingers were lifted: the next event starts a new
+        // swipe, which may flip again. Within one swipe the deltas arrive every
+        // 5-60 ms, so 150 ms is already a clear separation.
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
         {
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
