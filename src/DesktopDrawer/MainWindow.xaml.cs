@@ -553,8 +553,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // Small cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 100)
+        // Cooldown so a stray event right after a flip cannot turn another page.
+        if ((now - _lastHorizontalFlip).TotalMilliseconds < 500)
         {
             _horizontalAccumulator = 0;
             return;
