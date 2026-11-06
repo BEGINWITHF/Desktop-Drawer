@@ -88,9 +88,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
     private ResizeAxis _resizeAxis;
-    private Point _resizeStartMouse;
     private double _resizeStartWidth;
     private double _resizeStartHeight;
+    private double _resizeTotalX;
+    private double _resizeTotalY;
+    private bool _resizeFirstDelta;
     private bool _layoutNeedsSave;
 
     private const double ResizeGripSize = 14;
@@ -1917,6 +1919,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 grip.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
 
+                if (_resizeElement == element)
+                {
+                    // Keep the handle under the original corner while dragging;
+                    // moving it would turn its own displacement into more drag.
+                    continue;
+                }
+
                 double gripWidth = grip.Width > 0 ? grip.Width : ResizeGripSize;
                 double gripHeight = grip.Height > 0 ? grip.Height : ResizeGripSize;
 
@@ -1961,13 +1970,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         FrameworkElement element = tag.Element;
         _resizeElement = element;
         _resizeAxis = tag.Axis;
-        _resizeStartMouse = Mouse.GetPosition(RootGrid);
+        _resizeTotalX = 0;
+        _resizeTotalY = 0;
+        _resizeFirstDelta = true;
         _resizeStartWidth = element.Width is double width && !double.IsNaN(width)
             ? width
             : element.ActualWidth;
         _resizeStartHeight = element.Height is double height && !double.IsNaN(height)
             ? height
             : element.ActualHeight;
+
     }
 
     private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
@@ -1982,12 +1994,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ? known
             : new Size(24, 16);
 
-        // Use the pointer position, not the incremental Thumb delta: the handle
-        // itself moves while the element grows, which would otherwise feed the
-        // drag back into the size and blow the element up.
-        Point pointer = Mouse.GetPosition(RootGrid);
-        double deltaX = pointer.X - _resizeStartMouse.X;
-        double deltaY = pointer.Y - _resizeStartMouse.Y;
+        // A click or touch can produce one large synthetic delta before the
+        // pointer has actually travelled. Ignore that first sample, and limit
+        // the per-event step so a single event can never jump to the screen max.
+        if (_resizeFirstDelta)
+        {
+            _resizeFirstDelta = false;
+            return;
+        }
+
+        _resizeTotalX += Math.Clamp(e.HorizontalChange, -40, 40);
+        _resizeTotalY += Math.Clamp(e.VerticalChange, -40, 40);
 
         double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
         double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
@@ -1999,13 +2016,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
             }
 
-            element.Width = Math.Clamp(_resizeStartWidth + deltaX, natural.Width, maxWidth);
+            element.Width = Math.Clamp(_resizeStartWidth + _resizeTotalX, natural.Width, maxWidth);
         }
 
         if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both)
         {
-            element.Height = Math.Clamp(_resizeStartHeight + deltaY, natural.Height, maxHeight);
+            element.Height = Math.Clamp(_resizeStartHeight + _resizeTotalY, natural.Height, maxHeight);
         }
+
 
         element.UpdateLayout();
         ClampChromePosition(element);
