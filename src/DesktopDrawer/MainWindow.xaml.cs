@@ -83,7 +83,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Thickness _dragStartMargin;
     private readonly Dictionary<FrameworkElement, string> _chromeElements = new();
     private readonly Dictionary<FrameworkElement, (double Width, double Height)> _chromeDefaultSizes = new();
-    private readonly Dictionary<FrameworkElement, Size> _chromeNaturalSizes = new();
     private readonly Dictionary<FrameworkElement, Shapes.Rectangle> _layoutOutlines = new();
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
@@ -91,6 +90,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _resizeStartMouse;
     private double _resizeStartWidth;
     private double _resizeStartHeight;
+    private bool _resizeBaselineSet;
     private bool _layoutNeedsSave;
 
     private const double ResizeGripSize = 14;
@@ -1692,6 +1692,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _resizeElement = element;
             _resizeAxis = axis;
+            _resizeBaselineSet = false;
             _resizeStartMouse = e.GetPosition(RootGrid);
             _resizeStartWidth = element.Width is double width && !double.IsNaN(width)
                 ? width
@@ -1699,6 +1700,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _resizeStartHeight = element.Height is double height && !double.IsNaN(height)
                 ? height
                 : element.ActualHeight;
+
+            _chromeElements.TryGetValue(element, out string? key);
+            AppLog.Write(
+                $"Resize start {key} axis={axis} local={e.GetPosition(element).X:0},{e.GetPosition(element).Y:0} " +
+                $"actual={element.ActualWidth:0}x{element.ActualHeight:0} size={_resizeStartWidth:0}x{_resizeStartHeight:0}");
 
             element.CaptureMouse();
             e.Handled = true;
@@ -1768,15 +1774,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_resizeElement is not null && e.LeftButton == MouseButtonState.Pressed)
         {
             FrameworkElement element = _resizeElement;
-            Size natural = _chromeNaturalSizes.TryGetValue(element, out Size known)
-                ? known
-                : new Size(24, 16);
-
             Point pointer = e.GetPosition(RootGrid);
+
+            // The first move sample may be the touch position jumping in from
+            // (0,0). Use it as the baseline and start resizing from there.
+            if (!_resizeBaselineSet)
+            {
+                _resizeBaselineSet = true;
+                _resizeStartMouse = pointer;
+                AppLog.Write($"Resize baseline {pointer.X:0},{pointer.Y:0}");
+                e.Handled = true;
+                return;
+            }
+
             double deltaX = pointer.X - _resizeStartMouse.X;
             double deltaY = pointer.Y - _resizeStartMouse.Y;
-            double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
-            double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
+            double maxWidth = Math.Max(40, RootGrid.ActualWidth - element.Margin.Left);
+            double maxHeight = Math.Max(20, RootGrid.ActualHeight - element.Margin.Top);
 
             const double deadZone = 4;
 
@@ -1788,14 +1802,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
                 }
 
-                element.Width = Math.Clamp(_resizeStartWidth + deltaX, natural.Width, maxWidth);
+                element.Width = Math.Clamp(_resizeStartWidth + deltaX, 40, maxWidth);
             }
 
             if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
                 Math.Abs(deltaY) >= deadZone)
             {
-                element.Height = Math.Clamp(_resizeStartHeight + deltaY, natural.Height, maxHeight);
+                element.Height = Math.Clamp(_resizeStartHeight + deltaY, 20, maxHeight);
             }
+
+            AppLog.Write(
+                $"Resize move pointer={pointer.X:0},{pointer.Y:0} start={_resizeStartMouse.X:0},{_resizeStartMouse.Y:0} " +
+                $"delta={deltaX:0},{deltaY:0} size={element.Width:0}x{element.Height:0}");
 
             element.UpdateLayout();
             ClampChromePosition(element);
@@ -1838,6 +1856,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             FrameworkElement resized = _resizeElement;
             _resizeElement = null;
             resized.ReleaseMouseCapture();
+
+            AppLog.Write($"Resize end size={resized.Width:0}x{resized.Height:0}");
 
             if (_layoutEditing)
             {
@@ -1908,7 +1928,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (enabled)
         {
-            CaptureChromeNaturalSizes();
             BuildLayoutEditor();
             ShowLayoutToolbar();
 
@@ -1930,7 +1949,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             LayoutEditorCanvas.Children.Clear();
             _layoutOutlines.Clear();
             _layoutGrips.Clear();
-            _chromeNaturalSizes.Clear();
             HideLayoutToolbar();
 
             foreach (FrameworkElement element in _chromeElements.Keys)
@@ -2079,39 +2097,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         double x = Math.Clamp(element.Margin.Left, 0, Math.Max(0, width - elementWidth));
         double y = Math.Clamp(element.Margin.Top, 0, Math.Max(0, height - elementHeight));
         element.Margin = new Thickness(x, y, 0, 0);
-    }
-
-    private void CaptureChromeNaturalSizes()
-    {
-        _chromeNaturalSizes.Clear();
-
-        foreach (FrameworkElement element in _chromeElements.Keys)
-        {
-            double width = element.Width;
-            double height = element.Height;
-            HorizontalAlignment alignment = element.HorizontalAlignment;
-
-            element.Width = double.NaN;
-            element.Height = double.NaN;
-
-            if (element == HeaderBar)
-            {
-                HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
-            }
-
-            element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Size desired = element.DesiredSize;
-
-            element.Width = width;
-            element.Height = height;
-            element.HorizontalAlignment = alignment;
-
-            _chromeNaturalSizes[element] = new Size(
-                Math.Max(24, desired.Width),
-                Math.Max(16, desired.Height));
-        }
-
-        RootGrid.UpdateLayout();
     }
 
     private void ShowLayoutToolbar()
