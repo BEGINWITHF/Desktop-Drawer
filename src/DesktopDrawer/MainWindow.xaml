@@ -263,14 +263,34 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <Grid Grid.Column="1"
+                    <Grid x:Name="SearchField"
+                          Grid.Column="1"
                           MinWidth="150"
                           MaxWidth="320"
                           Height="32"
                           Margin="10,0"
                           HorizontalAlignment="Stretch"
-                          VerticalAlignment="Center">
+                          VerticalAlignment="Center"
+                          IsKeyboardFocusWithinChanged="SearchField_IsKeyboardFocusWithinChanged"
+                          MouseEnter="SearchField_MouseEnter"
+                          MouseLeave="SearchField_MouseLeave"
+                          PreviewMouseLeftButtonDown="SearchField_PreviewMouseLeftButtonDown">
                         <Border Style="{StaticResource SearchBoxBorder}" />
+                        <Border x:Name="SearchHoverLayer"
+                                Background="{DynamicResource PanelHoverBrush}"
+                                BorderBrush="{DynamicResource TileHoverBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Opacity="0"
+                                IsHitTestVisible="False" />
+                        <Border x:Name="SearchFocusLayer"
+                                Background="{DynamicResource SearchFocusSurfaceBrush}"
+                                BorderBrush="{DynamicResource AccentBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Opacity="0"
+                                IsHitTestVisible="False" />
+
                         <Grid Margin="11,0,7,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -278,16 +298,24 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <Path Grid.Column="0"
+                            <Grid Grid.Column="0"
                                   Width="14"
                                   Height="14"
-                                  Stroke="{DynamicResource TextMutedBrush}"
-                                  StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  Data="M 6.2,1.2 A 5,5 0 1 1 6.2,11.2 A 5,5 0 1 1 6.2,1.2 M 10.2,10.2 L 13.2,13.2"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,9,0" />
+                                  Margin="0,0,9,0"
+                                  VerticalAlignment="Center">
+                                <Path Stroke="{DynamicResource TextMutedBrush}"
+                                      StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M 6.2,1.2 A 5,5 0 1 1 6.2,11.2 A 5,5 0 1 1 6.2,1.2 M 10.2,10.2 L 13.2,13.2" />
+                                <Path x:Name="SearchIconAccent"
+                                      Stroke="{DynamicResource AccentBrush}"
+                                      StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M 6.2,1.2 A 5,5 0 1 1 6.2,11.2 A 5,5 0 1 1 6.2,1.2 M 10.2,10.2 L 13.2,13.2"
+                                      Opacity="0" />
+                            </Grid>
 
                             <Grid Grid.Column="1">
                                 <TextBox x:Name="SearchBox"
@@ -301,7 +329,35 @@
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            VerticalAlignment="Center"
                                            IsHitTestVisible="False"
-                                           Visibility="{Binding HasSearchText, Converter={StaticResource InverseBoolToVisibility}}" />
+                                           Panel.ZIndex="-1">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Setter Property="Opacity" Value="1" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSearchText}" Value="True">
+                                                    <DataTrigger.EnterActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                 To="0"
+                                                                                 Duration="0:0:0.1" />
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </DataTrigger.EnterActions>
+                                                    <DataTrigger.ExitActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                 To="1"
+                                                                                 Duration="0:0:0.18" />
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </DataTrigger.ExitActions>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </Grid>
 
                             <Button Grid.Column="2"
@@ -311,7 +367,17 @@
                                     Style="{StaticResource SearchClearButton}"
                                     Click="ClearSearchButton_Click"
                                     ToolTip="Clear search"
-                                    Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}">
+                                    Focusable="False"
+                                    Opacity="0"
+                                    Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}"
+                                    IsVisibleChanged="ClearSearchButton_IsVisibleChanged">
+                                <Button.RenderTransform>
+                                    <ScaleTransform x:Name="ClearSearchScale"
+                                                    ScaleX="0.7"
+                                                    ScaleY="0.7"
+                                                    CenterX="11"
+                                                    CenterY="11" />
+                                </Button.RenderTransform>
                                 <TextBlock Style="{StaticResource Glyph}"
                                            Text="&#xE711;"
                                            FontSize="9.5" />

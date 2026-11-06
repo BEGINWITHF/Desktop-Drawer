@@ -430,12 +430,6 @@
         <Setter Property="BorderBrush" Value="{DynamicResource SearchBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="10" />
-        <Style.Triggers>
-            <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                <Setter Property="Background" Value="{DynamicResource SearchFocusSurfaceBrush}" />
-            </Trigger>
-        </Style.Triggers>
     </Style>
 
     <Style x:Key="SearchTextBox" TargetType="{x:Type TextBox}">

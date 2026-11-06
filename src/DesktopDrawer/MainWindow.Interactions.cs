@@ -8,6 +8,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Models;
@@ -502,6 +503,103 @@ public partial class MainWindow
     private void SearchBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         SearchBox.SelectAll();
+    }
+
+    private void SearchField_IsKeyboardFocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        bool focused = SearchField.IsKeyboardFocusWithin;
+
+        AnimateSearchLayer(SearchFocusLayer, focused ? 1 : 0, focused ? 150 : 220);
+        AnimateSearchLayer(SearchIconAccent, focused ? 1 : 0, focused ? 150 : 220);
+
+        if (focused)
+        {
+            AnimateSearchLayer(SearchHoverLayer, 0, 120);
+        }
+        else if (SearchField.IsMouseOver)
+        {
+            AnimateSearchLayer(SearchHoverLayer, 1, 140);
+        }
+    }
+
+    private void SearchField_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (!SearchField.IsKeyboardFocusWithin)
+        {
+            AnimateSearchLayer(SearchHoverLayer, 1, 140);
+        }
+    }
+
+    private void SearchField_MouseLeave(object sender, MouseEventArgs e)
+    {
+        AnimateSearchLayer(SearchHoverLayer, 0, 180);
+    }
+
+    private void SearchField_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Let clicks on the padding or the magnifier focus the field too.
+        if (!SearchField.IsKeyboardFocusWithin && !ClearSearchButton.IsMouseOver)
+        {
+            SearchBox.Focus();
+        }
+    }
+
+    /// <summary>
+    /// Fades a layered border or icon, continuing from whatever opacity is
+    /// currently on screen so rapid hover/focus changes do not jump.
+    /// </summary>
+    private static void AnimateSearchLayer(UIElement element, double targetOpacity, int milliseconds)
+    {
+        double current = element.Opacity;
+
+        element.BeginAnimation(OpacityProperty, null);
+        element.Opacity = current;
+
+        if (Math.Abs(current - targetOpacity) < 0.01)
+        {
+            return;
+        }
+
+        var animation = new DoubleAnimation(current, targetOpacity, TimeSpan.FromMilliseconds(milliseconds))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        element.BeginAnimation(OpacityProperty, animation, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void ClearSearchButton_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (!ClearSearchButton.IsVisible)
+        {
+            return;
+        }
+
+        ClearSearchButton.BeginAnimation(OpacityProperty, null);
+        ClearSearchButton.Opacity = 0;
+
+        ClearSearchScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        ClearSearchScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        ClearSearchScale.ScaleX = 0.7;
+        ClearSearchScale.ScaleY = 0.7;
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        TimeSpan duration = TimeSpan.FromMilliseconds(150);
+
+        ClearSearchButton.BeginAnimation(
+            OpacityProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease },
+            HandoffBehavior.SnapshotAndReplace);
+
+        ClearSearchScale.BeginAnimation(
+            ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(0.7, 1, duration) { EasingFunction = ease },
+            HandoffBehavior.SnapshotAndReplace);
+
+        ClearSearchScale.BeginAnimation(
+            ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(0.7, 1, duration) { EasingFunction = ease },
+            HandoffBehavior.SnapshotAndReplace);
     }
 
     private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
