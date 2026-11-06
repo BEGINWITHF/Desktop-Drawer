@@ -88,6 +88,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
     private ResizeAxis _resizeAxis;
+    private Point _resizeStartMouse;
+    private double _resizeStartWidth;
+    private double _resizeStartHeight;
     private bool _layoutNeedsSave;
 
     private const double ResizeGripSize = 14;
@@ -1545,7 +1548,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             element.PreviewMouseLeftButtonDown += Chrome_PreviewMouseDown;
             element.PreviewMouseMove += Chrome_PreviewMouseMove;
             element.PreviewMouseLeftButtonUp += Chrome_PreviewMouseUp;
-            element.SizeChanged += (_, _) => UpdateLayoutEditorOverlays();
+            element.SizeChanged += (_, _) =>
+            {
+                UpdateLayoutEditorOverlays();
+
+                if (_resizeElement is not null || _dragElement is not null)
+                {
+                    return;
+                }
+
+                if (_chromeElements.TryGetValue(element, out string? key) &&
+                    _settings.Layout.TryGetValue(key, out ChromePosition? saved) &&
+                    saved.X.HasValue &&
+                    saved.Y.HasValue)
+                {
+                    return;
+                }
+
+                // Content-driven elements (the pager especially) start small and
+                // grow once the pages are built; keep default layouts centered.
+                ApplyChromeLayout();
+            };
         }
 
         RootGrid.SizeChanged += (_, _) => ApplyChromeLayout();
@@ -1935,8 +1958,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        _resizeElement = tag.Element;
+        FrameworkElement element = tag.Element;
+        _resizeElement = element;
         _resizeAxis = tag.Axis;
+        _resizeStartMouse = Mouse.GetPosition(RootGrid);
+        _resizeStartWidth = element.Width is double width && !double.IsNaN(width)
+            ? width
+            : element.ActualWidth;
+        _resizeStartHeight = element.Height is double height && !double.IsNaN(height)
+            ? height
+            : element.ActualHeight;
     }
 
     private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
@@ -1951,30 +1982,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ? known
             : new Size(24, 16);
 
+        // Use the pointer position, not the incremental Thumb delta: the handle
+        // itself moves while the element grows, which would otherwise feed the
+        // drag back into the size and blow the element up.
+        Point pointer = Mouse.GetPosition(RootGrid);
+        double deltaX = pointer.X - _resizeStartMouse.X;
+        double deltaY = pointer.Y - _resizeStartMouse.Y;
+
         double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
         double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
 
         if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both)
         {
-            double currentWidth = element.Width is double width && !double.IsNaN(width)
-                ? width
-                : element.ActualWidth;
-
             if (element == HeaderBar)
             {
                 HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
             }
 
-            element.Width = Math.Clamp(currentWidth + e.HorizontalChange, natural.Width, maxWidth);
+            element.Width = Math.Clamp(_resizeStartWidth + deltaX, natural.Width, maxWidth);
         }
 
         if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both)
         {
-            double currentHeight = element.Height is double height && !double.IsNaN(height)
-                ? height
-                : element.ActualHeight;
-
-            element.Height = Math.Clamp(currentHeight + e.VerticalChange, natural.Height, maxHeight);
+            element.Height = Math.Clamp(_resizeStartHeight + deltaY, natural.Height, maxHeight);
         }
 
         element.UpdateLayout();
