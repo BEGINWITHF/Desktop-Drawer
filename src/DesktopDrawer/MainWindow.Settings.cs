@@ -95,6 +95,9 @@ public partial class MainWindow
         HideIconsSettingsToggle.IsChecked = _desktopIconsService.AreHidden();
         UpdateLayoutEditButton();
 
+        FontScaleSlider.Value = Math.Clamp(_settings.FontScale, 80, 140);
+        FontScaleValueText.Text = $"{(int)Math.Round(FontScaleSlider.Value)}%";
+
         UpdateColorRows();
         WallpaperDimSlider.Value = Math.Clamp(_settings.WallpaperDim, 0, 60);
         WallpaperDimValueText.Text = $"{(int)WallpaperDimSlider.Value}%";
@@ -140,6 +143,21 @@ public partial class MainWindow
         ApplyDensity(_settings.Density);
         SaveSettings();
         RecalculateGrid(force: true);
+    }
+
+    private void FontScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || FontScaleValueText is null)
+        {
+            return;
+        }
+
+        _settings.FontScale = (int)Math.Round(e.NewValue);
+        FontScaleValueText.Text = $"{_settings.FontScale}%";
+
+        ThemeService.ApplyFontScale(_settings.FontScale);
+        ApplyDensity(_settings.Density);
+        SaveSettings();
     }
 
     private void AutoGridToggle_Changed(object sender, RoutedEventArgs e)

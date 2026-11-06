@@ -176,6 +176,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         BuildColorRows();
         ThemeService.Apply(_settings.Colors);
+        ThemeService.ApplyFontScale(_settings.FontScale);
         ApplyWallpaperDim();
 
         PageList.RenderTransform = new TranslateTransform();
@@ -232,6 +233,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         get => _tileNameHeight;
         private set => SetField(ref _tileNameHeight, value);
     }
+
+    private double FontScaleFactor => Math.Clamp(_settings.FontScale, 80, 140) / 100.0;
 
     public string SearchText
     {
@@ -1304,8 +1307,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         double iconSize = Math.Clamp(Math.Min(_requestedIconSize, maxIcon), 20, _requestedIconSize);
 
         IconSize = iconSize;
-        TileFontSize = Math.Clamp(iconSize * 0.18, 10, 16);
-        TileNameHeight = Math.Clamp(iconSize * 0.5, 24, 60);
+        double fontScale = FontScaleFactor;
+        TileFontSize = Math.Clamp(iconSize * 0.18, 10, 16) * fontScale;
+        TileNameHeight = Math.Clamp(iconSize * 0.5, 24, 60) * fontScale;
 
         if (!force && columns == _columns && rows == _rows)
         {
@@ -1353,8 +1357,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         IconSize = _requestedIconSize;
-        TileFontSize = Math.Clamp(_requestedIconSize * 0.18, 10, 16);
-        TileNameHeight = Math.Clamp(_requestedIconSize * 0.5, 24, 60);
+        double fontScale = FontScaleFactor;
+        TileFontSize = Math.Clamp(_requestedIconSize * 0.18, 10, 16) * fontScale;
+        TileNameHeight = Math.Clamp(_requestedIconSize * 0.5, 24, 60) * fontScale;
     }
 
     private void SaveSettings()
@@ -1701,10 +1706,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ? height
                 : element.ActualHeight;
 
-            _chromeElements.TryGetValue(element, out string? key);
-            AppLog.Write(
-                $"Resize start {key} axis={axis} local={e.GetPosition(element).X:0},{e.GetPosition(element).Y:0} " +
-                $"actual={element.ActualWidth:0}x{element.ActualHeight:0} size={_resizeStartWidth:0}x{_resizeStartHeight:0}");
 
             element.CaptureMouse();
             e.Handled = true;
@@ -1782,7 +1783,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 _resizeBaselineSet = true;
                 _resizeStartMouse = pointer;
-                AppLog.Write($"Resize baseline {pointer.X:0},{pointer.Y:0}");
                 e.Handled = true;
                 return;
             }
@@ -1811,9 +1811,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 element.Height = Math.Clamp(_resizeStartHeight + deltaY, 20, maxHeight);
             }
 
-            AppLog.Write(
-                $"Resize move pointer={pointer.X:0},{pointer.Y:0} start={_resizeStartMouse.X:0},{_resizeStartMouse.Y:0} " +
-                $"delta={deltaX:0},{deltaY:0} size={element.Width:0}x{element.Height:0}");
 
             element.UpdateLayout();
             ClampChromePosition(element);
@@ -1857,7 +1854,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _resizeElement = null;
             resized.ReleaseMouseCapture();
 
-            AppLog.Write($"Resize end size={resized.Width:0}x{resized.Height:0}");
 
             if (_layoutEditing)
             {

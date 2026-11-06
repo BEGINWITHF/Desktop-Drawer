@@ -15,6 +15,39 @@ internal static class ThemeService
     public static Color CurrentAccent { get; private set; } = Parse(ThemeColorTokens.DefaultFor(ThemeColorTokens.Accent));
     public static Color CurrentShade { get; private set; } = Parse(ThemeColorTokens.DefaultFor(ThemeColorTokens.Shade));
 
+    private static readonly (string Key, double BaseSize)[] FontSizes =
+    {
+        ("FontSize95", 9.5),
+        ("FontSize10", 10),
+        ("FontSize105", 10.5),
+        ("FontSize11", 11),
+        ("FontSize115", 11.5),
+        ("FontSize12", 12),
+        ("FontSize125", 12.5),
+        ("FontSize13", 13),
+        ("FontSize14", 14),
+        ("FontSize15", 15),
+        ("FontSize17", 17),
+        ("FontSize18", 18),
+        ("FontSize52", 52)
+    };
+
+    /// <summary>Rescales every font-size resource used by the theme.</summary>
+    public static void ApplyFontScale(int percent)
+    {
+        if (Application.Current is null)
+        {
+            return;
+        }
+
+        double scale = Math.Clamp(percent, 80, 140) / 100.0;
+
+        foreach ((string key, double baseSize) in FontSizes)
+        {
+            Application.Current.Resources[key] = baseSize * scale;
+        }
+    }
+
     public static void Apply(IReadOnlyDictionary<string, string>? colors)
     {
         Color accent = Read(colors, ThemeColorTokens.Accent);

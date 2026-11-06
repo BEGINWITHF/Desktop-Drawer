@@ -58,6 +58,7 @@ public sealed class AppSettings
     public bool HideIconsOnLaunch { get; set; } = true;
     public string AccentColor { get; set; } = string.Empty;   // legacy, migrated into Colors
     public Dictionary<string, string> Colors { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public int FontScale { get; set; } = 100;                  // percent, 80..140
     public int WallpaperDim { get; set; }                      // 0..60 percent
     public bool AlwaysShowChrome { get; set; }
     public Dictionary<string, ChromePosition> Layout { get; set; } = new(StringComparer.OrdinalIgnoreCase);

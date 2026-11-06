@@ -266,10 +266,10 @@ public partial class MainWindow
         {
             Text = glyph,
             FontFamily = (FontFamily)FindResource("IconFont"),
-            FontSize = 13,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
+        icon.SetResourceReference(TextBlock.FontSizeProperty, "FontSize13");
 
         if (FindResource("TextMutedBrush") is Brush brush)
         {

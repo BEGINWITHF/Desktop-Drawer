@@ -63,18 +63,18 @@ public partial class MainWindow
             var label = new TextBlock
             {
                 Text = token.Label,
-                FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center
             };
             label.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+            label.SetResourceReference(TextBlock.FontSizeProperty, "FontSize12");
 
             var hexLabel = new TextBlock
             {
                 Text = "#000000",
-                FontSize = 10.5,
                 VerticalAlignment = VerticalAlignment.Center
             };
             hexLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            hexLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
 
             Grid.SetColumn(label, 1);
             Grid.SetColumn(hexLabel, 2);
