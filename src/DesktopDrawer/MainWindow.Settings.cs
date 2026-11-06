@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media;
@@ -103,24 +104,22 @@ public partial class MainWindow
         WallpaperDimValueText.Text = $"{(int)WallpaperDimSlider.Value}%";
         ApplyWallpaperDim();
 
-        string language = I18n.Normalize(_settings.Language);
-        LanguageEnRadio.IsChecked = language == I18n.English;
-        LanguageZhCnRadio.IsChecked = language == I18n.ChineseSimplified;
-        LanguageZhHkRadio.IsChecked = language == I18n.ChineseHongKong;
-        LanguageJaRadio.IsChecked = language == I18n.Japanese;
-
         UpdateSortLabel();
         CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
     }
 
-    private void LanguageRadio_Checked(object sender, RoutedEventArgs e)
+    private void LanguageButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_initializingSettings || sender is not RadioButton { IsChecked: true } radio)
-        {
-            return;
-        }
+        ContextMenu menu = BuildLanguageMenu();
+        LanguageButton.ContextMenu = menu;
+        menu.PlacementTarget = LanguageButton;
+        menu.Placement = PlacementMode.Bottom;
+        menu.IsOpen = true;
+    }
 
-        string language = I18n.Normalize(radio.Tag?.ToString());
+    private void SetLanguage(string language)
+    {
+        language = I18n.Normalize(language);
         if (string.Equals(_settings.Language, language, StringComparison.OrdinalIgnoreCase))
         {
             return;

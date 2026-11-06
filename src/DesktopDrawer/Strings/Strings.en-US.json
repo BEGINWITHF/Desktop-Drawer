@@ -98,9 +98,7 @@
 
   "Settings.Title": "Settings",
   "Settings.Close": "Close settings",
-  "Section.Language": "LANGUAGE",
   "Settings.Language": "Language",
-  "Settings.LanguageDesc": "Interface language. Changes apply immediately.",
   "Settings.AutoSaved": "Changes are saved automatically.",
   "Language.English": "English",
   "Language.ZhCn": "简体中文",

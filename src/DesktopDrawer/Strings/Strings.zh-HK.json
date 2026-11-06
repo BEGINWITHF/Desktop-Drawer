@@ -96,11 +96,9 @@
   "Menu.Restart": "重新啟動 Desktop Drawer",
   "Menu.Exit": "結束 Desktop Drawer",
 
-  "Section.Language": "語言",
   "Settings.Title": "設定",
   "Settings.Close": "關閉設定",
   "Settings.Language": "語言",
-  "Settings.LanguageDesc": "選擇介面語言，切換後立即生效。",
   "Settings.AutoSaved": "變更會自動儲存。",
   "Language.English": "English",
   "Language.ZhCn": "简体中文",

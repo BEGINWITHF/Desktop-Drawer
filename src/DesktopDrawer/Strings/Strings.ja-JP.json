@@ -96,11 +96,9 @@
   "Menu.Restart": "Desktop Drawer を再起動",
   "Menu.Exit": "Desktop Drawer を終了",
 
-  "Section.Language": "言語",
   "Settings.Title": "設定",
   "Settings.Close": "設定を閉じる",
   "Settings.Language": "言語",
-  "Settings.LanguageDesc": "表示言語です。変更はすぐに反映されます。",
   "Settings.AutoSaved": "変更は自動的に保存されます。",
   "Language.English": "English",
   "Language.ZhCn": "简体中文",

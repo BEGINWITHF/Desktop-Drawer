@@ -20,6 +20,18 @@ public partial class MainWindow
         menu.IsOpen = true;
     }
 
+    private ContextMenu BuildLanguageMenu()
+    {
+        var menu = new ContextMenu();
+
+        AddCheckableItem(menu, I18n.T("Language.English"), I18n.Current == I18n.English, () => SetLanguage(I18n.English));
+        AddCheckableItem(menu, I18n.T("Language.ZhCn"), I18n.Current == I18n.ChineseSimplified, () => SetLanguage(I18n.ChineseSimplified));
+        AddCheckableItem(menu, I18n.T("Language.ZhHk"), I18n.Current == I18n.ChineseHongKong, () => SetLanguage(I18n.ChineseHongKong));
+        AddCheckableItem(menu, I18n.T("Language.Ja"), I18n.Current == I18n.Japanese, () => SetLanguage(I18n.Japanese));
+
+        return menu;
+    }
+
     private ContextMenu BuildSortMenu()
     {
         var menu = new ContextMenu();
