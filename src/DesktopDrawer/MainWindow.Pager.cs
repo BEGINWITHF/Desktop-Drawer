@@ -14,8 +14,6 @@ namespace DesktopDrawer;
 /// </summary>
 public partial class MainWindow
 {
-    private static readonly Color ActiveDotColor = Color.FromRgb(0x0B, 0x10, 0x20);
-
     private readonly HashSet<SolidColorBrush> _pagerBrushes = new();
 
     private bool _indicatorReady;
@@ -104,6 +102,10 @@ public partial class MainWindow
     {
         Color muted = ((SolidColorBrush)FindResource("TextMutedBrush")).Color;
 
+        // The active digit sits on the accent pill, so it uses the same contrast
+        // colour as text on accent buttons.
+        Color active = ((SolidColorBrush)FindResource("OnAccentBrush")).Color;
+
         for (int index = 0; index < PageDots.Count; index++)
         {
             Button? button = GetPageButton(index);
@@ -113,7 +115,7 @@ public partial class MainWindow
             }
 
             bool current = index == _pageIndex;
-            AnimateDotColor(button, current ? ActiveDotColor : muted);
+            AnimateDotColor(button, current ? active : muted);
             AnimateDotScale(button, current ? 1.04 : 1.0);
         }
     }
