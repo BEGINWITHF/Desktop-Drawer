@@ -84,14 +84,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, string> _chromeElements = new();
     private readonly Dictionary<FrameworkElement, ScaleTransform> _chromeScalers = new();
     private readonly Dictionary<FrameworkElement, Shapes.Rectangle> _layoutOutlines = new();
-    private readonly Dictionary<FrameworkElement, Thumb> _layoutGrips = new();
+    private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
-    private double _resizeStartScale;
-    private double _resizeReference;
+    private ResizeAxis _resizeAxis;
+    private double _resizeReferenceX;
+    private double _resizeReferenceY;
 
     private const double MinChromeScale = 0.5;
     private const double MaxChromeScale = 2.5;
     private const double ResizeGripSize = 14;
+
+    private enum ResizeAxis
+    {
+        Horizontal,
+        Vertical,
+        Both
+    }
+
+    private sealed record LayoutGripTag(FrameworkElement Element, ResizeAxis Axis);
     private bool _embeddedInDesktop;
     private int _embedAttempts;
     private GlobalShortcutHook? _shortcutHook;
@@ -1557,13 +1567,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach ((FrameworkElement element, string key) in _chromeElements)
         {
-            double scale = GetChromeScale(key);
-            SetChromeScale(element, scale);
+            (double scaleX, double scaleY) = GetChromeScale(key);
+            SetChromeScale(element, scaleX, scaleY);
 
             double baseWidth = element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width;
             double baseHeight = element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height;
-            double elementWidth = baseWidth * scale;
-            double elementHeight = baseHeight * scale;
+            double elementWidth = baseWidth * scaleX;
+            double elementHeight = baseHeight * scaleY;
 
             double x;
             double y;
@@ -1595,25 +1605,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateLayoutEditorOverlays();
     }
 
-    private double GetChromeScale(string key)
+    private (double X, double Y) GetChromeScale(string key)
     {
-        if (_settings.Layout.TryGetValue(key, out ChromePosition? saved) && saved.Scale.HasValue)
+        if (!_settings.Layout.TryGetValue(key, out ChromePosition? saved))
         {
-            return Math.Clamp(saved.Scale.Value, MinChromeScale, MaxChromeScale);
+            return (1, 1);
         }
 
-        return 1;
+        double legacy = saved.Scale ?? 1;
+        double x = Math.Clamp(saved.ScaleX ?? legacy, MinChromeScale, MaxChromeScale);
+        double y = Math.Clamp(saved.ScaleY ?? legacy, MinChromeScale, MaxChromeScale);
+        return (x, y);
     }
 
-    private double GetElementScale(FrameworkElement element) =>
-        _chromeScalers.TryGetValue(element, out ScaleTransform? scaler) ? scaler.ScaleX : 1;
+    private (double X, double Y) GetElementScale(FrameworkElement element) =>
+        _chromeScalers.TryGetValue(element, out ScaleTransform? scaler)
+            ? (scaler.ScaleX, scaler.ScaleY)
+            : (1, 1);
 
-    private void SetChromeScale(FrameworkElement element, double scale)
+    private void SetChromeScale(FrameworkElement element, double scaleX, double scaleY)
     {
         if (_chromeScalers.TryGetValue(element, out ScaleTransform? scaler))
         {
-            scaler.ScaleX = scale;
-            scaler.ScaleY = scale;
+            scaler.ScaleX = scaleX;
+            scaler.ScaleY = scaleY;
         }
     }
 
@@ -1641,9 +1656,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Point point = e.GetPosition(RootGrid);
         double width = RootGrid.ActualWidth;
         double height = RootGrid.ActualHeight;
-        double scale = GetElementScale(_dragElement);
-        double elementWidth = _dragElement.ActualWidth * scale;
-        double elementHeight = _dragElement.ActualHeight * scale;
+        (double scaleX, double scaleY) = GetElementScale(_dragElement);
+        double elementWidth = _dragElement.ActualWidth * scaleX;
+        double elementHeight = _dragElement.ActualHeight * scaleY;
 
         double x = _dragStartMargin.Left + (point.X - _dragStartPoint.X);
         double y = _dragStartMargin.Top + (point.Y - _dragStartPoint.Y);
@@ -1699,7 +1714,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         position.X = element.Margin.Left / width;
         position.Y = element.Margin.Top / height;
-        position.Scale = GetElementScale(element);
+
+        (double scaleX, double scaleY) = GetElementScale(element);
+        position.Scale = null;
+        position.ScaleX = scaleX;
+        position.ScaleY = scaleY;
         SaveSettings();
     }
 
@@ -1715,6 +1734,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (enabled)
         {
             BuildLayoutEditor();
+            ShowLayoutToolbar();
 
             foreach (FrameworkElement element in _chromeElements.Keys)
             {
@@ -1734,6 +1754,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             LayoutEditorCanvas.Children.Clear();
             _layoutOutlines.Clear();
             _layoutGrips.Clear();
+            HideLayoutToolbar();
 
             foreach (FrameworkElement element in _chromeElements.Keys)
             {
@@ -1743,11 +1764,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         UpdateLayoutEditButton();
         ShowChrome();
-
-        if (enabled)
-        {
-            ShowToast("Drag to move, drag a corner grip to resize. Press Esc when done.");
-        }
     }
 
     private void UpdateLayoutEditButton()
@@ -1777,26 +1793,39 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             };
             outline.SetResourceReference(Shapes.Shape.StrokeProperty, "AccentBrush");
 
-            var grip = new Thumb
+            var grips = new List<(ResizeAxis Axis, Thumb Grip)>
             {
-                Style = (Style)FindResource("LayoutGripThumb"),
-                Tag = element,
-                Width = ResizeGripSize,
-                Height = ResizeGripSize
+                (ResizeAxis.Horizontal, CreateLayoutGrip(element, ResizeAxis.Horizontal, "LayoutGripEWThumb")),
+                (ResizeAxis.Vertical, CreateLayoutGrip(element, ResizeAxis.Vertical, "LayoutGripNSThumb")),
+                (ResizeAxis.Both, CreateLayoutGrip(element, ResizeAxis.Both, "LayoutGripThumb"))
             };
 
-            grip.DragStarted += Grip_DragStarted;
-            grip.DragDelta += Grip_DragDelta;
-            grip.DragCompleted += Grip_DragCompleted;
-
             _layoutOutlines[element] = outline;
-            _layoutGrips[element] = grip;
+            _layoutGrips[element] = grips;
             LayoutEditorCanvas.Children.Add(outline);
-            LayoutEditorCanvas.Children.Add(grip);
+
+            foreach ((_, Thumb grip) in grips)
+            {
+                LayoutEditorCanvas.Children.Add(grip);
+            }
         }
 
         LayoutEditorCanvas.Visibility = Visibility.Visible;
         UpdateLayoutEditorOverlays();
+    }
+
+    private Thumb CreateLayoutGrip(FrameworkElement element, ResizeAxis axis, string styleKey)
+    {
+        var grip = new Thumb
+        {
+            Style = (Style)FindResource(styleKey),
+            Tag = new LayoutGripTag(element, axis)
+        };
+
+        grip.DragStarted += Grip_DragStarted;
+        grip.DragDelta += Grip_DragDelta;
+        grip.DragCompleted += Grip_DragCompleted;
+        return grip;
     }
 
     private void UpdateLayoutEditorOverlays()
@@ -1809,9 +1838,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         foreach (FrameworkElement element in _chromeElements.Keys)
         {
             bool visible = element.IsVisible && element.ActualWidth > 1 && element.ActualHeight > 1;
-            double scale = GetElementScale(element);
-            double width = element.ActualWidth * scale;
-            double height = element.ActualHeight * scale;
+            (double scaleX, double scaleY) = GetElementScale(element);
+            double width = element.ActualWidth * scaleX;
+            double height = element.ActualHeight * scaleY;
             double x = element.Margin.Left;
             double y = element.Margin.Top;
 
@@ -1824,20 +1853,43 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Canvas.SetTop(outline, y);
             }
 
-            if (_layoutGrips.TryGetValue(element, out Thumb? grip))
+            if (!_layoutGrips.TryGetValue(element, out List<(ResizeAxis Axis, Thumb Grip)>? grips))
+            {
+                continue;
+            }
+
+            foreach ((ResizeAxis axis, Thumb grip) in grips)
             {
                 grip.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
 
-                double gripX = Math.Clamp(
-                    x + width - (ResizeGripSize / 2),
-                    0,
-                    Math.Max(0, RootGrid.ActualWidth - ResizeGripSize));
+                double gripWidth = grip.Width > 0 ? grip.Width : ResizeGripSize;
+                double gripHeight = grip.Height > 0 ? grip.Height : ResizeGripSize;
 
-                double gripY = Math.Clamp(
-                    y + height - (ResizeGripSize / 2),
-                    0,
-                    Math.Max(0, RootGrid.ActualHeight - ResizeGripSize));
+                double gripX;
+                double gripY;
 
+                switch (axis)
+                {
+                    case ResizeAxis.Horizontal:
+                        // Width grip: top-right, away from the corner grip.
+                        gripX = x + width - (gripWidth / 2);
+                        gripY = y + 1;
+                        break;
+
+                    case ResizeAxis.Vertical:
+                        // Height grip: bottom-left, away from the corner grip.
+                        gripX = x + 1;
+                        gripY = y + height - (gripHeight / 2);
+                        break;
+
+                    default:
+                        gripX = x + width - (gripWidth / 2);
+                        gripY = y + height - (gripHeight / 2);
+                        break;
+                }
+
+                gripX = Math.Clamp(gripX, 0, Math.Max(0, RootGrid.ActualWidth - gripWidth));
+                gripY = Math.Clamp(gripY, 0, Math.Max(0, RootGrid.ActualHeight - gripHeight));
                 Canvas.SetLeft(grip, gripX);
                 Canvas.SetTop(grip, gripY);
             }
@@ -1846,14 +1898,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Grip_DragStarted(object sender, DragStartedEventArgs e)
     {
-        if (!_layoutEditing || sender is not Thumb { Tag: FrameworkElement element })
+        if (!_layoutEditing || sender is not Thumb { Tag: LayoutGripTag tag })
         {
             return;
         }
 
-        _resizeElement = element;
-        _resizeStartScale = GetElementScale(element);
-        _resizeReference = Math.Max(80, (element.ActualWidth + element.ActualHeight) * _resizeStartScale);
+        _resizeElement = tag.Element;
+        _resizeAxis = tag.Axis;
+
+        (double scaleX, double scaleY) = GetElementScale(tag.Element);
+        _resizeReferenceX = Math.Max(40, tag.Element.ActualWidth * scaleX);
+        _resizeReferenceY = Math.Max(40, tag.Element.ActualHeight * scaleY);
     }
 
     private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
@@ -1864,10 +1919,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         FrameworkElement element = _resizeElement;
-        double delta = (e.HorizontalChange + e.VerticalChange) / _resizeReference;
-        double scale = Math.Clamp(GetElementScale(element) + delta, MinChromeScale, MaxChromeScale);
+        (double scaleX, double scaleY) = GetElementScale(element);
 
-        SetChromeScale(element, scale);
+        if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both)
+        {
+            scaleX = Math.Clamp(
+                scaleX + (e.HorizontalChange / _resizeReferenceX),
+                MinChromeScale,
+                MaxChromeScale);
+        }
+
+        if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both)
+        {
+            scaleY = Math.Clamp(
+                scaleY + (e.VerticalChange / _resizeReferenceY),
+                MinChromeScale,
+                MaxChromeScale);
+        }
+
+        SetChromeScale(element, scaleX, scaleY);
         ClampChromePosition(element);
         UpdateLayoutEditorOverlays();
         e.Handled = true;
@@ -1891,13 +1961,100 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         double width = RootGrid.ActualWidth;
         double height = RootGrid.ActualHeight;
-        double scale = GetElementScale(element);
-        double elementWidth = element.ActualWidth * scale;
-        double elementHeight = element.ActualHeight * scale;
+        (double scaleX, double scaleY) = GetElementScale(element);
+        double elementWidth = element.ActualWidth * scaleX;
+        double elementHeight = element.ActualHeight * scaleY;
 
         double x = Math.Clamp(element.Margin.Left, 0, Math.Max(0, width - elementWidth));
         double y = Math.Clamp(element.Margin.Top, 0, Math.Max(0, height - elementHeight));
         element.Margin = new Thickness(x, y, 0, 0);
+    }
+
+    private void ShowLayoutToolbar()
+    {
+        LayoutToolbar.Visibility = Visibility.Visible;
+        LayoutToolbar.BeginAnimation(OpacityProperty, null);
+        LayoutToolbarTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        LayoutToolbar.Opacity = 0;
+        LayoutToolbarTransform.X = 240;
+
+        var slide = new DoubleAnimation(240, 0, TimeSpan.FromMilliseconds(280))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            // Let the settings panel finish sliding out first, so the toolbar's
+            // entrance is actually visible from the screen edge.
+            BeginTime = TimeSpan.FromMilliseconds(180)
+        };
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(180)
+        };
+
+        LayoutToolbarTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            slide,
+            HandoffBehavior.SnapshotAndReplace);
+
+        LayoutToolbar.BeginAnimation(
+            OpacityProperty,
+            fade,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void HideLayoutToolbar()
+    {
+        if (LayoutToolbar.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        double currentX = LayoutToolbarTransform.X;
+
+        var slide = new DoubleAnimation(currentX, 240, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+
+        var fade = new DoubleAnimation(LayoutToolbar.Opacity, 0, TimeSpan.FromMilliseconds(160));
+        fade.Completed += (_, _) =>
+        {
+            if (!_layoutEditing)
+            {
+                LayoutToolbar.Visibility = Visibility.Collapsed;
+                LayoutToolbarTransform.X = 240;
+                LayoutToolbar.BeginAnimation(OpacityProperty, null);
+                LayoutToolbar.Opacity = 1;
+            }
+        };
+
+        LayoutToolbarTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            slide,
+            HandoffBehavior.SnapshotAndReplace);
+
+        LayoutToolbar.BeginAnimation(
+            OpacityProperty,
+            fade,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void LayoutToolbarDone_Click(object sender, RoutedEventArgs e)
+    {
+        SetLayoutEditing(false);
+    }
+
+    private void LayoutToolbarReset_Click(object sender, RoutedEventArgs e)
+    {
+        ResetLayout();
+    }
+
+    private void ResetLayout()
+    {
+        _settings.Layout.Clear();
+        SaveSettings();
+        ApplyChromeLayout();
+        ShowToast("Layout reset to the default positions and sizes.");
     }
 
     private string BuildPageLabel(PageSlice slice, int pageCount)

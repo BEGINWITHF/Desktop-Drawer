@@ -283,10 +283,7 @@ public partial class MainWindow
 
     private void ResetLayoutButton_Click(object sender, RoutedEventArgs e)
     {
-        _settings.Layout.Clear();
-        SaveSettings();
-        ApplyChromeLayout();
-        ShowToast("Layout reset to the default positions and sizes.");
+        ResetLayout();
     }
 
     private void HideIconsSettingsToggle_Changed(object sender, RoutedEventArgs e)

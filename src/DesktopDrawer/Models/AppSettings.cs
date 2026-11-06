@@ -33,6 +33,10 @@ public sealed class ChromePosition
 
     /// <summary>Uniform scale of the chrome element. Null/1 = its natural size.</summary>
     public double? Scale { get; set; }
+
+    /// <summary>Independent horizontal and vertical scale (override <see cref="Scale"/>).</summary>
+    public double? ScaleX { get; set; }
+    public double? ScaleY { get; set; }
 }
 
 public sealed class AppSettings

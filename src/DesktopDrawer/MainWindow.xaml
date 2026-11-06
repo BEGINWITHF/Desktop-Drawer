@@ -760,6 +760,54 @@
             <Canvas x:Name="LayoutEditorCanvas"
                     Panel.ZIndex="40"
                     Visibility="Collapsed" />
+
+            <!-- Floating layout toolbar: slides in from the right edge while editing. -->
+            <Border x:Name="LayoutToolbar"
+                    Panel.ZIndex="50"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,0,16,0"
+                    Padding="14,12"
+                    CornerRadius="14"
+                    Background="{DynamicResource SettingsPanelBrush}"
+                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
+                    BorderThickness="1"
+                    Visibility="Collapsed">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="LayoutToolbarTransform" X="240" />
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="6" Opacity="0.45" Color="#000000" />
+                </Border.Effect>
+
+                <StackPanel>
+                    <TextBlock Text="Layout editor"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="14"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Drag to move. Use the edge and corner grips to resize."
+                               FontSize="10.5"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               TextWrapping="Wrap"
+                               MaxWidth="190"
+                               Margin="0,3,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Content="Reset"
+                                Style="{StaticResource GhostButton}"
+                                Height="30"
+                                Padding="14,0"
+                                FontSize="11.5"
+                                Click="LayoutToolbarReset_Click" />
+                        <Button Content="Done"
+                                Style="{StaticResource AccentButton}"
+                                Height="30"
+                                Padding="18,0"
+                                FontSize="11.5"
+                                Margin="8,0,0,0"
+                                Click="LayoutToolbarDone_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
 
         <Grid x:Name="SettingsOverlay"

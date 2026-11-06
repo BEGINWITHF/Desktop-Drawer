@@ -811,6 +811,50 @@
         </Setter>
     </Style>
 
+    <Style x:Key="LayoutGripEWThumb" TargetType="{x:Type Thumb}">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Cursor" Value="SizeWE" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Grid>
+                        <Ellipse Fill="{DynamicResource AccentBrush}"
+                                 Stroke="{DynamicResource OnAccentBrush}"
+                                 StrokeThickness="1" />
+                        <Path Data="M 4,7 L 10,7"
+                              Stroke="{DynamicResource OnAccentBrush}"
+                              StrokeThickness="1.4"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="LayoutGripNSThumb" TargetType="{x:Type Thumb}">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Cursor" Value="SizeNS" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Grid>
+                        <Ellipse Fill="{DynamicResource AccentBrush}"
+                                 Stroke="{DynamicResource OnAccentBrush}"
+                                 StrokeThickness="1" />
+                        <Path Data="M 7,4 L 7,10"
+                              Stroke="{DynamicResource OnAccentBrush}"
+                              StrokeThickness="1.4"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="ColorRowButton" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="8,6,9,6" />
