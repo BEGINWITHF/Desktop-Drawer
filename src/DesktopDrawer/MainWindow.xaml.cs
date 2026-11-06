@@ -291,7 +291,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
-        RegisterTouchpadDiagnostics(handle);
+        RegisterTouchpadInput(handle);
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.
@@ -383,23 +383,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return IntPtr.Zero;
     }
 
-    private void RegisterTouchpadDiagnostics(IntPtr handle)
+    private void RegisterTouchpadInput(IntPtr handle)
     {
         try
         {
-            var mouse = new NativeMethods.RawInputDevice
-            {
-                UsagePage = 0x01,          // generic desktop
-                Usage = 0x02,              // mouse / touchpad
-                Flags = NativeMethods.RidevInputSink,
-                Target = handle
-            };
-
-            bool mouseOk = NativeMethods.RegisterRawInputDevices(
-                new[] { mouse },
-                1,
-                (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
-
             var touchpad = new NativeMethods.RawInputDevice
             {
                 UsagePage = 0x0D,          // digitizer
@@ -413,19 +400,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 1,
                 (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
 
-            AppLog.Write(
-                $"Raw mouse input: {(mouseOk ? "enabled" : "failed " + Marshal.GetLastWin32Error())}, " +
-                $"touchpad contact: {(touchOk ? "enabled" : "unavailable " + Marshal.GetLastWin32Error())}");
+            AppLog.Write(touchOk
+                ? "Touchpad contact tracking registered"
+                : $"Touchpad contact tracking unavailable ({Marshal.GetLastWin32Error()})");
         }
         catch (Exception ex)
         {
-            AppLog.Write(ex, "Could not register raw mouse input");
+            AppLog.Write(ex, "Could not register touchpad input");
         }
     }
 
     /// <summary>
     /// Handles raw input: digitizer reports tell us whether fingers are on the
-    /// touchpad, mouse wheel reports are logged while a diagnostic recording runs.
+    /// touchpad, which is how the pager knows a swipe has ended.
     /// </summary>
     private static void HandleRawInput(IntPtr rawInput)
     {
@@ -454,26 +441,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (header.Type == 2)
             {
                 TouchpadMonitor.NoteReport(header.Device, header.Size);
-                return;
             }
-
-            if (header.Type != 0 || !InputDiagnostics.IsRecording)
-            {
-                return;
-            }
-
-            var mouse = Marshal.PtrToStructure<NativeMethods.RawMouse>(IntPtr.Add(buffer, (int)headerSize));
-            uint flags = mouse.ButtonFlags;
-
-            if ((flags & (NativeMethods.RiMouseWheel | NativeMethods.RiMouseHWheel)) == 0)
-            {
-                return;
-            }
-
-            InputDiagnostics.Write(
-                $"RAW wheel={(flags & NativeMethods.RiMouseWheel) != 0} " +
-                $"hwheel={(flags & NativeMethods.RiMouseHWheel) != 0} " +
-                $"data={(short)mouse.ButtonData} hwnd={header.WParam.ToInt64():X}");
         }
         finally
         {

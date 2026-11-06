@@ -266,8 +266,6 @@ internal static class NativeMethods
     public const int WmInput = 0x00FF;
     public const uint RidInput = 0x10000003;
     public const uint RidevInputSink = 0x00000100;
-    public const uint RiMouseWheel = 0x0400;
-    public const uint RiMouseHWheel = 0x0800;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RawInputDevice
@@ -285,18 +283,6 @@ internal static class NativeMethods
         public uint Size;
         public IntPtr Device;
         public IntPtr WParam;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RawMouse
-    {
-        public ushort Flags;
-        public ushort ButtonFlags;
-        public ushort ButtonData;
-        public uint RawButtons;
-        public int LastX;
-        public int LastY;
-        public uint ExtraInformation;
     }
 
     [DllImport("user32.dll", SetLastError = true)]
