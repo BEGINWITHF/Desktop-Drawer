@@ -2006,10 +2006,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _resizeTotalX += Math.Clamp(e.HorizontalChange, -40, 40);
         _resizeTotalY += Math.Clamp(e.VerticalChange, -40, 40);
 
+        // Ignore sub-pixel jitter and the tiny movement of a tap until the
+        // pointer has actually travelled a few pixels.
+        const double deadZone = 6;
+
         double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
         double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
 
-        if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both)
+        if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both &&
+            Math.Abs(_resizeTotalX) >= deadZone)
         {
             if (element == HeaderBar)
             {
@@ -2019,7 +2024,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             element.Width = Math.Clamp(_resizeStartWidth + _resizeTotalX, natural.Width, maxWidth);
         }
 
-        if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both)
+        if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
+            Math.Abs(_resizeTotalY) >= deadZone)
         {
             element.Height = Math.Clamp(_resizeStartHeight + _resizeTotalY, natural.Height, maxHeight);
         }
