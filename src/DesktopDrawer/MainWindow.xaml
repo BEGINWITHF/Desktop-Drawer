@@ -252,11 +252,11 @@
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                         </Border>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="Desktop Drawer"
+                            <TextBlock Text="{DynamicResource Str.App.Title}"
                                        FontFamily="{StaticResource DisplayFont}"
                                        FontSize="{DynamicResource FontSize14}"
                                        FontWeight="SemiBold" />
-                            <TextBlock Text="A paged desktop"
+                            <TextBlock Text="{DynamicResource Str.App.Subtitle}"
                                        FontSize="{DynamicResource FontSize10}"
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,0,0" />
@@ -324,7 +324,7 @@
                                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=120}"
                                          PreviewKeyDown="SearchBox_PreviewKeyDown"
                                          GotKeyboardFocus="SearchBox_GotKeyboardFocus" />
-                                <TextBlock Text="Search desktop"
+                                <TextBlock Text="{DynamicResource Str.Search.Placeholder}"
                                            FontSize="{DynamicResource FontSize125}"
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            VerticalAlignment="Center"
@@ -370,7 +370,7 @@
                                     Height="22"
                                     Style="{StaticResource SearchClearButton}"
                                     Click="ClearSearchButton_Click"
-                                    ToolTip="Clear search"
+                                    ToolTip="{DynamicResource Str.Search.Clear}"
                                     Focusable="False"
                                     Opacity="0"
                                     Visibility="{Binding HasSearchText, Converter={StaticResource BoolToVisibility}}"
@@ -397,7 +397,7 @@
                                 Height="32"
                                 Padding="8,0"
                                 Click="SortButton_Click"
-                                ToolTip="Change sort order">
+                                ToolTip="{DynamicResource Str.Header.Sort}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource Glyph}"
                                            Text="&#xE8CB;"
@@ -405,7 +405,7 @@
                                            Margin="0,0,5,0"
                                            Foreground="{DynamicResource TextMutedBrush}" />
                                 <TextBlock x:Name="SortLabelText"
-                                           Text="Name"
+                                           Text="{DynamicResource Str.Sort.Name}"
                                            FontSize="{DynamicResource FontSize115}"
                                            VerticalAlignment="Center" />
                                 <Path Width="7"
@@ -423,7 +423,7 @@
                                 Height="32"
                                 Margin="2,0,0,0"
                                 Click="RefreshButton_Click"
-                                ToolTip="Refresh (F5)">
+                                ToolTip="{DynamicResource Str.Header.Refresh}">
                             <TextBlock Style="{StaticResource Glyph}"
                                        Text="&#xE72C;"
                                        FontSize="{DynamicResource FontSize14}" />
@@ -435,7 +435,7 @@
                                       Height="32"
                                       Margin="2,0,0,0"
                                       Click="HideIconsToggle_Click"
-                                      ToolTip="Hide the Windows desktop icons">
+                                      ToolTip="{DynamicResource Str.Header.HideIcons}">
                             <Grid Width="17" Height="17">
                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}}"
                                       StrokeThickness="1.4"
@@ -473,7 +473,7 @@
                                 Height="32"
                                 Margin="2,0,0,0"
                                 Click="SettingsButton_Click"
-                                ToolTip="Settings">
+                                ToolTip="{DynamicResource Str.Header.Settings}">
                             <TextBlock Style="{StaticResource Glyph}"
                                        Text="&#xE713;"
                                        FontSize="{DynamicResource FontSize15}" />
@@ -488,7 +488,7 @@
                                 Width="32"
                                 Height="32"
                                 Click="MinimizeButton_Click"
-                                ToolTip="Minimize">
+                                ToolTip="{DynamicResource Str.Header.Minimize}">
                             <TextBlock Style="{StaticResource Glyph}"
                                        Text="&#xE921;"
                                        FontSize="{DynamicResource FontSize10}" />
@@ -500,7 +500,7 @@
                                 Height="32"
                                 Margin="2,0,0,0"
                                 Click="CloseButton_Click"
-                                ToolTip="Close to tray">
+                                ToolTip="{DynamicResource Str.Header.CloseTray}">
                             <TextBlock Style="{StaticResource Glyph}"
                                        Text="&#xE8BB;"
                                        FontSize="{DynamicResource FontSize10}" />
@@ -568,14 +568,14 @@
                                    FontSize="{DynamicResource FontSize52}"
                                    Foreground="{DynamicResource EmptyGlyphBrush}" />
                         <TextBlock x:Name="EmptyTitle"
-                                   Text="Nothing here yet"
+                                   Text="{DynamicResource Str.Empty.ClearTitle}"
                                    FontFamily="{StaticResource DisplayFont}"
                                    FontSize="{DynamicResource FontSize17}"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"
                                    Margin="0,12,0,0" />
                         <TextBlock x:Name="EmptySubtitle"
-                                   Text="New files on your desktop will show up here."
+                                   Text="{DynamicResource Str.Empty.ClearText}"
                                    FontSize="{DynamicResource FontSize12}"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center"
@@ -628,7 +628,7 @@
                             Height="28"
                             IsEnabled="False"
                             Click="PrevPage_Click"
-                            ToolTip="Previous page (PageUp)">
+                            ToolTip="{DynamicResource Str.Pager.Previous}">
                         <TextBlock Style="{StaticResource Glyph}"
                                    Text="&#xE76B;"
                                    FontSize="{DynamicResource FontSize11}" />
@@ -721,7 +721,7 @@
                             Margin="4,0,0,0"
                             IsEnabled="False"
                             Click="NextPage_Click"
-                            ToolTip="Next page (PageDown)">
+                            ToolTip="{DynamicResource Str.Pager.Next}">
                         <TextBlock Style="{StaticResource Glyph}"
                                    Text="&#xE76C;"
                                    FontSize="{DynamicResource FontSize11}" />
@@ -742,7 +742,7 @@
             <Border x:Name="HintText"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top">
-                <TextBlock Text="Scroll or use PgUp / PgDn"
+                <TextBlock Text="{DynamicResource Str.Pager.Hint}"
                            FontSize="{DynamicResource FontSize105}"
                            Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center"
@@ -792,24 +792,24 @@
                 </Border.Effect>
 
                 <StackPanel>
-                    <TextBlock Text="Layout editor"
+                    <TextBlock Text="{DynamicResource Str.LayoutToolbar.Title}"
                                FontFamily="{StaticResource DisplayFont}"
                                FontSize="{DynamicResource FontSize14}"
                                FontWeight="SemiBold" />
-                    <TextBlock Text="Drag to move. Use the edge and corner grips to resize."
+                    <TextBlock Text="{DynamicResource Str.LayoutToolbar.Desc}"
                                FontSize="{DynamicResource FontSize105}"
                                Foreground="{DynamicResource TextMutedBrush}"
                                TextWrapping="Wrap"
                                MaxWidth="190"
                                Margin="0,3,0,0" />
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                        <Button Content="Reset"
+                        <Button Content="{DynamicResource Str.Appearance.Reset}"
                                 Style="{StaticResource GhostButton}"
                                 Height="30"
                                 Padding="14,0"
                                 FontSize="{DynamicResource FontSize115}"
                                 Click="LayoutToolbarReset_Click" />
-                        <Button Content="Done"
+                        <Button Content="{DynamicResource Str.LayoutToolbar.Done}"
                                 Style="{StaticResource AccentButton}"
                                 Height="30"
                                 Padding="18,0"
@@ -856,11 +856,11 @@
                                    Height="30"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                             <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Settings"
+                                <TextBlock Text="{DynamicResource Str.Settings.Title}"
                                            FontFamily="{StaticResource DisplayFont}"
                                            FontSize="{DynamicResource FontSize18}"
                                            FontWeight="SemiBold" />
-                                <TextBlock Text="Desktop Drawer"
+                                <TextBlock Text="{DynamicResource Str.App.Title}"
                                            FontSize="{DynamicResource FontSize105}"
                                            Foreground="{DynamicResource TextMutedBrush}" />
                             </StackPanel>
@@ -868,7 +868,7 @@
                         <Button HorizontalAlignment="Right"
                                 Style="{StaticResource IconButton}"
                                 Click="SettingsCloseButton_Click"
-                                ToolTip="Close settings">
+                                ToolTip="{DynamicResource Str.Settings.Close}">
                             <TextBlock Style="{StaticResource Glyph}"
                                        Text="&#xE8BB;"
                                        FontSize="{DynamicResource FontSize11}" />
@@ -881,28 +881,60 @@
                                   HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="0,0,6,10">
 
-                            <TextBlock Text="LAYOUT" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Section.Language}" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Settings.LanguageDesc}"
+                                       Style="{StaticResource SettingDescription}" />
+                            <WrapPanel Margin="0,10,10,0">
+                                <RadioButton x:Name="LanguageEnRadio"
+                                             GroupName="Language"
+                                             Style="{StaticResource SegmentRadio}"
+                                             Content="English"
+                                             Tag="en-US"
+                                             Checked="LanguageRadio_Checked" />
+                                <RadioButton x:Name="LanguageZhCnRadio"
+                                             GroupName="Language"
+                                             Style="{StaticResource SegmentRadio}"
+                                             Content="简体中文"
+                                             Tag="zh-CN"
+                                             Checked="LanguageRadio_Checked" />
+                                <RadioButton x:Name="LanguageZhHkRadio"
+                                             GroupName="Language"
+                                             Style="{StaticResource SegmentRadio}"
+                                             Content="繁體中文"
+                                             Tag="zh-HK"
+                                             Checked="LanguageRadio_Checked" />
+                                <RadioButton x:Name="LanguageJaRadio"
+                                             GroupName="Language"
+                                             Style="{StaticResource SegmentRadio}"
+                                             Content="日本語"
+                                             Tag="ja-JP"
+                                             Checked="LanguageRadio_Checked" />
+                            </WrapPanel>
+
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,18,10,16" />
+
+                            <TextBlock Text="{DynamicResource Str.Section.Layout}" Style="{StaticResource SectionLabel}" />
                             <Grid Margin="0,0,10,4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Desktop controls" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Move the header, pager, summary, hint and group badge, and drag a corner grip to resize them."
+                                    <TextBlock Text="{DynamicResource Str.Layout.Title}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Layout.Description}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <Button x:Name="LayoutEditButton"
                                         Grid.Column="1"
                                         Style="{StaticResource GhostButton}"
-                                        Content="Adjust layout"
+                                        Content="{DynamicResource Str.Layout.Adjust}"
                                         Height="30"
                                         Padding="12,0"
                                         FontSize="{DynamicResource FontSize115}"
                                         VerticalAlignment="Center"
                                         Click="LayoutEditButton_Click" />
                             </Grid>
-                            <Button Content="Reset layout"
+                            <Button Content="{DynamicResource Str.Layout.Reset}"
                                     Style="{StaticResource ToolbarButton}"
                                     HorizontalAlignment="Left"
                                     Padding="12,0"
@@ -911,9 +943,9 @@
                                     Margin="0,6,0,4"
                                     Click="ResetLayoutButton_Click" />
 
-                            <TextBlock Text="APPEARANCE" Style="{StaticResource SectionLabel}" />
-                            <TextBlock Text="Icon size" Style="{StaticResource SettingTitle}" />
-                            <TextBlock Text="Choose how large desktop items appear. Smaller tiles fit more items on each page."
+                            <TextBlock Text="{DynamicResource Str.Section.Appearance}" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Appearance.IconSize}" Style="{StaticResource SettingTitle}" />
+                            <TextBlock Text="{DynamicResource Str.Appearance.IconSizeDesc}"
                                        Style="{StaticResource SettingDescription}" />
                             <Border Background="{DynamicResource SegmentSurfaceBrush}"
                                     BorderBrush="{DynamicResource StrokeBrush}"
@@ -926,19 +958,19 @@
                                     <RadioButton x:Name="CompactRadio"
                                                  GroupName="IconSize"
                                                  Style="{StaticResource SegmentRadio}"
-                                                 Content="Compact"
+                                                 Content="{DynamicResource Str.Density.Compact}"
                                                  Tag="Compact"
                                                  Checked="DensityRadio_Checked" />
                                     <RadioButton x:Name="CozyRadio"
                                                  GroupName="IconSize"
                                                  Style="{StaticResource SegmentRadio}"
-                                                 Content="Cozy"
+                                                 Content="{DynamicResource Str.Density.Cozy}"
                                                  Tag="Cozy"
                                                  Checked="DensityRadio_Checked" />
                                     <RadioButton x:Name="LargeRadio"
                                                  GroupName="IconSize"
                                                  Style="{StaticResource SegmentRadio}"
-                                                 Content="Large"
+                                                 Content="{DynamicResource Str.Density.Large}"
                                                  Tag="Large"
                                                  Checked="DensityRadio_Checked" />
                                 </StackPanel>
@@ -950,19 +982,19 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Custom icon size" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Str.Appearance.CustomIcon}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="IconSizeValueText"
                                            Grid.Column="1"
                                            Text="72 px"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <Button Grid.Column="2"
-                                        Content="Auto"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
                                         x:Name="AutoIconSizeButton"
                                         AutomationProperties.Name="Auto icon size"
                                         Style="{StaticResource AutoButton}"
                                         Margin="8,0,0,0"
-                                        ToolTip="Use the density preset"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoIconTip}"
                                         Click="ResetIconSizeButton_Click" />
                             </Grid>
                             <Slider x:Name="IconSizeSlider"
@@ -979,22 +1011,22 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Text size" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Str.Appearance.TextSize}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="FontScaleValueText"
                                            Grid.Column="1"
                                            Text="100%"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <Button Grid.Column="2"
-                                        Content="Auto"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
                                         x:Name="AutoFontScaleButton"
                                         AutomationProperties.Name="Auto text size"
                                         Style="{StaticResource AutoButton}"
                                         Margin="8,0,0,0"
-                                        ToolTip="Use 100%"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoTextTip}"
                                         Click="ResetFontScaleButton_Click" />
                             </Grid>
-                            <TextBlock Text="Scales headings, labels, buttons and the desktop icon names."
+                            <TextBlock Text="{DynamicResource Str.Appearance.TextSizeDesc}"
                                        Style="{StaticResource SettingDescription}" />
                             <Slider x:Name="FontScaleSlider"
                                     Minimum="80"
@@ -1010,12 +1042,12 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Colors" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Every colour in the overlay is editable. Pick one to open the RGB picker."
+                                    <TextBlock Text="{DynamicResource Str.Appearance.Colors}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Appearance.ColorsDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <Button Grid.Column="1"
-                                        Content="Reset"
+                                        Content="{DynamicResource Str.Appearance.Reset}"
                                         Style="{StaticResource GhostButton}"
                                         Padding="10,0"
                                         Height="28"
@@ -1039,22 +1071,22 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Wallpaper dim" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDim}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="WallpaperDimValueText"
                                            Grid.Column="1"
                                            Text="0%"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <Button Grid.Column="2"
-                                        Content="Auto"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
                                         x:Name="AutoWallpaperDimButton"
                                         AutomationProperties.Name="Auto wallpaper dim"
                                         Style="{StaticResource AutoButton}"
                                         Margin="8,0,0,0"
-                                        ToolTip="Do not dim the wallpaper"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoDimTip}"
                                         Click="ResetWallpaperDimButton_Click" />
                             </Grid>
-                            <TextBlock Text="Darkens the wallpaper behind the icons. 0% keeps it untouched."
+                            <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDimDesc}"
                                        Style="{StaticResource SettingDescription}" />
                             <Slider x:Name="WallpaperDimSlider"
                                     Minimum="0"
@@ -1066,7 +1098,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,18,10,16" />
 
-                            <TextBlock Text="GRID" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Section.Grid}" Style="{StaticResource SectionLabel}" />
 
                             <Grid Margin="0,0,10,6">
                                 <Grid.ColumnDefinitions>
@@ -1074,8 +1106,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Fit to window" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Let the app choose how many columns and rows fit."
+                                    <TextBlock Text="{DynamicResource Str.Grid.Fit}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Grid.FitDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="AutoGridToggle"
@@ -1093,7 +1125,7 @@
                                     <ColumnDefinition Width="36" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Columns" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Str.Grid.Columns}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
                                 <Slider x:Name="ColumnsSlider"
                                         Grid.Column="1"
                                         Minimum="2"
@@ -1110,14 +1142,14 @@
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <Button Grid.Column="3"
-                                        Content="Auto"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
                                         x:Name="AutoColumnsButton"
                                         AutomationProperties.Name="Auto columns"
                                         Style="{StaticResource AutoButton}"
                                         Height="24"
                                         Padding="6,0"
                                         Margin="6,0,0,0"
-                                        ToolTip="Fit to the window"
+                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
                                         Click="AutoGridButton_Click" />
                             </Grid>
 
@@ -1128,7 +1160,7 @@
                                     <ColumnDefinition Width="36" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Rows" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Str.Grid.Rows}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
                                 <Slider x:Name="RowsSlider"
                                         Grid.Column="1"
                                         Minimum="1"
@@ -1145,20 +1177,20 @@
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <Button Grid.Column="3"
-                                        Content="Auto"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
                                         x:Name="AutoRowsButton"
                                         AutomationProperties.Name="Auto rows"
                                         Style="{StaticResource AutoButton}"
                                         Height="24"
                                         Padding="6,0"
                                         Margin="6,0,0,0"
-                                        ToolTip="Fit to the window"
+                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
                                         Click="AutoGridButton_Click" />
                             </Grid>
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="SORTING" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Section.Sorting}" Style="{StaticResource SectionLabel}" />
 
                             <Grid Margin="0,0,10,15">
                                 <Grid.ColumnDefinitions>
@@ -1166,8 +1198,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Folders first" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Keep folders above files when sorting."
+                                    <TextBlock Text="{DynamicResource Str.Sorting.FoldersFirst}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Sorting.FoldersFirstDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="FoldersFirstToggle"
@@ -1184,8 +1216,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Show hidden files" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Include hidden and system items from the desktop."
+                                    <TextBlock Text="{DynamicResource Str.Sorting.ShowHidden}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Sorting.ShowHiddenDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="ShowHiddenToggle"
@@ -1198,7 +1230,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="BEHAVIOR" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Section.Behavior}" Style="{StaticResource SectionLabel}" />
 
                             <Grid Margin="0,0,10,15">
                                 <Grid.ColumnDefinitions>
@@ -1206,8 +1238,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Always show controls" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Keep the header and the page bar visible instead of fading them out."
+                                    <TextBlock Text="{DynamicResource Str.Behavior.AlwaysShow}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Behavior.AlwaysShowDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="AlwaysShowChromeToggle"
@@ -1224,8 +1256,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Close to tray" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Keep Desktop Drawer running when the window is closed."
+                                    <TextBlock Text="{DynamicResource Str.Behavior.CloseToTray}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Behavior.CloseToTrayDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="CloseToTrayToggle"
@@ -1242,8 +1274,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Start with Windows" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Open Desktop Drawer automatically after sign-in."
+                                    <TextBlock Text="{DynamicResource Str.Behavior.StartWithWindows}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Behavior.StartWithWindowsDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="StartWithWindowsToggle"
@@ -1256,7 +1288,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="WINDOWS DESKTOP" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.Section.Windows}" Style="{StaticResource SectionLabel}" />
 
                             <Grid Margin="0,0,10,8">
                                 <Grid.ColumnDefinitions>
@@ -1264,8 +1296,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Hide desktop icons now" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Temporarily hide the icons on the Windows desktop while you use Desktop Drawer."
+                                    <TextBlock Text="{DynamicResource Str.Windows.HideNow}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Windows.HideNowDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="HideIconsSettingsToggle"
@@ -1282,8 +1314,8 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Hide icons on launch" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Automatically hide the Windows icons whenever Desktop Drawer starts."
+                                    <TextBlock Text="{DynamicResource Str.Windows.HideOnLaunch}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Windows.HideOnLaunchDesc}"
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
                                 <CheckBox x:Name="HideIconsOnLaunchToggle"
@@ -1294,36 +1326,36 @@
                                           Unchecked="HideIconsOnLaunchToggle_Changed" />
                             </Grid>
 
-                            <TextBlock Text="Desktop icon visibility is restored when Desktop Drawer exits."
+                            <TextBlock Text="{DynamicResource Str.Windows.RestoreNote}"
                                        Style="{StaticResource SettingDescription}"
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,10,12" />
 
                             <WrapPanel Margin="0,0,10,0">
                                 <Button Style="{StaticResource GhostButton}"
-                                        Content="Open Desktop folder"
+                                        Content="{DynamicResource Str.Windows.OpenFolder}"
                                         Margin="0,0,8,8"
                                         Click="OpenDesktopFolderButton_Click" />
                                 <Button Style="{StaticResource GhostButton}"
-                                        Content="Refresh icons"
+                                        Content="{DynamicResource Str.Windows.RefreshIcons}"
                                         Margin="0,0,8,8"
                                         Click="RefreshIconsButton_Click" />
                             </WrapPanel>
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="ABOUT" Style="{StaticResource SectionLabel}" />
-                            <TextBlock Text="Desktop Drawer 1.0"
+                            <TextBlock Text="{DynamicResource Str.Section.About}" Style="{StaticResource SectionLabel}" />
+                            <TextBlock Text="{DynamicResource Str.About.Version}"
                                        Style="{StaticResource SettingTitle}" />
-                            <TextBlock Text="Your desktop files, spread across calm, page-sized views. Files stay exactly where they are."
+                            <TextBlock Text="{DynamicResource Str.About.Text}"
                                        Style="{StaticResource SettingDescription}" />
                             <WrapPanel Margin="0,12,10,0">
                                 <Button Style="{StaticResource GhostButton}"
-                                        Content="Open data folder"
+                                        Content="{DynamicResource Str.About.OpenData}"
                                         Margin="0,0,8,8"
                                         Click="OpenDataFolderButton_Click" />
                                 <Button Style="{StaticResource GhostButton}"
-                                        Content="Exit Desktop Drawer"
+                                        Content="{DynamicResource Str.About.Exit}"
                                         Foreground="{DynamicResource DangerBrush}"
                                         Margin="0,0,8,8"
                                         Click="ExitApplicationButton_Click" />
@@ -1332,7 +1364,7 @@
                     </ScrollViewer>
 
                     <TextBlock Grid.Row="2"
-                               Text="Changes are saved automatically."
+                               Text="{DynamicResource Str.Settings.AutoSaved}"
                                FontSize="{DynamicResource FontSize105}"
                                Foreground="{DynamicResource TextMutedBrush}"
                                Margin="0,12,10,0" />
@@ -1360,12 +1392,12 @@
                     <StackPanel>
                         <Grid>
                             <StackPanel>
-                                <TextBlock Text="Choose a color"
+                                <TextBlock Text="{DynamicResource Str.ColorPicker.Title}"
                                            FontFamily="{StaticResource DisplayFont}"
                                            FontSize="{DynamicResource FontSize17}"
                                            FontWeight="SemiBold" />
                                 <TextBlock x:Name="PickerTokenLabel"
-                                           Text="Accent"
+                                           Text="{DynamicResource Str.ColorToken.Accent}"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,3,0,0" />
@@ -1376,7 +1408,7 @@
                                     Width="30"
                                     Height="30"
                                     Click="ColorPickerCancel_Click"
-                                    ToolTip="Close the color picker">
+                                    ToolTip="{DynamicResource Str.ColorPicker.Close}">
                                 <TextBlock Style="{StaticResource Glyph}"
                                            Text="&#xE8BB;"
                                            FontSize="{DynamicResource FontSize10}" />
@@ -1505,7 +1537,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Hex"
+                            <TextBlock Text="{DynamicResource Str.ColorPicker.Hex}"
                                        FontSize="{DynamicResource FontSize115}"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
@@ -1522,7 +1554,7 @@
                         </Grid>
 
                         <Grid Margin="0,16,0,0">
-                            <Button Content="Reset"
+                            <Button Content="{DynamicResource Str.Appearance.Reset}"
                                     Style="{StaticResource GhostButton}"
                                     HorizontalAlignment="Left"
                                     Height="30"
@@ -1530,13 +1562,13 @@
                                     FontSize="{DynamicResource FontSize115}"
                                     Click="ColorPickerReset_Click" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="Cancel"
+                                <Button Content="{DynamicResource Str.ColorPicker.Cancel}"
                                         Style="{StaticResource GhostButton}"
                                         Height="30"
                                         Padding="14,0"
                                         FontSize="{DynamicResource FontSize115}"
                                         Click="ColorPickerCancel_Click" />
-                                <Button Content="Apply"
+                                <Button Content="{DynamicResource Str.ColorPicker.Apply}"
                                         AutomationProperties.Name="Apply color"
                                         Style="{StaticResource AccentButton}"
                                         Height="30"

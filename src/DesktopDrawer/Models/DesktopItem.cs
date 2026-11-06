@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
+using DesktopDrawer.Services;
 
 namespace DesktopDrawer.Models;
 
@@ -119,7 +120,7 @@ public sealed class DesktopItem : INotifyPropertyChanged
 
     public string IconCacheKey => $"{FullPath}|{Modified.Ticks}|{IsFolder}";
 
-    public string SizeText => IsFolder ? "Folder" : Helpers.FileSizeFormatter.Format(Size);
+    public string SizeText => IsFolder ? I18n.T("Type.Folder") : Helpers.FileSizeFormatter.Format(Size);
 
     public string ModifiedText => Modified == default ? string.Empty : Modified.ToString("yyyy-MM-dd HH:mm");
 
@@ -129,7 +130,7 @@ public sealed class DesktopItem : INotifyPropertyChanged
         {
             if (IsFolder)
             {
-                return "Folder";
+                return I18n.T("Type.Folder");
             }
 
             if (!string.IsNullOrWhiteSpace(TypeName))
@@ -137,8 +138,17 @@ public sealed class DesktopItem : INotifyPropertyChanged
                 return TypeName;
             }
 
-            return string.IsNullOrWhiteSpace(Extension) ? "File" : Extension.TrimStart('.').ToUpperInvariant() + " file";
+            return string.IsNullOrWhiteSpace(Extension)
+                ? I18n.T("Type.File")
+                : I18n.F("Type.FileExt", Extension.TrimStart('.').ToUpperInvariant());
         }
+    }
+
+    /// <summary>Re-raises the computed labels after the interface language changes.</summary>
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(SizeText));
+        OnPropertyChanged(nameof(TypeLabel));
     }
 
     public void SetMetadata(

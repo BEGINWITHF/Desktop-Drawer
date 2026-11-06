@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
+using DesktopDrawer.Services;
 
 namespace DesktopDrawer;
 
@@ -112,8 +113,8 @@ public partial class App : Application
     {
         AppLog.Write(e.Exception, "Dispatcher exception");
         MessageBox.Show(
-            $"Desktop Drawer hit an unexpected error and needs to close.\n\n{e.Exception.Message}\n\nDetails were written to:\n{AppLog.LogPath}",
-            "Desktop Drawer",
+            I18n.F("App.CrashMessage", e.Exception.Message, AppLog.LogPath),
+            I18n.T("App.Title"),
             MessageBoxButton.OK,
             MessageBoxImage.Error);
         e.Handled = true;

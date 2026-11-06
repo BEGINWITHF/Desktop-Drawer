@@ -29,4 +29,10 @@
     <Resource Include="Assets\app.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Strings\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

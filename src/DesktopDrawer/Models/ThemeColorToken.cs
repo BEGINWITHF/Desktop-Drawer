@@ -4,7 +4,14 @@ namespace DesktopDrawer.Models;
 /// One user-editable colour in the overlay palette. The key is what gets stored
 /// in settings.json; the label and hint are shown in the colour list.
 /// </summary>
-public sealed record ThemeColorToken(string Key, string Label, string Hint, string DefaultValue);
+public sealed record ThemeColorToken(string Key, string Label, string Hint, string DefaultValue)
+{
+    /// <summary>Resource key for the localized label, derived from the token key.</summary>
+    public string LabelKey => "ColorToken." + char.ToUpperInvariant(Key[0]) + Key[1..];
+
+    /// <summary>Resource key for the localized hint shown under the picker title.</summary>
+    public string HintKey => LabelKey + "Hint";
+}
 
 public static class ThemeColorTokens
 {

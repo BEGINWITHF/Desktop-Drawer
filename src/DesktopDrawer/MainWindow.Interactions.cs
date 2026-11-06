@@ -441,7 +441,7 @@ public partial class MainWindow
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowToast("Desktop Drawer stays on the desktop. Exit it from the tray icon.");
+        ShowToast(I18n.T("Toast.StaysOnDesktop"));
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -1119,7 +1119,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not open desktop items");
-            ShowToast("Could not open that item.");
+            ShowToast(I18n.T("Toast.CouldNotOpenItem"));
         }
     }
 
@@ -1138,7 +1138,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not open the Open With dialog");
-            ShowToast("Could not open the Open With dialog.");
+            ShowToast(I18n.T("Toast.CouldNotOpenWith"));
         }
     }
 
@@ -1157,7 +1157,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not show item in Explorer");
-            ShowToast("Could not open File Explorer.");
+            ShowToast(I18n.T("Toast.CouldNotOpenExplorer"));
         }
     }
 
@@ -1176,7 +1176,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not show item properties");
-            ShowToast("Could not open item properties.");
+            ShowToast(I18n.T("Toast.CouldNotOpenProperties"));
         }
     }
 
@@ -1191,12 +1191,12 @@ public partial class MainWindow
         try
         {
             _shellService.CopyPaths(items);
-            ShowToast(items.Count == 1 ? "Path copied" : "Paths copied");
+            ShowToast(I18n.T(items.Count == 1 ? "Toast.PathCopied" : "Toast.PathsCopied"));
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not copy paths");
-            ShowToast("Could not copy to the clipboard.");
+            ShowToast(I18n.T("Toast.CouldNotCopy"));
         }
     }
 
@@ -1233,17 +1233,21 @@ public partial class MainWindow
 
             if (move)
             {
-                ShowToast(items.Count == 1 ? "Item cut" : $"{items.Count} items cut");
+                ShowToast(items.Count == 1
+                ? I18n.T("Toast.ItemCut")
+                : I18n.F("Toast.ItemsCut", items.Count));
             }
             else
             {
-                ShowToast(items.Count == 1 ? "Item copied" : $"{items.Count} items copied");
+                ShowToast(items.Count == 1
+                ? I18n.T("Toast.ItemCopied")
+                : I18n.F("Toast.ItemsCopied", items.Count));
             }
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not copy files to the clipboard");
-            ShowToast("Could not copy to the clipboard.");
+            ShowToast(I18n.T("Toast.CouldNotCopy"));
         }
     }
 
@@ -1253,7 +1257,7 @@ public partial class MainWindow
         {
             if (!Clipboard.ContainsFileDropList())
             {
-                ShowToast("The clipboard is empty.");
+                ShowToast(I18n.T("Toast.ClipboardEmpty"));
                 return;
             }
 
@@ -1275,12 +1279,12 @@ public partial class MainWindow
                 Clipboard.Clear();
             }
 
-            ShowToast(move ? "Moved to the desktop" : "Pasted to the desktop");
+            ShowToast(I18n.T(move ? "Toast.Moved" : "Toast.Pasted"));
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Paste failed");
-            ShowToast(ex is ShellOperationException ? ex.Message : "Could not paste into the desktop.");
+            ShowToast(ex is ShellOperationException ? ex.Message : I18n.T("Toast.CouldNotPaste"));
         }
 
         await RefreshAsync();
@@ -1354,12 +1358,12 @@ public partial class MainWindow
         try
         {
             _shellService.TransferToFolder(paths, destination, move, new WindowInteropHelper(this).Handle);
-            ShowToast(move ? "Moved to the desktop" : "Copied to the desktop");
+            ShowToast(I18n.T(move ? "Toast.Moved" : "Toast.Copied"));
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Drop failed");
-            ShowToast(ex is ShellOperationException ? ex.Message : "Could not drop the items here.");
+            ShowToast(ex is ShellOperationException ? ex.Message : I18n.T("Toast.CouldNotDrop"));
         }
 
         await RefreshAsync();
@@ -1422,11 +1426,11 @@ public partial class MainWindow
 
         string message = permanent
             ? items.Count == 1
-                ? $"Deleted \"{items[0].DisplayName}\" permanently"
-                : $"Deleted {items.Count} items permanently"
+                ? I18n.F("Toast.DeletedOne", items[0].DisplayName)
+                : I18n.F("Toast.DeletedN", items.Count)
             : items.Count == 1
-                ? $"Moved \"{items[0].DisplayName}\" to the Recycle Bin"
-                : $"Moved {items.Count} items to the Recycle Bin";
+                ? I18n.F("Toast.RecycledOne", items[0].DisplayName)
+                : I18n.F("Toast.RecycledN", items.Count);
 
         try
         {
@@ -1439,8 +1443,8 @@ public partial class MainWindow
             ShowToast(ex is ShellOperationException
                 ? ex.Message
                 : permanent
-                    ? "Could not delete the items."
-                    : "Could not move the items to the Recycle Bin.");
+                    ? I18n.T("Toast.CouldNotDelete")
+                    : I18n.T("Toast.CouldNotRecycle"));
         }
         finally
         {
@@ -1471,7 +1475,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not create a new folder");
-            ShowToast("Could not create a new folder.");
+            ShowToast(I18n.T("Toast.CouldNotCreateFolder"));
         }
     }
 
@@ -1531,13 +1535,13 @@ public partial class MainWindow
         try
         {
             string destination = _shellService.Rename(item, requestedName);
-            ShowToast("Renamed");
+            ShowToast(I18n.T("Toast.Renamed"));
             await RefreshAsync(selectPath: destination);
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Rename failed");
-            ShowToast(ex is ShellOperationException ? ex.Message : "Could not rename that item.");
+            ShowToast(ex is ShellOperationException ? ex.Message : I18n.T("Toast.CouldNotRename"));
             item.EditName = item.DisplayName;
         }
         finally

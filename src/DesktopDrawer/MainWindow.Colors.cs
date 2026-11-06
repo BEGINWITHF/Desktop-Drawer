@@ -62,7 +62,7 @@ public partial class MainWindow
 
             var label = new TextBlock
             {
-                Text = token.Label,
+                Text = I18n.T(token.LabelKey),
                 VerticalAlignment = VerticalAlignment.Center
             };
             label.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
@@ -83,7 +83,7 @@ public partial class MainWindow
             grid.Children.Add(hexLabel);
             row.Content = grid;
 
-            AutomationProperties.SetName(row, $"Edit {token.Label} color");
+            AutomationProperties.SetName(row, I18n.F("ColorToken.EditA11y", I18n.T(token.LabelKey)));
             string key = token.Key;
             row.Click += (_, _) => OpenColorPicker(key);
 
@@ -152,7 +152,7 @@ public partial class MainWindow
 
         _editingColorKey = token.Key;
         _colorEditBackup = new Dictionary<string, string>(_settings.Colors, StringComparer.OrdinalIgnoreCase);
-        PickerTokenLabel.Text = token.Label;
+        PickerTokenLabel.Text = I18n.T(token.LabelKey);
 
         Color color = ThemeService.Read(_settings.Colors, token.Key);
         _updatingColorPicker = true;
@@ -394,7 +394,7 @@ public partial class MainWindow
         ApplyWallpaperDim();
         UpdateColorRows();
         CloseColorPicker();
-        ShowToast("All colors reset to the default look.");
+        ShowToast(I18n.T("Appearance.ResetColorsToast"));
     }
 
     private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";

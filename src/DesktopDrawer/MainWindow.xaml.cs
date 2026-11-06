@@ -151,6 +151,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _settingsService = new SettingsService();
         _settings = _settingsService.Load();
+        I18n.Apply(_settings.Language);
+        _settings.Language = I18n.Current;
         _desktopService = new DesktopService();
         _iconService = new IconService();
         _shellService = new ShellService();
@@ -184,7 +186,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();
         UpdateSortLabel();
-        CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
+        CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
         InitializeChromeLayout();
 
         PreviewMouseDown += Window_PreviewMouseActivity;
@@ -631,7 +633,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _settings.HasLaunched = true;
             SaveSettings();
-            ShowToast("Move the mouse to show controls. Scroll or press PageDown to flip pages.");
+            ShowToast(I18n.T("Toast.MoveMouse"));
         }
     }
 
@@ -827,7 +829,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         catch (Exception ex)
         {
             AppLog.Write(ex, "Desktop refresh failed");
-            ShowToast("Could not read the desktop. See the log for details.");
+            ShowToast(I18n.T("Toast.CouldNotReadDesktop"));
         }
         finally
         {
@@ -913,7 +915,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         CurrentGroupText = string.IsNullOrEmpty(slice.Group)
             ? string.Empty
-            : $"{slice.Group} · {slice.GroupTotal}";
+            : I18n.F("Pager.GroupLabel", LocalizeGroup(slice.Group), slice.GroupTotal);
         ShowGroupBadge = !string.IsNullOrEmpty(slice.Group);
 
         _updatingPage = true;
@@ -978,8 +980,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 PageSlice dot = _pages[i];
                 PageDots[i].IsCurrent = i == _pageIndex;
                 PageDots[i].Tooltip = string.IsNullOrEmpty(dot.Group)
-                    ? $"Page {i + 1} - {dot.Items.Count} items"
-                    : $"{dot.Group} - page {dot.GroupPage} of {dot.GroupPages}";
+                    ? I18n.F("Pager.PageTooltip", i + 1, dot.Items.Count)
+                    : I18n.F("Pager.GroupTooltip", LocalizeGroup(dot.Group), dot.GroupPage, dot.GroupPages);
             }
         }
         else
@@ -1071,49 +1073,57 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (HasSearchText)
         {
-            EmptyTitle.Text = "No matches";
-            EmptySubtitle.Text = $"Nothing on your desktop matches \"{_searchText.Trim()}\".";
+            EmptyTitle.Text = I18n.T("Empty.NoMatchesTitle");
+            EmptySubtitle.Text = I18n.F("Empty.NoMatchesText", _searchText.Trim());
             return;
         }
 
         if (_allItems.Count == 0)
         {
-            EmptyTitle.Text = "Your desktop is clear";
-            EmptySubtitle.Text = "Files and folders you add will appear here.";
+            EmptyTitle.Text = I18n.T("Empty.ClearTitle");
+            EmptySubtitle.Text = I18n.T("Empty.ClearText");
             return;
         }
 
-        EmptyTitle.Text = "This page is empty";
-        EmptySubtitle.Text = "Try another page or adjust the icon size.";
+        EmptyTitle.Text = I18n.T("Empty.PageTitle");
+        EmptySubtitle.Text = I18n.T("Empty.PageText");
     }
 
     private void UpdateSummary()
     {
         if (!_hasLoadedOnce)
         {
-            ItemSummary = "Reading desktop...";
+            ItemSummary = I18n.T("Summary.Reading");
             return;
         }
 
         int selected = _updatingPage ? 0 : PageList.SelectedItems.Count;
-        string pages = _pageCount == 1 ? "1 page" : $"{_pageCount} pages";
+        string pages = _pageCount == 1
+            ? I18n.T("Summary.PagesOne")
+            : I18n.F("Summary.Pages", _pageCount);
 
         if (selected > 0)
         {
-            ItemSummary = selected == 1 ? "1 selected" : $"{selected} selected";
+            ItemSummary = selected == 1
+                ? I18n.T("Summary.SelectedOne")
+                : I18n.F("Summary.Selected", selected);
             return;
         }
 
         if (HasSearchText)
         {
-            string results = _filteredItems.Count == 1 ? "1 result" : $"{_filteredItems.Count} results";
-            ItemSummary = $"{results} - {pages}";
+            string results = _filteredItems.Count == 1
+                ? I18n.T("Summary.ResultsOne")
+                : I18n.F("Summary.Results", _filteredItems.Count);
+            ItemSummary = I18n.F("Summary.Separator", results, pages);
             return;
         }
 
-        string items = _allItems.Count == 1 ? "1 item" : $"{_allItems.Count} items";
-        ItemSummary = $"{items} - {pages}";
-        Title = $"Desktop Drawer - {_allItems.Count} items";
+        string items = _allItems.Count == 1
+            ? I18n.T("Summary.ItemsOne")
+            : I18n.F("Summary.Items", _allItems.Count);
+        ItemSummary = I18n.F("Summary.Separator", items, pages);
+        Title = I18n.F("App.WindowTitle", _allItems.Count);
     }
 
     private void GoToPage(int targetPage)
@@ -1371,10 +1381,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         SortLabelText.Text = _settings.SortMode switch
         {
-            SortMode.DateModified => "Date",
-            SortMode.Type => "Type",
-            SortMode.Size => "Size",
-            _ => "Name"
+            SortMode.DateModified => I18n.T("Sort.Date"),
+            SortMode.Type => I18n.T("Sort.Type"),
+            SortMode.Size => I18n.T("Sort.Size"),
+            _ => I18n.T("Sort.Name")
         };
     }
 
@@ -1385,7 +1395,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        _trayIcon.Text = $"Desktop Drawer - {_allItems.Count} items across {_pageCount} pages";
+        _trayIcon.Text = I18n.F("App.TrayTooltip", _allItems.Count, _pageCount);
     }
 
     private void ShowToast(string message)
@@ -1961,7 +1971,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (LayoutEditButton is not null)
         {
-            LayoutEditButton.Content = _layoutEditing ? "Done adjusting" : "Adjust layout";
+            LayoutEditButton.Content = I18n.T(_layoutEditing ? "Layout.Done" : "Layout.Adjust");
         }
     }
 
@@ -2179,19 +2189,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settings.Layout.Clear();
         SaveSettings();
         ApplyChromeLayout();
-        ShowToast("Layout reset to the default positions and sizes.");
+        ShowToast(I18n.T("Layout.ResetToast"));
     }
 
     private string BuildPageLabel(PageSlice slice, int pageCount)
     {
         if (!string.IsNullOrEmpty(slice.Group))
         {
+            string group = LocalizeGroup(slice.Group);
             return slice.GroupPages > 1
-                ? $"{slice.Group} · {slice.GroupPage}/{slice.GroupPages}"
-                : slice.Group;
+                ? I18n.F("Pager.GroupPageLabel", group, slice.GroupPage, slice.GroupPages)
+                : group;
         }
 
-        return pageCount <= 1 ? "1 page" : $"Page {_pageIndex + 1} of {pageCount}";
+        return pageCount <= 1
+            ? I18n.T("Pager.OnePage")
+            : I18n.F("Pager.PageLabel", _pageIndex + 1, pageCount);
+    }
+
+    private static string LocalizeGroup(string group)
+    {
+        string key = "Group." + group;
+        string text = I18n.T(key);
+        return string.Equals(text, key, StringComparison.Ordinal) ? group : text;
     }
 
     private List<PageSlice> BuildPages(int capacity)

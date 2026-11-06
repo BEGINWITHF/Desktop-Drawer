@@ -103,8 +103,58 @@ public partial class MainWindow
         WallpaperDimValueText.Text = $"{(int)WallpaperDimSlider.Value}%";
         ApplyWallpaperDim();
 
+        string language = I18n.Normalize(_settings.Language);
+        LanguageEnRadio.IsChecked = language == I18n.English;
+        LanguageZhCnRadio.IsChecked = language == I18n.ChineseSimplified;
+        LanguageZhHkRadio.IsChecked = language == I18n.ChineseHongKong;
+        LanguageJaRadio.IsChecked = language == I18n.Japanese;
+
         UpdateSortLabel();
-        CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
+        CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
+    }
+
+    private void LanguageRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializingSettings || sender is not RadioButton { IsChecked: true } radio)
+        {
+            return;
+        }
+
+        string language = I18n.Normalize(radio.Tag?.ToString());
+        if (string.Equals(_settings.Language, language, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _settings.Language = language;
+        I18n.Apply(language);
+        SaveSettings();
+        RefreshLocalizedUi();
+    }
+
+    /// <summary>
+    /// Re-applies every string that is assigned from code instead of a
+    /// DynamicResource, then rebuilds the tray menu so both surfaces follow
+    /// the newly selected language.
+    /// </summary>
+    private void RefreshLocalizedUi()
+    {
+        UpdatePage();
+        UpdateSortLabel();
+        UpdateLayoutEditButton();
+        UpdateDesktopIconsUi();
+        CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
+
+        BuildColorRows();
+        UpdateColorRows();
+
+        foreach (DesktopItem item in _allItems)
+        {
+            item.RefreshLocalizedText();
+        }
+
+        BuildTrayMenuItems();
+        UpdateTrayText();
     }
 
     private void DensityRadio_Checked(object sender, RoutedEventArgs e)
@@ -172,7 +222,7 @@ public partial class MainWindow
 
         SaveSettings();
         RecalculateGrid(force: true);
-        ShowToast("Icon size follows the density preset.");
+        ShowToast(I18n.T("Appearance.AutoIconToast"));
     }
 
     private void ResetFontScaleButton_Click(object sender, RoutedEventArgs e)
@@ -304,7 +354,7 @@ public partial class MainWindow
 
         _settings.CloseToTray = CloseToTrayToggle.IsChecked == true;
         SaveSettings();
-        CloseButton.ToolTip = _settings.CloseToTray ? "Close to tray" : "Close";
+        CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
     }
 
     private void StartWithWindowsToggle_Changed(object sender, RoutedEventArgs e)
@@ -327,7 +377,7 @@ public partial class MainWindow
 
         if (!_startupService.SetEnabled(enabled))
         {
-            ShowToast("Could not update the Windows startup entry. Run Desktop Drawer from its published .exe to use this.");
+            ShowToast(I18n.T("Toast.CouldNotUpdateStartup"));
             _initializingSettings = true;
             StartWithWindowsToggle.IsChecked = _settings.StartWithWindows;
             _initializingSettings = false;
@@ -342,8 +392,8 @@ public partial class MainWindow
         _initializingSettings = false;
 
         ShowToast(enabled
-            ? "Desktop Drawer will start with Windows."
-            : "Desktop Drawer will no longer start with Windows.");
+            ? I18n.T("Toast.StartEnabled")
+            : I18n.T("Toast.StartDisabled"));
     }
 
     private void HideIconsToggle_Click(object sender, RoutedEventArgs e)
@@ -396,13 +446,13 @@ public partial class MainWindow
             _desktopIconsService.SetHidden(hidden);
             _desktopIconsChanged = _desktopIconsService.AreHidden() != _initialIconsHidden;
             UpdateDesktopIconsUi();
-            ShowToast(hidden ? "Windows desktop icons hidden" : "Windows desktop icons restored");
+            ShowToast(I18n.T(hidden ? "Toast.IconsHidden" : "Toast.IconsRestored"));
         }
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not change desktop icon visibility");
             UpdateDesktopIconsUi();
-            ShowToast(ex is InvalidOperationException ? ex.Message : "Could not change the Windows desktop icon setting.");
+            ShowToast(ex is InvalidOperationException ? ex.Message : I18n.T("Toast.CouldNotChangeIcons"));
         }
     }
 
@@ -420,8 +470,8 @@ public partial class MainWindow
             HideIconsToggle.IsChecked = hidden;
             HideIconsSettingsToggle.IsChecked = hidden;
             HideIconsToggle.ToolTip = hidden
-                ? "Show the Windows desktop icons"
-                : "Hide the Windows desktop icons";
+                ? I18n.T("Header.ShowIcons")
+                : I18n.T("Header.HideIcons");
         }
         finally
         {
@@ -521,7 +571,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not open the desktop folder");
-            ShowToast("Could not open the desktop folder.");
+            ShowToast(I18n.T("Toast.CouldNotOpenDesktop"));
         }
     }
 
@@ -538,7 +588,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not open the data folder");
-            ShowToast("Could not open the data folder.");
+            ShowToast(I18n.T("Toast.CouldNotOpenData"));
         }
     }
 
@@ -553,12 +603,51 @@ public partial class MainWindow
 
         UpdatePage();
         StartPrefetch();
-        ShowToast("Icons refreshed");
+        ShowToast(I18n.T("Toast.IconsRefreshed"));
     }
 
     private void ExitApplicationButton_Click(object sender, RoutedEventArgs e)
     {
         ExitApplication();
+    }
+
+    private void BuildTrayMenuItems()
+    {
+        if (_trayMenu is null)
+        {
+            return;
+        }
+
+        while (_trayMenu.Items.Count > 0)
+        {
+            _trayMenu.Items[0].Dispose();
+        }
+
+        var openItem = new WinForms.ToolStripMenuItem(I18n.T("Tray.Open"))
+        {
+            Font = new Drawing.Font(WinForms.SystemInformation.MenuFont, Drawing.FontStyle.Bold)
+        };
+        openItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(ShowFromTray));
+
+        _trayHideIconsItem = new WinForms.ToolStripMenuItem(I18n.T("Tray.HideIcons"));
+        _trayHideIconsItem.Click += (_, _) => SetDesktopIconsHidden(!_desktopIconsService.AreHidden());
+
+        _trayStartupItem = new WinForms.ToolStripMenuItem(I18n.T("Tray.Startup"));
+        _trayStartupItem.Click += (_, _) => SetStartWithWindows(!_settings.StartWithWindows);
+
+        var openDesktopItem = new WinForms.ToolStripMenuItem(I18n.T("Tray.OpenDesktop"));
+        openDesktopItem.Click += (_, _) => OpenDesktopFolderButton_Click(this, new RoutedEventArgs());
+
+        var exitItem = new WinForms.ToolStripMenuItem(I18n.T("Tray.Exit"));
+        exitItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(ExitApplication));
+
+        _trayMenu.Items.Add(openItem);
+        _trayMenu.Items.Add(new WinForms.ToolStripSeparator());
+        _trayMenu.Items.Add(_trayHideIconsItem);
+        _trayMenu.Items.Add(_trayStartupItem);
+        _trayMenu.Items.Add(openDesktopItem);
+        _trayMenu.Items.Add(new WinForms.ToolStripSeparator());
+        _trayMenu.Items.Add(exitItem);
     }
 
     private void InitializeTray()
@@ -578,31 +667,7 @@ public partial class MainWindow
                 Font = WinForms.SystemInformation.MenuFont
             };
 
-            var openItem = new WinForms.ToolStripMenuItem("Open Desktop Drawer")
-            {
-                Font = new Drawing.Font(WinForms.SystemInformation.MenuFont, Drawing.FontStyle.Bold)
-            };
-            openItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(ShowFromTray));
-
-            _trayHideIconsItem = new WinForms.ToolStripMenuItem("Hide Windows desktop icons");
-            _trayHideIconsItem.Click += (_, _) => SetDesktopIconsHidden(!_desktopIconsService.AreHidden());
-
-            _trayStartupItem = new WinForms.ToolStripMenuItem("Start with Windows");
-            _trayStartupItem.Click += (_, _) => SetStartWithWindows(!_settings.StartWithWindows);
-
-            var openDesktopItem = new WinForms.ToolStripMenuItem("Open Desktop folder");
-            openDesktopItem.Click += (_, _) => OpenDesktopFolderButton_Click(this, new RoutedEventArgs());
-
-            var exitItem = new WinForms.ToolStripMenuItem("Exit");
-            exitItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(ExitApplication));
-
-            _trayMenu.Items.Add(openItem);
-            _trayMenu.Items.Add(new WinForms.ToolStripSeparator());
-            _trayMenu.Items.Add(_trayHideIconsItem);
-            _trayMenu.Items.Add(_trayStartupItem);
-            _trayMenu.Items.Add(openDesktopItem);
-            _trayMenu.Items.Add(new WinForms.ToolStripSeparator());
-            _trayMenu.Items.Add(exitItem);
+            BuildTrayMenuItems();
 
             _trayMenu.Opening += (_, _) =>
             {
@@ -620,7 +685,7 @@ public partial class MainWindow
             _trayIcon = new WinForms.NotifyIcon
             {
                 Icon = _trayIconImage,
-                Text = "Desktop Drawer",
+                Text = I18n.T("App.Title"),
                 Visible = true,
                 ContextMenuStrip = _trayMenu
             };
@@ -696,8 +761,8 @@ public partial class MainWindow
             _trayHintShown = true;
             _trayIcon.ShowBalloonTip(
                 3000,
-                "Desktop Drawer is still running",
-                "Double-click the notification icon to reopen it.",
+                I18n.T("Tray.BalloonTitle"),
+                I18n.T("Tray.BalloonText"),
                 WinForms.ToolTipIcon.Info);
         }
     }
