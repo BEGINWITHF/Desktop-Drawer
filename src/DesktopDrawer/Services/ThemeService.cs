@@ -105,29 +105,29 @@ internal static class ThemeService
         SetBrush("PanelStrongBrush", WithAlpha(panel, 0xFF));
         SetBrush("MenuSurfaceBrush", WithAlpha(panel, 0xFF));
         SetBrush("ToastSurfaceBrush", WithAlpha(panel, 0xFF));
-        SetBrush("PagerSurfaceBrush", WithAlpha(Blend(panel, shade, 0.45), 0xA6));
-        SetBrush("BadgePanelBrush", WithAlpha(Blend(panel, shade, 0.45), 0xB3));
+        SetBrush("PagerSurfaceBrush", WithAlpha(Blend(panel, shade, 0.45), 0xF2));
+        SetBrush("BadgePanelBrush", WithAlpha(Blend(panel, shade, 0.45), 0xF2));
         SetBrush("CloseSurfaceBrush", WithAlpha(Blend(panel, Colors.White, 0.16), 0xD9));
         SetBrush("CloseHoverBrush", WithAlpha(Blend(panel, Colors.White, 0.22), 0xF0));
-        SetBrush("SearchSurfaceBrush", WithAlpha(panel, 0x8C));
-        SetBrush("SearchFocusSurfaceBrush", WithAlpha(panel, 0xB3));
+        SetBrush("SearchSurfaceBrush", WithAlpha(panel, 0xE6));
+        SetBrush("SearchFocusSurfaceBrush", WithAlpha(panel, 0xF2));
 
         // Borders, dividers and thumbs.
-        SetBrush("DividerBrush", WithAlpha(border, 0x12));
-        SetBrush("MenuDividerBrush", WithAlpha(border, 0x16));
-        SetBrush("TileHoverBorderBrush", WithAlpha(border, 0x18));
-        SetBrush("BadgeBorderBrush", WithAlpha(border, 0x18));
-        SetBrush("DividerStrongBrush", WithAlpha(border, 0x1A));
-        SetBrush("StrokeBrush", WithAlpha(border, 0x1C));
-        SetBrush("SettingsPanelBorderBrush", WithAlpha(border, 0x22));
-        SetBrush("MenuBorderBrush", WithAlpha(border, 0x2A));
-        SetBrush("ToastBorderBrush", WithAlpha(border, 0x2A));
-        SetBrush("TrackBorderBrush", WithAlpha(border, 0x2E));
-        SetBrush("ScrollThumbBrush", WithAlpha(border, 0x2E));
-        SetBrush("StrokeStrongBrush", WithAlpha(border, 0x33));
-        SetBrush("PagerBorderBrush", WithAlpha(border, 0x3D));
-        SetBrush("SearchBorderBrush", WithAlpha(border, 0x3D));
-        SetBrush("ScrollThumbHoverBrush", WithAlpha(border, 0x4D));
+        SetBrush("DividerBrush", WithAlpha(border, 0x20));
+        SetBrush("MenuDividerBrush", WithAlpha(border, 0x2A));
+        SetBrush("TileHoverBorderBrush", WithAlpha(border, 0x2A));
+        SetBrush("BadgeBorderBrush", WithAlpha(border, 0x2A));
+        SetBrush("DividerStrongBrush", WithAlpha(border, 0x33));
+        SetBrush("StrokeBrush", WithAlpha(border, 0x30));
+        SetBrush("SettingsPanelBorderBrush", WithAlpha(border, 0x3D));
+        SetBrush("MenuBorderBrush", WithAlpha(border, 0x40));
+        SetBrush("ToastBorderBrush", WithAlpha(border, 0x40));
+        SetBrush("TrackBorderBrush", WithAlpha(border, 0x40));
+        SetBrush("ScrollThumbBrush", WithAlpha(border, 0x40));
+        SetBrush("StrokeStrongBrush", WithAlpha(border, 0x4D));
+        SetBrush("PagerBorderBrush", WithAlpha(border, 0x4D));
+        SetBrush("SearchBorderBrush", WithAlpha(border, 0x4D));
+        SetBrush("ScrollThumbHoverBrush", WithAlpha(border, 0x66));
 
         // Dimming behind overlays and the wallpaper.
         SetBrush("ScrimBrush", WithAlpha(shade, 0x8C));

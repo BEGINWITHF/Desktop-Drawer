@@ -31,14 +31,14 @@ public static class ThemeColorTokens
     /// </summary>
     public static readonly ThemeColorToken[] All =
     [
-        new(Accent, "Accent", "Selection, highlights and the pager.", "#E8E8E8"),
-        new(TextPrimary, "Primary text", "Icon names, titles and control labels.", "#EDEDED"),
-        new(TextSecondary, "Secondary text", "Descriptions, summaries and hover labels.", "#A3A3A3"),
-        new(TextMuted, "Muted text", "Captions, placeholders and section labels.", "#6E6E6E"),
+        new(Accent, "Accent", "Selection, highlights and the pager.", "#FFFFFF"),
+        new(TextPrimary, "Primary text", "Icon names, titles and control labels.", "#F0F0F0"),
+        new(TextSecondary, "Secondary text", "Descriptions, summaries and hover labels.", "#B0B0B0"),
+        new(TextMuted, "Muted text", "Captions, placeholders and section labels.", "#707070"),
         new(Surface, "Surfaces", "Hover cards, fields and pressed controls.", "#FFFFFF"),
-        new(Panel, "Panels", "Settings, menus, toasts, the pager and badges.", "#111111"),
+        new(Panel, "Panels", "Settings, menus, toasts, the pager and badges.", "#0D0D0D"),
         new(Border, "Borders", "Hairlines, outlines and scroll thumbs.", "#FFFFFF"),
-        new(Danger, "Danger", "Destructive actions such as Exit.", "#FF6B6B"),
+        new(Danger, "Danger", "Destructive actions such as Exit.", "#FF5A5A"),
         new(Shade, "Shade", "Dimming behind the overlay and the wallpaper.", "#000000")
     ];
 
