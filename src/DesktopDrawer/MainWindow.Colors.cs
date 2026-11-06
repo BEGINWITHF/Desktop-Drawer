@@ -53,7 +53,7 @@ public partial class MainWindow
             {
                 Width = 16,
                 Height = 16,
-                CornerRadius = new CornerRadius(5),
+                CornerRadius = new CornerRadius(0),
                 BorderThickness = new Thickness(1),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 10, 0)
@@ -74,6 +74,7 @@ public partial class MainWindow
                 VerticalAlignment = VerticalAlignment.Center
             };
             hexLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            hexLabel.SetResourceReference(TextBlock.FontFamilyProperty, "MonoFont");
             hexLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
 
             Grid.SetColumn(label, 1);
@@ -98,7 +99,7 @@ public partial class MainWindow
             var swatch = new Border
             {
                 Height = 26,
-                CornerRadius = new CornerRadius(7),
+                CornerRadius = new CornerRadius(0),
                 Background = new SolidColorBrush(color),
                 BorderThickness = new Thickness(2),
                 BorderBrush = Brushes.Transparent,

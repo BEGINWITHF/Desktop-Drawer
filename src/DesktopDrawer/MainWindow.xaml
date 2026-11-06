@@ -590,7 +590,7 @@
                             Background="{DynamicResource ToastSurfaceBrush}"
                             BorderBrush="{DynamicResource ToastBorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="4"
+                            CornerRadius="0"
                             Visibility="Collapsed"
                             IsHitTestVisible="False">
                         <StackPanel Orientation="Horizontal">
@@ -860,7 +860,7 @@
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top">
                             <Button x:Name="LanguageButton"
-                                    Style="{StaticResource IconButton}"
+                                    Style="{StaticResource PanelIconButton}"
                                     Width="28"
                                     Height="28"
                                     Margin="0,1,4,0"
@@ -871,7 +871,9 @@
                                            Text="&#xE774;"
                                            FontSize="{DynamicResource FontSize14}" />
                             </Button>
-                            <Button Style="{StaticResource IconButton}"
+                            <Button Style="{StaticResource PanelIconButton}"
+                                    Width="28"
+                                    Height="28"
                                     Click="SettingsCloseButton_Click"
                                     ToolTip="{DynamicResource Str.Settings.Close}">
                                 <TextBlock Style="{StaticResource Glyph}"
@@ -887,7 +889,7 @@
                                   HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="0,0,6,10">
 
-                            <TextBlock Text="{DynamicResource Str.Section.Layout}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Layout}" Style="{StaticResource SectionHeader}" />
                             <Grid Margin="0,0,10,4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -917,14 +919,14 @@
                                     Margin="0,6,0,4"
                                     Click="ResetLayoutButton_Click" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.Appearance}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Appearance}" Style="{StaticResource SectionHeader}" />
                             <TextBlock Text="{DynamicResource Str.Appearance.IconSize}" Style="{StaticResource SettingTitle}" />
                             <TextBlock Text="{DynamicResource Str.Appearance.IconSizeDesc}"
                                        Style="{StaticResource SettingDescription}" />
                             <Border Background="{DynamicResource SegmentSurfaceBrush}"
                                     BorderBrush="{DynamicResource StrokeBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="10"
+                                    CornerRadius="0"
                                     Padding="2"
                                     Margin="0,10,10,0"
                                     HorizontalAlignment="Left">
@@ -957,7 +959,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{DynamicResource Str.Appearance.CustomIcon}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="IconSizeValueText"
+                                <TextBlock x:Name="IconSizeValueText" FontFamily="{StaticResource MonoFont}"
                                            Grid.Column="1"
                                            Text="72 px"
                                            FontSize="{DynamicResource FontSize11}"
@@ -986,7 +988,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{DynamicResource Str.Appearance.TextSize}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="FontScaleValueText"
+                                <TextBlock x:Name="FontScaleValueText" FontFamily="{StaticResource MonoFont}"
                                            Grid.Column="1"
                                            Text="100%"
                                            FontSize="{DynamicResource FontSize11}"
@@ -1032,7 +1034,7 @@
 
                             <Border Margin="0,10,10,0"
                                     Padding="6"
-                                    CornerRadius="12"
+                                    CornerRadius="0"
                                     Background="{DynamicResource SegmentSurfaceBrush}"
                                     BorderBrush="{DynamicResource StrokeBrush}"
                                     BorderThickness="1">
@@ -1046,7 +1048,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDim}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="WallpaperDimValueText"
+                                <TextBlock x:Name="WallpaperDimValueText" FontFamily="{StaticResource MonoFont}"
                                            Grid.Column="1"
                                            Text="0%"
                                            FontSize="{DynamicResource FontSize11}"
@@ -1072,7 +1074,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,18,10,16" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.Grid}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Grid}" Style="{StaticResource SectionHeader}" />
 
                             <Grid Margin="0,0,10,6">
                                 <Grid.ColumnDefinitions>
@@ -1108,7 +1110,7 @@
                                         IsSnapToTickEnabled="True"
                                         Margin="0,0,10,0"
                                         ValueChanged="GridSlider_ValueChanged" />
-                                <TextBlock x:Name="ColumnsValueText"
+                                <TextBlock x:Name="ColumnsValueText" FontFamily="{StaticResource MonoFont}"
                                            Grid.Column="2"
                                            Text="8"
                                            FontSize="{DynamicResource FontSize11}"
@@ -1143,7 +1145,7 @@
                                         IsSnapToTickEnabled="True"
                                         Margin="0,0,10,0"
                                         ValueChanged="GridSlider_ValueChanged" />
-                                <TextBlock x:Name="RowsValueText"
+                                <TextBlock x:Name="RowsValueText" FontFamily="{StaticResource MonoFont}"
                                            Grid.Column="2"
                                            Text="4"
                                            FontSize="{DynamicResource FontSize11}"
@@ -1164,7 +1166,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.Sorting}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Sorting}" Style="{StaticResource SectionHeader}" />
 
                             <Grid Margin="0,0,10,15">
                                 <Grid.ColumnDefinitions>
@@ -1204,7 +1206,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.Behavior}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Behavior}" Style="{StaticResource SectionHeader}" />
 
                             <Grid Margin="0,0,10,15">
                                 <Grid.ColumnDefinitions>
@@ -1262,7 +1264,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.Windows}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.Windows}" Style="{StaticResource SectionHeader}" />
 
                             <Grid Margin="0,0,10,8">
                                 <Grid.ColumnDefinitions>
@@ -1318,7 +1320,7 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <TextBlock Text="{DynamicResource Str.Section.About}" Style="{StaticResource SectionLabel}" />
+                            <ContentControl Content="{DynamicResource Str.Section.About}" Style="{StaticResource SectionHeader}" />
                             <TextBlock Text="{DynamicResource Str.About.Version}"
                                        Style="{StaticResource SettingTitle}" />
                             <TextBlock Text="{DynamicResource Str.About.Text}"
@@ -1337,11 +1339,14 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <TextBlock Grid.Row="2"
-                               Text="{DynamicResource Str.Settings.AutoSaved}"
-                               FontSize="{DynamicResource FontSize105}"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               Margin="0,12,10,0" />
+                    <StackPanel Grid.Row="2" Margin="0,12,10,0">
+                        <Border Height="1"
+                                Background="{DynamicResource DividerBrush}"
+                                Margin="0,0,0,10" />
+                        <TextBlock Text="{DynamicResource Str.Settings.AutoSaved}"
+                                   FontSize="{DynamicResource FontSize105}"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -1375,7 +1380,7 @@
                             </StackPanel>
                             <Button HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
-                                    Style="{StaticResource IconButton}"
+                                    Style="{StaticResource PanelIconButton}"
                                     Width="30"
                                     Height="30"
                                     Click="ColorPickerCancel_Click"
@@ -1386,17 +1391,21 @@
                             </Button>
                         </Grid>
 
+                        <Border Height="1"
+                                Margin="0,14,0,0"
+                                Background="{DynamicResource StrokeBrush}" />
+
                         <Border x:Name="PickerPreviewBorder"
                                 Height="56"
                                 Margin="0,14,0,0"
-                                CornerRadius="10"
+                                CornerRadius="0"
                                 BorderBrush="{DynamicResource StrokeBrush}"
                                 BorderThickness="1">
                             <Border.Background>
-                                <SolidColorBrush x:Name="PickerPreviewBrush" Color="#7C9CFF" />
+                                <SolidColorBrush x:Name="PickerPreviewBrush" Color="#E8E8E8" />
                             </Border.Background>
-                            <TextBlock x:Name="PickerPreviewText"
-                                       Text="#7C9CFF"
+                            <TextBlock x:Name="PickerPreviewText" FontFamily="{StaticResource MonoFont}"
+                                       Text="#E8E8E8"
                                        FontSize="{DynamicResource FontSize13}"
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center"
@@ -1413,14 +1422,14 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="48" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="R"
+                            <TextBlock Text="R" FontFamily="{StaticResource MonoFont}"
                                        FontSize="{DynamicResource FontSize115}"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <Grid Grid.Column="1" Margin="0,0,12,0">
-                                <Border Height="8"
-                                        Margin="8,0"
-                                        CornerRadius="4"
+                                <Border Height="4"
+                                        Margin="0"
+                                        CornerRadius="0"
                                         VerticalAlignment="Center"
                                         Background="{StaticResource RedChannelBrush}" />
                                 <Slider x:Name="RedSlider"
@@ -1445,14 +1454,14 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="48" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="G"
+                            <TextBlock Text="G" FontFamily="{StaticResource MonoFont}"
                                        FontSize="{DynamicResource FontSize115}"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <Grid Grid.Column="1" Margin="0,0,12,0">
-                                <Border Height="8"
-                                        Margin="8,0"
-                                        CornerRadius="4"
+                                <Border Height="4"
+                                        Margin="0"
+                                        CornerRadius="0"
                                         VerticalAlignment="Center"
                                         Background="{StaticResource GreenChannelBrush}" />
                                 <Slider x:Name="GreenSlider"
@@ -1477,14 +1486,14 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="48" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="B"
+                            <TextBlock Text="B" FontFamily="{StaticResource MonoFont}"
                                        FontSize="{DynamicResource FontSize115}"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <Grid Grid.Column="1" Margin="0,0,12,0">
-                                <Border Height="8"
-                                        Margin="8,0"
-                                        CornerRadius="4"
+                                <Border Height="4"
+                                        Margin="0"
+                                        CornerRadius="0"
                                         VerticalAlignment="Center"
                                         Background="{StaticResource BlueChannelBrush}" />
                                 <Slider x:Name="BlueSlider"

@@ -77,7 +77,7 @@ internal static class ThemeService
         SetBrush("AccentSoftBrush", WithAlpha(accent, 0x2E));
         SetBrush("AccentBorderBrush", WithAlpha(accent, 0x66));
         SetBrush("AccentHoverBrush", Blend(accent, Colors.White, 0.22));
-        SetBrush("OnAccentBrush", IsLight(accent) ? Parse("#0B1020") : Colors.White);
+        SetBrush("OnAccentBrush", IsLight(accent) ? Parse("#0B0B0B") : Colors.White);
         SetBrush("SelectionBorderBrush", accent);
         SetBrush("SelectionFillBrush", WithAlpha(accent, 0x33));
         SetBrush("DangerBrush", danger);
