@@ -948,6 +948,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Custom icon size" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="IconSizeValueText"
@@ -955,6 +956,14 @@
                                            Text="72 px"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="Auto"
+                                        x:Name="AutoIconSizeButton"
+                                        AutomationProperties.Name="Auto icon size"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="Use the density preset"
+                                        Click="ResetIconSizeButton_Click" />
                             </Grid>
                             <Slider x:Name="IconSizeSlider"
                                     Minimum="24"
@@ -968,6 +977,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Text size" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="FontScaleValueText"
@@ -975,6 +985,14 @@
                                            Text="100%"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="Auto"
+                                        x:Name="AutoFontScaleButton"
+                                        AutomationProperties.Name="Auto text size"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="Use 100%"
+                                        Click="ResetFontScaleButton_Click" />
                             </Grid>
                             <TextBlock Text="Scales headings, labels, buttons and the desktop icon names."
                                        Style="{StaticResource SettingDescription}" />
@@ -1019,6 +1037,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Wallpaper dim" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
                                 <TextBlock x:Name="WallpaperDimValueText"
@@ -1026,6 +1045,14 @@
                                            Text="0%"
                                            FontSize="{DynamicResource FontSize11}"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="Auto"
+                                        x:Name="AutoWallpaperDimButton"
+                                        AutomationProperties.Name="Auto wallpaper dim"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="Do not dim the wallpaper"
+                                        Click="ResetWallpaperDimButton_Click" />
                             </Grid>
                             <TextBlock Text="Darkens the wallpaper behind the icons. 0% keeps it untouched."
                                        Style="{StaticResource SettingDescription}" />
@@ -1063,7 +1090,8 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="76" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Columns" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
                                 <Slider x:Name="ColumnsSlider"
@@ -1081,13 +1109,24 @@
                                            HorizontalAlignment="Right"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="3"
+                                        Content="Auto"
+                                        x:Name="AutoColumnsButton"
+                                        AutomationProperties.Name="Auto columns"
+                                        Style="{StaticResource AutoButton}"
+                                        Height="24"
+                                        Padding="6,0"
+                                        Margin="6,0,0,0"
+                                        ToolTip="Fit to the window"
+                                        Click="AutoGridButton_Click" />
                             </Grid>
 
                             <Grid Margin="0,8,10,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="76" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Rows" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
                                 <Slider x:Name="RowsSlider"
@@ -1105,6 +1144,16 @@
                                            HorizontalAlignment="Right"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="3"
+                                        Content="Auto"
+                                        x:Name="AutoRowsButton"
+                                        AutomationProperties.Name="Auto rows"
+                                        Style="{StaticResource AutoButton}"
+                                        Height="24"
+                                        Padding="6,0"
+                                        Margin="6,0,0,0"
+                                        ToolTip="Fit to the window"
+                                        Click="AutoGridButton_Click" />
                             </Grid>
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />

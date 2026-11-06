@@ -160,6 +160,70 @@ public partial class MainWindow
         SaveSettings();
     }
 
+    private void ResetIconSizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.IconSize = 0;
+        ApplyDensity(_settings.Density);
+
+        _initializingSettings = true;
+        IconSizeSlider.Value = _requestedIconSize;
+        IconSizeValueText.Text = $"{_requestedIconSize:0} px";
+        _initializingSettings = false;
+
+        SaveSettings();
+        RecalculateGrid(force: true);
+        ShowToast("Icon size follows the density preset.");
+    }
+
+    private void ResetFontScaleButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.FontScale = 100;
+
+        _initializingSettings = true;
+        FontScaleSlider.Value = 100;
+        FontScaleValueText.Text = "100%";
+        _initializingSettings = false;
+
+        ThemeService.ApplyFontScale(100);
+        ApplyDensity(_settings.Density);
+        SaveSettings();
+    }
+
+    private void ResetWallpaperDimButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.WallpaperDim = 0;
+
+        _initializingSettings = true;
+        WallpaperDimSlider.Value = 0;
+        WallpaperDimValueText.Text = "0%";
+        _initializingSettings = false;
+
+        ApplyWallpaperDim();
+        SaveSettings();
+    }
+
+    private void AutoGridButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.GridColumns = 0;
+        _settings.GridRows = 0;
+
+        _initializingSettings = true;
+        AutoGridToggle.IsChecked = true;
+        ColumnsSlider.IsEnabled = false;
+        RowsSlider.IsEnabled = false;
+        _initializingSettings = false;
+
+        SaveSettings();
+        RecalculateGrid(force: true);
+
+        _initializingSettings = true;
+        ColumnsSlider.Value = Math.Max(2, Columns);
+        RowsSlider.Value = Math.Max(1, Rows);
+        ColumnsValueText.Text = Columns.ToString();
+        RowsValueText.Text = Rows.ToString();
+        _initializingSettings = false;
+    }
+
     private void AutoGridToggle_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializingSettings)
