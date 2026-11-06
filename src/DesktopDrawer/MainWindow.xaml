@@ -1321,11 +1321,26 @@
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <ContentControl Content="{DynamicResource Str.Section.About}" Style="{StaticResource SectionHeader}" />
-                            <TextBlock Text="{DynamicResource Str.About.Version}"
+                            <TextBlock x:Name="VersionText"
+                                       Text="Desktop Drawer"
                                        Style="{StaticResource SettingTitle}" />
                             <TextBlock Text="{DynamicResource Str.About.Text}"
                                        Style="{StaticResource SettingDescription}" />
+                            <TextBlock x:Name="UpdateStatusText"
+                                       Visibility="Collapsed"
+                                       FontSize="{DynamicResource FontSize105}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,10,0" />
                             <WrapPanel Margin="0,12,10,0">
+                                <Button x:Name="UpdateButton"
+                                        Style="{StaticResource AccentButton}"
+                                        Content="{DynamicResource Str.About.Update}"
+                                        Height="30"
+                                        Padding="14,0"
+                                        FontSize="{DynamicResource FontSize115}"
+                                        Margin="0,0,8,8"
+                                        Click="UpdateButton_Click" />
                                 <Button Style="{StaticResource GhostButton}"
                                         Content="{DynamicResource Str.About.OpenData}"
                                         Margin="0,0,8,8"

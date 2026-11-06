@@ -83,6 +83,24 @@
 
 所有设置即时保存，不用点确定。
 
+## 一键更新
+
+设置面板最下方 ABOUT 里有一个 `Update now` 按钮，一次点击完成：检查 GitHub 最新 Release、下载更新包、校验 SHA-256、退出桌面层、替换文件并自动重新启动。
+
+- 更新源：GitHub Releases 的 `DesktopDrawer-win-x64.zip`
+- 版本号取自发布标签 `vX.Y.Z`，当前版本显示在按钮上方
+- 下载和替换日志：`%APPDATA%\DesktopDrawer\update.log`
+- 设置、布局和颜色保存在 `%APPDATA%\DesktopDrawer`，更新不会动它们
+- 没有新版本时会提示已是最新版本
+
+发布新版本（需要 GitHub CLI 已登录）：
+
+```powershell
+.\release.ps1 -Version 1.0.1 -Publish
+```
+
+或者推送标签 `v1.0.1`，GitHub Actions 会自动构建并创建 Release。更新包的资源名必须保持为 `DesktopDrawer-win-x64.zip`。
+
 ## 原生桌面图标
 
 程序启动时会把 Windows 自带的桌面图标隐藏起来（和桌面右键 →「查看」→ 取消「显示桌面图标」是同一个开关）。无论是正常退出、崩溃，还是被任务管理器强制结束，只要分页桌面消失，原生桌面图标就会恢复显示。点关闭按钮收进托盘时也会先把图标还给你，从托盘重新打开时再隐藏。

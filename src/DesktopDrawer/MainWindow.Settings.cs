@@ -105,6 +105,7 @@ public partial class MainWindow
         ApplyWallpaperDim();
 
         UpdateSortLabel();
+        VersionText.Text = I18n.F("About.Version", UpdateService.CurrentVersionText);
         CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
     }
 
@@ -142,6 +143,7 @@ public partial class MainWindow
         UpdateSortLabel();
         UpdateLayoutEditButton();
         UpdateDesktopIconsUi();
+        VersionText.Text = I18n.F("About.Version", UpdateService.CurrentVersionText);
         CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
 
         BuildColorRows();

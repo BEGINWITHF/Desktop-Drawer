@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build update package
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $stage = Join-Path $env:RUNNER_TEMP 'DesktopDrawer-release'
+          if (Test-Path $stage) {
+            Remove-Item $stage -Recurse -Force
+          }
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          dotnet publish src/DesktopDrawer/DesktopDrawer.csproj -c Release -r win-x64 --self-contained false -p:Version=$version -o $stage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          dotnet publish src/DesktopDrawer.Watchdog/DesktopDrawer.Watchdog.csproj -c Release -r win-x64 --self-contained false -o $stage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $zip = Join-Path $env:RUNNER_TEMP 'DesktopDrawer-win-x64.zip'
+          if (Test-Path $zip) {
+            Remove-Item $zip -Force
+          }
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
+
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "$zip.sha256" -Value "$hash  DesktopDrawer-win-x64.zip" -NoNewline
+
+          "ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $zip = $env:ZIP
+          gh release create "${{ github.ref_name }}" $zip "$zip.sha256" --title "Desktop Drawer ${{ github.ref_name }}" --notes "Desktop Drawer ${{ github.ref_name }}"
