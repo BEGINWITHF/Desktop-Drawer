@@ -769,6 +769,7 @@
                  The canvas itself has no background, so only the grips are hit-testable. -->
             <Canvas x:Name="LayoutEditorCanvas"
                     Panel.ZIndex="40"
+                    IsHitTestVisible="False"
                     Visibility="Collapsed" />
 
             <!-- Floating layout toolbar: slides in from the right edge while editing. -->

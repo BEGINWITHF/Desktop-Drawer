@@ -88,11 +88,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
     private ResizeAxis _resizeAxis;
+    private Point _resizeStartMouse;
     private double _resizeStartWidth;
     private double _resizeStartHeight;
-    private double _resizeTotalX;
-    private double _resizeTotalY;
-    private bool _resizeFirstDelta;
     private bool _layoutNeedsSave;
 
     private const double ResizeGripSize = 14;
@@ -103,8 +101,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Vertical,
         Both
     }
-
-    private sealed record LayoutGripTag(FrameworkElement Element, ResizeAxis Axis);
     private bool _embeddedInDesktop;
     private int _embedAttempts;
     private GlobalShortcutHook? _shortcutHook;
@@ -1692,6 +1688,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        if (TryGetResizeAxis(element, e.GetPosition(element), out ResizeAxis axis))
+        {
+            _resizeElement = element;
+            _resizeAxis = axis;
+            _resizeStartMouse = e.GetPosition(RootGrid);
+            _resizeStartWidth = element.Width is double width && !double.IsNaN(width)
+                ? width
+                : element.ActualWidth;
+            _resizeStartHeight = element.Height is double height && !double.IsNaN(height)
+                ? height
+                : element.ActualHeight;
+
+            element.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
         _dragElement = element;
         _dragStartPoint = e.GetPosition(RootGrid);
         _dragStartMargin = element.Margin;
@@ -1699,9 +1712,99 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         e.Handled = true;
     }
 
+    private static bool TryGetResizeAxis(FrameworkElement element, Point local, out ResizeAxis axis)
+    {
+        const double grip = 16;
+
+        bool right = local.X >= element.ActualWidth - grip;
+        bool bottom = local.Y >= element.ActualHeight - grip;
+        bool left = local.X <= grip;
+        bool top = local.Y <= grip;
+
+        if (right && bottom)
+        {
+            axis = ResizeAxis.Both;
+            return true;
+        }
+
+        if (right && top)
+        {
+            axis = ResizeAxis.Horizontal;
+            return true;
+        }
+
+        if (left && bottom)
+        {
+            axis = ResizeAxis.Vertical;
+            return true;
+        }
+
+        axis = ResizeAxis.Both;
+        return false;
+    }
+
     private void Chrome_PreviewMouseMove(object sender, MouseEventArgs e)
     {
-        if (!_layoutEditing || _dragElement is null || e.LeftButton != MouseButtonState.Pressed)
+        if (!_layoutEditing)
+        {
+            return;
+        }
+
+        if (_resizeElement is null &&
+            _dragElement is null &&
+            sender is FrameworkElement hover &&
+            e.LeftButton != MouseButtonState.Pressed)
+        {
+            hover.Cursor = TryGetResizeAxis(hover, e.GetPosition(hover), out ResizeAxis hoverAxis)
+                ? hoverAxis switch
+                {
+                    ResizeAxis.Horizontal => Cursors.SizeWE,
+                    ResizeAxis.Vertical => Cursors.SizeNS,
+                    _ => Cursors.SizeNWSE
+                }
+                : Cursors.SizeAll;
+        }
+
+        if (_resizeElement is not null && e.LeftButton == MouseButtonState.Pressed)
+        {
+            FrameworkElement element = _resizeElement;
+            Size natural = _chromeNaturalSizes.TryGetValue(element, out Size known)
+                ? known
+                : new Size(24, 16);
+
+            Point pointer = e.GetPosition(RootGrid);
+            double deltaX = pointer.X - _resizeStartMouse.X;
+            double deltaY = pointer.Y - _resizeStartMouse.Y;
+            double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
+            double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
+
+            const double deadZone = 4;
+
+            if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both &&
+                Math.Abs(deltaX) >= deadZone)
+            {
+                if (element == HeaderBar)
+                {
+                    HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
+                }
+
+                element.Width = Math.Clamp(_resizeStartWidth + deltaX, natural.Width, maxWidth);
+            }
+
+            if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
+                Math.Abs(deltaY) >= deadZone)
+            {
+                element.Height = Math.Clamp(_resizeStartHeight + deltaY, natural.Height, maxHeight);
+            }
+
+            element.UpdateLayout();
+            ClampChromePosition(element);
+            UpdateLayoutEditorOverlays();
+            e.Handled = true;
+            return;
+        }
+
+        if (_dragElement is null || e.LeftButton != MouseButtonState.Pressed)
         {
             return;
         }
@@ -1730,6 +1833,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Chrome_PreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
+        if (_resizeElement is not null)
+        {
+            FrameworkElement resized = _resizeElement;
+            _resizeElement = null;
+            resized.ReleaseMouseCapture();
+
+            if (_layoutEditing)
+            {
+                SaveChromePosition(resized);
+                ApplyChromeLayout();
+            }
+
+            e.Handled = true;
+            return;
+        }
+
         if (_dragElement is null)
         {
             return;
@@ -1853,9 +1972,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             var grips = new List<(ResizeAxis Axis, Thumb Grip)>
             {
-                (ResizeAxis.Horizontal, CreateLayoutGrip(element, ResizeAxis.Horizontal, "LayoutGripEWThumb")),
-                (ResizeAxis.Vertical, CreateLayoutGrip(element, ResizeAxis.Vertical, "LayoutGripNSThumb")),
-                (ResizeAxis.Both, CreateLayoutGrip(element, ResizeAxis.Both, "LayoutGripThumb"))
+                (ResizeAxis.Horizontal, CreateLayoutGrip("LayoutGripEWThumb")),
+                (ResizeAxis.Vertical, CreateLayoutGrip("LayoutGripNSThumb")),
+                (ResizeAxis.Both, CreateLayoutGrip("LayoutGripThumb"))
             };
 
             _layoutOutlines[element] = outline;
@@ -1872,18 +1991,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         UpdateLayoutEditorOverlays();
     }
 
-    private Thumb CreateLayoutGrip(FrameworkElement element, ResizeAxis axis, string styleKey)
+    private Thumb CreateLayoutGrip(string styleKey)
     {
-        var grip = new Thumb
+        // Purely visual: the element's own mouse handlers detect the grip area,
+        // so no Thumb drag machinery can feed its position back into the size.
+        return new Thumb
         {
             Style = (Style)FindResource(styleKey),
-            Tag = new LayoutGripTag(element, axis)
+            IsHitTestVisible = false
         };
-
-        grip.DragStarted += Grip_DragStarted;
-        grip.DragDelta += Grip_DragDelta;
-        grip.DragCompleted += Grip_DragCompleted;
-        return grip;
     }
 
     private void UpdateLayoutEditorOverlays()
@@ -1919,13 +2035,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 grip.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
 
-                if (_resizeElement == element)
-                {
-                    // Keep the handle under the original corner while dragging;
-                    // moving it would turn its own displacement into more drag.
-                    continue;
-                }
-
                 double gripWidth = grip.Width > 0 ? grip.Width : ResizeGripSize;
                 double gripHeight = grip.Height > 0 ? grip.Height : ResizeGripSize;
 
@@ -1935,20 +2044,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 switch (axis)
                 {
                     case ResizeAxis.Horizontal:
-                        // Width grip: top-right, away from the corner grip.
-                        gripX = x + width - (gripWidth / 2);
+                        // Width grip: inside the top-right corner.
+                        gripX = x + width - gripWidth - 1;
                         gripY = y + 1;
                         break;
 
                     case ResizeAxis.Vertical:
-                        // Height grip: bottom-left, away from the corner grip.
+                        // Height grip: inside the bottom-left corner.
                         gripX = x + 1;
-                        gripY = y + height - (gripHeight / 2);
+                        gripY = y + height - gripHeight - 1;
                         break;
 
                     default:
-                        gripX = x + width - (gripWidth / 2);
-                        gripY = y + height - (gripHeight / 2);
+                        gripX = x + width - gripWidth - 1;
+                        gripY = y + height - gripHeight - 1;
                         break;
                 }
 
@@ -1958,97 +2067,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Canvas.SetTop(grip, gripY);
             }
         }
-    }
-
-    private void Grip_DragStarted(object sender, DragStartedEventArgs e)
-    {
-        if (!_layoutEditing || sender is not Thumb { Tag: LayoutGripTag tag })
-        {
-            return;
-        }
-
-        FrameworkElement element = tag.Element;
-        _resizeElement = element;
-        _resizeAxis = tag.Axis;
-        _resizeTotalX = 0;
-        _resizeTotalY = 0;
-        _resizeFirstDelta = true;
-        _resizeStartWidth = element.Width is double width && !double.IsNaN(width)
-            ? width
-            : element.ActualWidth;
-        _resizeStartHeight = element.Height is double height && !double.IsNaN(height)
-            ? height
-            : element.ActualHeight;
-
-    }
-
-    private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
-    {
-        if (!_layoutEditing || _resizeElement is null)
-        {
-            return;
-        }
-
-        FrameworkElement element = _resizeElement;
-        Size natural = _chromeNaturalSizes.TryGetValue(element, out Size known)
-            ? known
-            : new Size(24, 16);
-
-        // A click or touch can produce one large synthetic delta before the
-        // pointer has actually travelled. Ignore that first sample, and limit
-        // the per-event step so a single event can never jump to the screen max.
-        if (_resizeFirstDelta)
-        {
-            _resizeFirstDelta = false;
-            return;
-        }
-
-        _resizeTotalX += Math.Clamp(e.HorizontalChange, -40, 40);
-        _resizeTotalY += Math.Clamp(e.VerticalChange, -40, 40);
-
-        // Ignore sub-pixel jitter and the tiny movement of a tap until the
-        // pointer has actually travelled a few pixels.
-        const double deadZone = 6;
-
-        double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
-        double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
-
-        if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both &&
-            Math.Abs(_resizeTotalX) >= deadZone)
-        {
-            if (element == HeaderBar)
-            {
-                HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
-            }
-
-            element.Width = Math.Clamp(_resizeStartWidth + _resizeTotalX, natural.Width, maxWidth);
-        }
-
-        if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
-            Math.Abs(_resizeTotalY) >= deadZone)
-        {
-            element.Height = Math.Clamp(_resizeStartHeight + _resizeTotalY, natural.Height, maxHeight);
-        }
-
-
-        element.UpdateLayout();
-        ClampChromePosition(element);
-        UpdateLayoutEditorOverlays();
-        e.Handled = true;
-    }
-
-    private void Grip_DragCompleted(object sender, DragCompletedEventArgs e)
-    {
-        if (_resizeElement is null)
-        {
-            return;
-        }
-
-        FrameworkElement element = _resizeElement;
-        _resizeElement = null;
-        SaveChromePosition(element);
-        ApplyChromeLayout();
-        e.Handled = true;
     }
 
     private void ClampChromePosition(FrameworkElement element)
