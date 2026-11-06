@@ -1,193 +1,201 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="Desktop Drawer - a paged desktop for Windows" width="100%">
+</p>
+
 # Desktop Drawer
 
-把 Windows 桌面图标收进一个**可以翻页的桌面**。它不移动、不改名、不删除你的文件，只是在壁纸上铺一层和原生桌面几乎一样的图标网格，文件多了也不用再挤成一团。
+Turn the Windows desktop into a **paged desktop**. Desktop Drawer never moves, renames, or deletes your files. It draws a native-like icon grid over the wallpaper so a crowded desktop stays manageable.
 
-- 图标直接画在壁纸上，没有大顶栏、没有窗口边框
-- 窗口是**真透明**的：背景完全透出系统壁纸，换壁纸、壁纸幻灯片、动态壁纸都直接生效
-- 任务栏、Alt+Tab、窗口切换器里都不会出现它；`Win+D` 之后它会自己贴回桌面
-- 永远贴在桌面之上、所有软件窗口之下：不会遮挡任何正在运行的程序
-- 启动时默认隐藏 Windows 原生桌面图标，退出时自动恢复
-- 默认开机自启，登录后直接接管桌面
-- 鼠标滚轮、PageUp / PageDown、底部圆点都能翻页
-- 顶栏和底栏在鼠标静止约 2.4 秒后自动淡出，鼠标一动就回来
+- Icons are drawn directly on the wallpaper: no large title bar and no window frame.
+- The window is **truly transparent**. The wallpaper shows through completely, including wallpaper changes, slideshows, and live wallpapers.
+- It never appears in the taskbar, Alt+Tab, or the window switcher. After `Win+D`, it pins itself back to the desktop.
+- It always sits above the desktop and below application windows, so it never covers a running app.
+- Native Windows desktop icons are hidden on launch by default and restored on exit.
+- Starts with Windows by default, taking over the desktop after sign-in.
+- Page with the mouse wheel, `PageUp` / `PageDown`, or the page dots.
+- The header and footer fade out after about 2.4 seconds of inactivity and return as soon as the mouse moves.
 
-## 安装
+## Installation
 
-需要 Windows 10/11 和 .NET 9 桌面运行时（本机已装 SDK 也可以）。
+Requires Windows 10/11 and the .NET 9 Desktop Runtime (the SDK also works).
 
 ```powershell
 .\build.ps1
 ```
 
-脚本会发布到 `%LocalAppData%\DesktopDrawer`，并把这台机器的开机自启项指向该目录。之后直接运行：
+The script publishes to `%LocalAppData%\DesktopDrawer` and points the current user's startup entry at that folder. Run:
 
 ```text
 %LocalAppData%\DesktopDrawer\DesktopDrawer.exe
 ```
 
-同时会在开始菜单里创建（并每次刷新）一个 **Desktop Drawer** 快捷方式，所以按 `Win` 打开应用列表或直接搜索名字都能找到它。
+It also creates (and refreshes) a **Desktop Drawer** shortcut in the Start menu, so opening the app list with `Win` or searching for the name finds it.
 
-程序是单实例的，重复启动不会叠出第二个桌面。
+The app is single-instance; launching it again will not create a second desktop.
 
-### 安装包
+### Installer
 
 ```powershell
 .\installer.ps1 -Version 1.0.0
 ```
 
-生成 `installer\Output\DesktopDrawer-Setup-1.0.0.exe`，双击安装即可：
+Creates `installer\Output\DesktopDrawer-Setup-1.0.0.exe`:
 
-- 按当前用户安装到 `%LocalAppData%\DesktopDrawer`，不需要管理员权限
-- 创建开始菜单快捷方式，并在“应用和功能”里注册卸载项
-- 安装前检查 .NET 9 桌面运行时
-- 安装器支持 English / 简体中文 / 繁體中文 / 日本語
-- 更新或卸载时保留 `%APPDATA%\DesktopDrawer` 里的设置、布局和颜色
-- 需要本机安装 Inno Setup 6：`winget install JRSoftware.InnoSetup`
+- Installs per-user to `%LocalAppData%\DesktopDrawer` with no administrator rights.
+- Adds a Start menu shortcut and registers an uninstall entry in Apps & Features.
+- Checks for the .NET 9 Desktop Runtime before installing.
+- Installer UI in English / 简体中文 / 繁體中文 / 日本語.
+- Settings, layout, and colors in `%APPDATA%\DesktopDrawer` survive updates and uninstalls.
+- Requires Inno Setup 6 locally: `winget install JRSoftware.InnoSetup`.
 
-推送 `v*` 标签时 GitHub Actions 会自动生成安装包并上传到 Release。当前安装包未做代码签名，首次运行可能出现 SmartScreen 提示。
+Pushing a `v*` tag makes GitHub Actions build the installer and attach it to the release. The installer is currently unsigned, so SmartScreen may warn on first launch.
 
-## 操作速查
+## Shortcuts
 
-| 操作 | 方式 |
+| Action | How |
 | --- | --- |
-| 翻页 | 鼠标滚轮、触控板双指横滑 / 竖滑、`PageUp` / `PageDown`、`Alt+←` / `Alt+→`、底部圆点 |
-| 第一页 / 最后一页 | `Ctrl+Home` / `Ctrl+End` |
-| 搜索 | `Ctrl+F` |
-| 打开 | 双击，或选中后按 `Enter` |
-| 选择 | 单击、`Ctrl+单击`、`Shift+单击`、方向键 |
-| 查看完整文件名 | 单击文件名被截断的图标，标签会自动展开显示完整名称 |
-| 重命名 | `F2` |
-| 属性 | `Alt+Enter` |
-| 删除到回收站 | `Delete` |
-| 永久删除 | `Shift+Delete` |
-| 复制文件 | `Ctrl+C` |
-| 剪切文件 | `Ctrl+X` |
-| 粘贴到桌面 | `Ctrl+V` |
-| 复制文件路径 | `Ctrl+Shift+C` |
-| 全选当前页 | `Ctrl+A` |
-| 输入字母跳转 | 直接键入文件名开头，自动选中匹配项 |
-| 切换图标大小 | `Ctrl+滚轮`，或 `Ctrl+Shift+1/2/3`（紧凑 / 舒适 / 大） |
-| 刷新 | `F5` |
-| 新建文件夹 | `Ctrl+Shift+N` |
-| 临时隐藏 / 恢复原生桌面图标 | `Ctrl+Shift+H` |
-| 关闭搜索 / 关闭面板 | `Esc` |
-| 其它快捷键 | 任何未单独定义的 `Ctrl` / `Alt` / `Win` 组合都会先在原生桌面选中同一个图标、把桌面切成前台，再把按键原样回放并注入系统，因此挂勾子、注册热键或挂在桌面视图上的第三方工具都会像在原生桌面上一样响应 |
-| 右键菜单 | 图标上右键打开应用风格的菜单；最后一项 **More options...**（或 `Shift+右键`）打开 Windows 原生菜单，包含所有已安装右键扩展 |
-| 空白处右键 | 新建文件夹、刷新、分组、隐藏原生图标、设置、**重启**或退出 |
-| 拖出文件 | 直接把图标拖到资源管理器、聊天窗口等接受文件的地方 |
-| 拖入文件 | 从资源管理器把文件拖到桌面空白处或某个文件夹图标上；默认同盘移动、跨盘复制，按住 `Ctrl` 复制、`Shift` 移动 |
+| Flip pages | Mouse wheel, two-finger pan on a touchpad, `PageUp` / `PageDown`, `Alt+←` / `Alt+→`, or the page dots |
+| First / last page | `Ctrl+Home` / `Ctrl+End` |
+| Search | `Ctrl+F` |
+| Open | Double-click, or select and press `Enter` |
+| Select | Click, `Ctrl+click`, `Shift+click`, or the arrow keys |
+| View full file name | Click a truncated icon label; the label expands to show the full name |
+| Rename | `F2` |
+| Properties | `Alt+Enter` |
+| Delete to Recycle Bin | `Delete` |
+| Delete permanently | `Shift+Delete` |
+| Copy files | `Ctrl+C` |
+| Cut files | `Ctrl+X` |
+| Paste to desktop | `Ctrl+V` |
+| Copy file path | `Ctrl+Shift+C` |
+| Select all on current page | `Ctrl+A` |
+| Type-ahead | Start typing a file name to select the first matching item |
+| Change icon size | `Ctrl+wheel`, or `Ctrl+Shift+1/2/3` (Compact / Cozy / Large) |
+| Refresh | `F5` |
+| New folder | `Ctrl+Shift+N` |
+| Toggle native desktop icons | `Ctrl+Shift+H` |
+| Close search / close panel | `Esc` |
+| Other shortcuts | Any other `Ctrl` / `Alt` / `Win` combination is forwarded to the native desktop: the matching icon is selected, the desktop is brought forward, and the key is injected into the system, so third-party tools that hook the desktop respond exactly as they would on the native desktop |
+| Context menu | Right-click an icon for the app-style menu; the last item, **More options...** (or `Shift`+right-click), opens the native Windows menu with all installed shell extensions |
+| Empty-area right-click | New folder, refresh, grouping, hide native icons, settings, **restart**, or exit |
+| Drag out | Drag an icon to File Explorer, a chat window, or any other drop target |
+| Drag in | Drop files from File Explorer onto the desktop area or a folder icon; same-volume moves and cross-volume copies are the default, with `Ctrl` to copy and `Shift` to move |
 
-## 设置面板
+## Settings panel
 
-顶栏右侧的齿轮按钮可以打开设置（顶栏隐藏时先把鼠标动一下；也可以从托盘图标重新打开窗口）：
+The gear at the top right opens settings. If the header is hidden, move the mouse first; you can also reopen the window from the tray icon.
 
-- **Language**：English / 简体中文 / 繁體中文 / 日本語 四种界面语言，切换后立即生效，窗口标题、菜单、托盘和提示都会跟随（首次启动跟随系统语言）
-- **Icon size**：Compact / Cozy / Large 三个预设，控制每页能放多少图标
-- **Custom icon size**：滑杆自定义图标大小（24–160 px），拖动后自动覆盖预设
-- **Text size**：80%–140% 全局字号缩放，标题、按钮、菜单、搜索框和桌面图标名称一起变化
-- **Auto**：图标大小、文字大小、壁纸压暗、列数、行数右侧都有 `Auto` 按钮，点击后回到自动值（跟随密度预设 / 100% / 不压暗 / 自动适应窗口）
-- **Colors**：主题色、三级文字、悬停表面、面板、边框、危险色和遮罩全部可改；点任意一行打开 RGB 调色盘（标准色板 + R / G / B 滑杆与数值 + Hex），调整时整层界面实时预览，Apply 保存，Reset 恢复默认
-- **Wallpaper dim**：0–60% 压暗壁纸（只影响桌面层，不影响其它窗口）
-- **Fit to window / Columns / Rows**：关掉自适应后可以指定每页的列数（2–16）和行数（1–16）；格子放不下时图标会自动缩小到合适尺寸
-- **Folders first**：文件夹排在文件前面
-- **Show hidden files**：显示桌面上的隐藏/系统项目
-- **Always show controls**：顶栏和页码栏常驻，不再自动淡出
-- **Close to tray**：点关闭按钮时留在托盘而不是退出
-- **Start with Windows**：开机自启
-- **Hide desktop icons now**：立刻隐藏 / 恢复 Windows 原生桌面图标
-- **Hide icons on launch**：启动时自动隐藏原生图标
-- **Open Desktop folder / Refresh icons**：打开桌面目录、重新读取图标
+- **Language**: English / 简体中文 / 繁體中文 / 日本語. Changes apply immediately to the window title, menus, tray, and toasts. First launch follows the system language.
+- **Icon size**: Compact / Cozy / Large presets control how many icons fit on each page.
+- **Custom icon size**: A 24–160 px slider; dragging overrides the preset.
+- **Text size**: 80%–140% global scale for headings, buttons, menus, the search box, and desktop icon names.
+- **Auto**: Auto buttons next to icon size, text size, wallpaper dim, columns, and rows return to automatic values (density preset / 100% / no dim / fit to window).
+- **Colors**: Accent, three text levels, hover surfaces, panels, borders, danger, and shade are editable. Click any row to open the RGB picker (standard swatches + R/G/B sliders and values + Hex). The overlay previews changes live; Apply saves, Reset restores defaults.
+- **Wallpaper dim**: 0–60% dims the wallpaper behind the overlay only.
+- **Fit to window / Columns / Rows**: When fit is off, choose 2–16 columns and 1–16 rows. Tiles shrink automatically if they do not fit.
+- **Folders first**: Keep folders above files when sorting.
+- **Show hidden files**: Include hidden and system items from the desktop.
+- **Always show controls**: Keep the header and page bar visible instead of fading them out.
+- **Close to tray**: Keep Desktop Drawer running when the window is closed.
+- **Start with Windows**: Start Desktop Drawer automatically after sign-in.
+- **Hide desktop icons now**: Hide or restore the native Windows desktop icons immediately.
+- **Hide icons on launch**: Hide native icons automatically when Desktop Drawer starts.
+- **Open Desktop folder / Refresh icons**: Open the desktop folder and re-read icons.
 
-所有设置即时保存，不用点确定。
+All settings save instantly.
 
-## 一键更新
+## One-click updates
 
-设置面板最下方 ABOUT 里有一个 `Update now` 按钮，一次点击完成：检查 GitHub 最新 Release、下载更新包、校验 SHA-256、退出桌面层、替换文件并自动重新启动。
+The **Update now** button in ABOUT checks the latest GitHub Release, downloads the update package, verifies its SHA-256, exits the overlay, replaces the files, and restarts automatically.
 
-- 更新源：GitHub Releases 的 `DesktopDrawer-win-x64.zip`
-- 版本号取自发布标签 `vX.Y.Z`，当前版本显示在按钮上方
-- 下载和替换日志：`%APPDATA%\DesktopDrawer\update.log`
-- 设置、布局和颜色保存在 `%APPDATA%\DesktopDrawer`，更新不会动它们
-- 没有新版本时会提示已是最新版本
+- Source: `DesktopDrawer-win-x64.zip` from GitHub Releases.
+- The version comes from the `vX.Y.Z` release tag; the current version is shown above the button.
+- Download and replacement log: `%APPDATA%\DesktopDrawer\update.log`.
+- Settings, layout, and colors live in `%APPDATA%\DesktopDrawer` and are not touched by updates.
+- If no newer release exists, it reports that you are up to date.
 
-发布新版本（需要 GitHub CLI 已登录）：
+Publishing a new version (requires GitHub CLI login):
 
 ```powershell
 .\release.ps1 -Version 1.0.1 -Publish
 ```
 
-或者推送标签 `v1.0.1`，GitHub Actions 会自动构建并创建 Release。更新包的资源名必须保持为 `DesktopDrawer-win-x64.zip`。
+Or push a `v1.0.1` tag and GitHub Actions builds and creates the release automatically. The update asset must remain named `DesktopDrawer-win-x64.zip`.
 
-## 原生桌面图标
+## Native desktop icons
 
-程序启动时会把 Windows 自带的桌面图标隐藏起来（和桌面右键 →「查看」→ 取消「显示桌面图标」是同一个开关）。无论是正常退出、崩溃，还是被任务管理器强制结束，只要分页桌面消失，原生桌面图标就会恢复显示。点关闭按钮收进托盘时也会先把图标还给你，从托盘重新打开时再隐藏。
+At launch, Desktop Drawer hides the native Windows desktop icons (the same switch as Desktop right-click → View → Show desktop icons). Whether the app exits normally, crashes, or is killed from Task Manager, the icons are restored as soon as the paged desktop disappears. Hiding to the tray also restores them first and hides them again when the window is reopened.
 
-这靠一个后台守卫进程 `DesktopDrawer.Watchdog.exe` 实现。它由主程序启动，任务管理器里会看到两个和 Desktop Drawer 有关的进程：守卫进程没有界面、占用很小，主进程一消失它就把原生图标恢复好然后自己退出，所以正常退出时不用手动结束它。守卫进程万一被单独结束，主程序会在 30 秒内重新拉起一个。
+`DesktopDrawer.Watchdog.exe` handles this. It is started by the main app, so Task Manager shows two Desktop Drawer-related processes. The watchdog has no UI and a tiny footprint. When the main process disappears, it restores the icons and exits, so you never need to end it manually. If the watchdog is killed on its own, the main app starts another one within 30 seconds.
 
-恢复时判断的是桌面图标列表窗口当前**实际**有没有显示，而不是只看注册表里的 `HideIcons`，所以即使上一次是强制结束、注册表和画面已经对不上，也能把图标真正显示回来。
+Restoration checks whether the desktop icon list window is actually visible, not only the `HideIcons` registry value. Even after a forced kill, when the registry and the screen disagree, the icons are really shown again.
 
-只有把主进程和守卫进程一起杀掉（任务管理器的「结束进程树」、`taskkill /T`）才会没人负责恢复，这时手动补救：
+Only killing both processes (End process tree, `taskkill /T`) leaves nobody to restore them. Manual fix:
 
-- 桌面右键 →「查看」→ 勾选「显示桌面图标」
-- 或者重新启动一次 Desktop Drawer，再从设置面板正常退出（退出时同样会恢复显示）
+- Desktop right-click → View → Show desktop icons.
+- Or start Desktop Drawer once and exit normally from the settings panel (it also restores icons on exit).
 
-## 布局与整理
+## Layout and grouping
 
-**调整布局**
+**Adjust layout**
 
-设置面板 → LAYOUT → 点 `Adjust layout` 按钮（设置面板会自动收起）。顶栏、页码胶囊、分组标签、左下角统计、右下角提示都会出现虚线框和三个缩放手柄，同时右侧会滑出一个浮动工具条：
+Settings → LAYOUT → **Adjust layout** (the settings panel closes automatically). The header, pager, group badge, bottom-left summary, and bottom-right hint get dashed outlines and three resize grips, and a floating toolbar slides in from the right:
 
-- 按住元素拖动可以移动位置
-- 手柄分别控制宽度、高度和两者：右侧手柄改宽度、下侧手柄改高度、右下角手柄同时改宽高；元素内容会按新尺寸重新布局，不会被拉伸变形
-- 浮动工具条上的 `Reset` 恢复默认位置与大小，`Done` 退出编辑；按 `Esc` 也可以退出
-- 位置和尺寸都按比例写进 `settings.json` 的 `Layout`，换分辨率也不会跑丢
-- 顶栏占满整行，所以只支持上下移动；其余元素可以任意拖动和调整尺寸
+- Drag an element to move it.
+- The grips control width, height, and both: the right grip changes width, the bottom grip changes height, and the corner grip changes both. Content reflows at the new size instead of stretching.
+- **Reset** on the toolbar restores default positions and sizes; **Done** exits editing; `Esc` also exits.
+- Positions and sizes are stored proportionally in `Layout` in `settings.json`, so they survive resolution changes.
+- The header spans the full row, so it can only move vertically; the other elements move and resize freely.
 
-**虚拟分组**
+**Virtual grouping**
 
-右键桌面 → `Group by`（排序菜单里也有），可以按 `Type`（文件夹 / 文档 / 图片 / 视频 / 音频 / 压缩包 / 程序 / 其他）、`Name` 首字母、`Date modified` 分组。
+Desktop right-click → **Group by** (also in the sort menu) groups by **Type** (folders, documents, images, videos, audio, archives, programs, other), the first letter of **Name**, or **Date modified**.
 
-- 文件不会被移动、改名或删除，只是把同一组的图标排到同一段页码里
-- 页码胶囊会显示当前组，比如 `Images · 2/3`；左上角的标签显示组名和数量
-- 组名标签本身也在 `Adjust layout` 里可以拖动
-- 选 `None` 就回到不分组的分页
+- Files are never moved, renamed, or deleted; icons in the same group are just placed on the same page range.
+- The pager shows the current group, for example `Images · 2/3`; the top-left badge shows the group name and count.
+- The group badge can also be moved in Adjust layout.
+- Choose **None** to return to ungrouped pages.
 
-## 数据位置
+## Data locations
 
-| 内容 | 路径 |
+| Content | Path |
 | --- | --- |
-| 设置 | `%APPDATA%\DesktopDrawer\settings.json` |
-| 日志 | `%APPDATA%\DesktopDrawer\desktop-drawer.log` |
-| 程序 | `%LocalAppData%\DesktopDrawer\` |
-| 开机自启项 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\DesktopDrawer` |
+| Settings | `%APPDATA%\DesktopDrawer\settings.json` |
+| Log | `%APPDATA%\DesktopDrawer\desktop-drawer.log` |
+| App | `%LocalAppData%\DesktopDrawer\` |
+| Startup entry | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\DesktopDrawer` |
 
-删掉 `settings.json` 就会恢复默认设置（包括重新隐藏原生图标、开机自启）。
+Delete `settings.json` to reset settings, including re-hiding native icons and starting with Windows.
 
-## 开发
+## Development
 
 ```powershell
 dotnet build src\DesktopDrawer\DesktopDrawer.csproj
 dotnet run --project src\DesktopDrawer\DesktopDrawer.csproj
 ```
 
-项目的技术栈是 .NET 9 + WPF，不依赖任何第三方 NuGet 包：
+The stack is .NET 9 + WPF with no third-party NuGet dependencies:
 
 ```text
 src\DesktopDrawer
-├─ MainWindow.xaml            界面（壁纸层、图标网格、顶栏、浮动页码、设置面板）
-├─ MainWindow.xaml.cs         布局、分页、图标尺寸、壁纸、顶栏自动隐藏
-├─ MainWindow.Interactions.cs 键鼠、搜索、重命名、删除、拖拽
-├─ MainWindow.Settings.cs     托盘、设置面板、原生图标开关、退出
-├─ MainWindow.Menus.cs        排序菜单、图标右键菜单、空白处菜单
-├─ Services\                  桌面枚举、图标提取、壁纸、设置、开机自启、Shell 操作
-├─ Interop\NativeMethods.cs   Win32 / Shell 声明
-└─ Themes\Theme.xaml          颜色、按钮、开关等样式
+├─ MainWindow.xaml            UI (wallpaper layer, icon grid, header, floating pager, settings)
+├─ MainWindow.xaml.cs         layout, paging, icon sizing, wallpaper, header auto-hide
+├─ MainWindow.Interactions.cs keyboard/mouse, search, rename, delete, drag and drop
+├─ MainWindow.Settings.cs     tray, settings panel, native icon toggle, exit
+├─ MainWindow.Menus.cs        sort menu, item context menu, empty-area menu
+├─ Services\                  desktop enumeration, icon extraction, wallpaper, settings, startup, shell operations
+├─ Interop\NativeMethods.cs   Win32 / Shell declarations
+└─ Themes\Theme.xaml          colors, buttons, toggles, and other styles
 
-src\DesktopDrawer.Watchdog      独立的守卫进程，主程序消失后恢复原生图标
+src\DesktopDrawer.Watchdog      separate watchdog that restores native icons when the app exits
 ```
 
-## 已知限制
+## Known limitations
 
-- 它是一个顶层工具窗口（只是不显示在任务栏和 Alt+Tab 里）。`Win+D` 时系统会把它和其他窗口一起最小化，程序会立刻恢复并重新贴到桌面之上，中间可能有极短的闪烁。
-- 只读取用户桌面和公共桌面两个目录，不会移动或整理原始文件。
-- 图标尺寸按 100% 及更高 DPI 自动缩放，极端的自定义缩放比例可能需要微调密度档位。
+- It is a top-level tool window (hidden from the taskbar and Alt+Tab). `Win+D` minimizes it with the other windows; the app immediately restores and re-pins itself above the desktop, so there may be a very brief flash.
+- It only reads the user desktop and public desktop folders; it never moves or reorganizes the original files.
+- Icon sizes scale automatically at 100% DPI and above; extreme custom scaling may need a small density adjustment.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
