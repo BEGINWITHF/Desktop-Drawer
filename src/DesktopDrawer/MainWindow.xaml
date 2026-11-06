@@ -619,7 +619,9 @@
                     BorderThickness="1"
                     CornerRadius="20"
                     Padding="8,4">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
                     <Button x:Name="PrevButton"
                             Style="{StaticResource IconButton}"
                             Width="28"
@@ -727,19 +729,25 @@
                 </StackPanel>
             </Border>
 
-            <TextBlock x:Name="SummaryText"
-                       Text="{Binding ItemSummary}"
-                       FontSize="11"
-                       HorizontalAlignment="Left"
-                       VerticalAlignment="Top"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Border x:Name="SummaryText"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top">
+                <TextBlock Text="{Binding ItemSummary}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Border>
 
-            <TextBlock x:Name="HintText"
-                       Text="Scroll or use PgUp / PgDn"
-                       FontSize="10.5"
-                       HorizontalAlignment="Left"
-                       VerticalAlignment="Top"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+            <Border x:Name="HintText"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top">
+                <TextBlock Text="Scroll or use PgUp / PgDn"
+                           FontSize="10.5"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Border>
 
             <Border x:Name="GroupBadge"
                     HorizontalAlignment="Left"
@@ -752,7 +760,9 @@
                     Visibility="{Binding ShowGroupBadge, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Text="{Binding CurrentGroupText}"
                            FontSize="11"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
             </Border>
 
             <!-- Layout editor: dashed outlines and a resize grip per chrome element.

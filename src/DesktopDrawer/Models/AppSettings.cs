@@ -37,6 +37,10 @@ public sealed class ChromePosition
     /// <summary>Independent horizontal and vertical scale (override <see cref="Scale"/>).</summary>
     public double? ScaleX { get; set; }
     public double? ScaleY { get; set; }
+
+    /// <summary>Explicit layout size in device-independent pixels.</summary>
+    public double? Width { get; set; }
+    public double? Height { get; set; }
 }
 
 public sealed class AppSettings

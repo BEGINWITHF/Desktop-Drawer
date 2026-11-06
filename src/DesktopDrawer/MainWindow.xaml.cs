@@ -82,16 +82,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _dragStartPoint;
     private Thickness _dragStartMargin;
     private readonly Dictionary<FrameworkElement, string> _chromeElements = new();
-    private readonly Dictionary<FrameworkElement, ScaleTransform> _chromeScalers = new();
+    private readonly Dictionary<FrameworkElement, (double Width, double Height)> _chromeDefaultSizes = new();
+    private readonly Dictionary<FrameworkElement, Size> _chromeNaturalSizes = new();
     private readonly Dictionary<FrameworkElement, Shapes.Rectangle> _layoutOutlines = new();
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
     private FrameworkElement? _resizeElement;
     private ResizeAxis _resizeAxis;
-    private double _resizeReferenceX;
-    private double _resizeReferenceY;
+    private bool _layoutNeedsSave;
 
-    private const double MinChromeScale = 0.5;
-    private const double MaxChromeScale = 2.5;
     private const double ResizeGripSize = 14;
 
     private enum ResizeAxis
@@ -1542,10 +1540,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach (FrameworkElement element in _chromeElements.Keys)
         {
-            var scaler = new ScaleTransform(1, 1);
-            element.RenderTransformOrigin = new Point(0, 0);
-            element.RenderTransform = scaler;
-            _chromeScalers[element] = scaler;
+            _chromeDefaultSizes[element] = (element.Width, element.Height);
 
             element.PreviewMouseLeftButtonDown += Chrome_PreviewMouseDown;
             element.PreviewMouseMove += Chrome_PreviewMouseMove;
@@ -1567,20 +1562,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach ((FrameworkElement element, string key) in _chromeElements)
         {
-            (double scaleX, double scaleY) = GetChromeScale(key);
-            SetChromeScale(element, scaleX, scaleY);
+            _settings.Layout.TryGetValue(key, out ChromePosition? saved);
+            MigrateChromeScale(element, saved);
+            ApplyChromeSize(element, key, saved);
 
-            double baseWidth = element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width;
-            double baseHeight = element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height;
-            double elementWidth = baseWidth * scaleX;
-            double elementHeight = baseHeight * scaleY;
+            double elementWidth = saved?.Width ??
+                (element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width);
+            double elementHeight = saved?.Height ??
+                (element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height);
 
             double x;
             double y;
 
-            if (_settings.Layout.TryGetValue(key, out ChromePosition? saved) &&
-                saved.X.HasValue &&
-                saved.Y.HasValue)
+            if (saved is not null && saved.X.HasValue && saved.Y.HasValue)
             {
                 x = saved.X.Value * width;
                 y = saved.Y.Value * height;
@@ -1602,34 +1596,68 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             element.Margin = new Thickness(x, y, 0, 0);
         }
 
+        if (_layoutNeedsSave)
+        {
+            _layoutNeedsSave = false;
+            SaveSettings();
+        }
+
         UpdateLayoutEditorOverlays();
     }
 
-    private (double X, double Y) GetChromeScale(string key)
+    /// <summary>
+    /// Older builds stored visual scale factors. Turn them into a real layout
+    /// size once, so the content reflows instead of staying stretched.
+    /// </summary>
+    private void MigrateChromeScale(FrameworkElement element, ChromePosition? saved)
     {
-        if (!_settings.Layout.TryGetValue(key, out ChromePosition? saved))
+        if (saved is null ||
+            saved.Width.HasValue ||
+            saved.Height.HasValue ||
+            (!saved.Scale.HasValue && !saved.ScaleX.HasValue && !saved.ScaleY.HasValue))
         {
-            return (1, 1);
+            return;
         }
 
-        double legacy = saved.Scale ?? 1;
-        double x = Math.Clamp(saved.ScaleX ?? legacy, MinChromeScale, MaxChromeScale);
-        double y = Math.Clamp(saved.ScaleY ?? legacy, MinChromeScale, MaxChromeScale);
-        return (x, y);
+        if (element.ActualWidth < 2 || element.ActualHeight < 2)
+        {
+            return;
+        }
+
+        double scaleX = saved.ScaleX ?? saved.Scale ?? 1;
+        double scaleY = saved.ScaleY ?? saved.Scale ?? 1;
+
+        if (Math.Abs(scaleX - 1) > 0.001)
+        {
+            saved.Width = element.ActualWidth * scaleX;
+        }
+
+        if (Math.Abs(scaleY - 1) > 0.001)
+        {
+            saved.Height = element.ActualHeight * scaleY;
+        }
+
+        saved.Scale = null;
+        saved.ScaleX = null;
+        saved.ScaleY = null;
+        _layoutNeedsSave = true;
     }
 
-    private (double X, double Y) GetElementScale(FrameworkElement element) =>
-        _chromeScalers.TryGetValue(element, out ScaleTransform? scaler)
-            ? (scaler.ScaleX, scaler.ScaleY)
-            : (1, 1);
-
-    private void SetChromeScale(FrameworkElement element, double scaleX, double scaleY)
+    private void ApplyChromeSize(FrameworkElement element, string key, ChromePosition? saved)
     {
-        if (_chromeScalers.TryGetValue(element, out ScaleTransform? scaler))
+        (double defaultWidth, double defaultHeight) = _chromeDefaultSizes.TryGetValue(element, out var defaults)
+            ? defaults
+            : (double.NaN, double.NaN);
+
+        if (key == "header")
         {
-            scaler.ScaleX = scaleX;
-            scaler.ScaleY = scaleY;
+            HeaderBar.HorizontalAlignment = saved?.Width.HasValue == true
+                ? HorizontalAlignment.Left
+                : HorizontalAlignment.Stretch;
         }
+
+        element.Width = saved?.Width ?? defaultWidth;
+        element.Height = saved?.Height ?? defaultHeight;
     }
 
     private void Chrome_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -1656,9 +1684,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Point point = e.GetPosition(RootGrid);
         double width = RootGrid.ActualWidth;
         double height = RootGrid.ActualHeight;
-        (double scaleX, double scaleY) = GetElementScale(_dragElement);
-        double elementWidth = _dragElement.ActualWidth * scaleX;
-        double elementHeight = _dragElement.ActualHeight * scaleY;
+        double elementWidth = _dragElement.ActualWidth;
+        double elementHeight = _dragElement.ActualHeight;
 
         double x = _dragStartMargin.Left + (point.X - _dragStartPoint.X);
         double y = _dragStartMargin.Top + (point.Y - _dragStartPoint.Y);
@@ -1714,11 +1741,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         position.X = element.Margin.Left / width;
         position.Y = element.Margin.Top / height;
-
-        (double scaleX, double scaleY) = GetElementScale(element);
+        position.Width = element.Width is double elementWidth && !double.IsNaN(elementWidth)
+            ? elementWidth
+            : null;
+        position.Height = element.Height is double elementHeight && !double.IsNaN(elementHeight)
+            ? elementHeight
+            : null;
         position.Scale = null;
-        position.ScaleX = scaleX;
-        position.ScaleY = scaleY;
+        position.ScaleX = null;
+        position.ScaleY = null;
         SaveSettings();
     }
 
@@ -1733,6 +1764,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         if (enabled)
         {
+            CaptureChromeNaturalSizes();
             BuildLayoutEditor();
             ShowLayoutToolbar();
 
@@ -1754,6 +1786,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             LayoutEditorCanvas.Children.Clear();
             _layoutOutlines.Clear();
             _layoutGrips.Clear();
+            _chromeNaturalSizes.Clear();
             HideLayoutToolbar();
 
             foreach (FrameworkElement element in _chromeElements.Keys)
@@ -1838,9 +1871,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         foreach (FrameworkElement element in _chromeElements.Keys)
         {
             bool visible = element.IsVisible && element.ActualWidth > 1 && element.ActualHeight > 1;
-            (double scaleX, double scaleY) = GetElementScale(element);
-            double width = element.ActualWidth * scaleX;
-            double height = element.ActualHeight * scaleY;
+            double width = element.ActualWidth;
+            double height = element.ActualHeight;
             double x = element.Margin.Left;
             double y = element.Margin.Top;
 
@@ -1905,10 +1937,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _resizeElement = tag.Element;
         _resizeAxis = tag.Axis;
-
-        (double scaleX, double scaleY) = GetElementScale(tag.Element);
-        _resizeReferenceX = Math.Max(40, tag.Element.ActualWidth * scaleX);
-        _resizeReferenceY = Math.Max(40, tag.Element.ActualHeight * scaleY);
     }
 
     private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
@@ -1919,25 +1947,37 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         FrameworkElement element = _resizeElement;
-        (double scaleX, double scaleY) = GetElementScale(element);
+        Size natural = _chromeNaturalSizes.TryGetValue(element, out Size known)
+            ? known
+            : new Size(24, 16);
+
+        double maxWidth = Math.Max(natural.Width, RootGrid.ActualWidth - element.Margin.Left);
+        double maxHeight = Math.Max(natural.Height, RootGrid.ActualHeight - element.Margin.Top);
 
         if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both)
         {
-            scaleX = Math.Clamp(
-                scaleX + (e.HorizontalChange / _resizeReferenceX),
-                MinChromeScale,
-                MaxChromeScale);
+            double currentWidth = element.Width is double width && !double.IsNaN(width)
+                ? width
+                : element.ActualWidth;
+
+            if (element == HeaderBar)
+            {
+                HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
+            }
+
+            element.Width = Math.Clamp(currentWidth + e.HorizontalChange, natural.Width, maxWidth);
         }
 
         if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both)
         {
-            scaleY = Math.Clamp(
-                scaleY + (e.VerticalChange / _resizeReferenceY),
-                MinChromeScale,
-                MaxChromeScale);
+            double currentHeight = element.Height is double height && !double.IsNaN(height)
+                ? height
+                : element.ActualHeight;
+
+            element.Height = Math.Clamp(currentHeight + e.VerticalChange, natural.Height, maxHeight);
         }
 
-        SetChromeScale(element, scaleX, scaleY);
+        element.UpdateLayout();
         ClampChromePosition(element);
         UpdateLayoutEditorOverlays();
         e.Handled = true;
@@ -1961,13 +2001,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         double width = RootGrid.ActualWidth;
         double height = RootGrid.ActualHeight;
-        (double scaleX, double scaleY) = GetElementScale(element);
-        double elementWidth = element.ActualWidth * scaleX;
-        double elementHeight = element.ActualHeight * scaleY;
+        double elementWidth = element.ActualWidth;
+        double elementHeight = element.ActualHeight;
 
         double x = Math.Clamp(element.Margin.Left, 0, Math.Max(0, width - elementWidth));
         double y = Math.Clamp(element.Margin.Top, 0, Math.Max(0, height - elementHeight));
         element.Margin = new Thickness(x, y, 0, 0);
+    }
+
+    private void CaptureChromeNaturalSizes()
+    {
+        _chromeNaturalSizes.Clear();
+
+        foreach (FrameworkElement element in _chromeElements.Keys)
+        {
+            double width = element.Width;
+            double height = element.Height;
+            HorizontalAlignment alignment = element.HorizontalAlignment;
+
+            element.Width = double.NaN;
+            element.Height = double.NaN;
+
+            if (element == HeaderBar)
+            {
+                HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
+            }
+
+            element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Size desired = element.DesiredSize;
+
+            element.Width = width;
+            element.Height = height;
+            element.HorizontalAlignment = alignment;
+
+            _chromeNaturalSizes[element] = new Size(
+                Math.Max(24, desired.Width),
+                Math.Max(16, desired.Height));
+        }
+
+        RootGrid.UpdateLayout();
     }
 
     private void ShowLayoutToolbar()
