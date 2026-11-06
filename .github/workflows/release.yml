@@ -48,17 +48,46 @@ jobs:
 
           "ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $stage = Join-Path $env:RUNNER_TEMP 'DesktopDrawer-release'
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          }
+          $output = Join-Path $env:RUNNER_TEMP 'DesktopDrawer-installer'
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+          $productVersion = ($version -split '-')[0] + '.0'
+
+          & $iscc "/DAppVersion=$version" "/DProductVersion=$productVersion" "/DSourceDir=$stage" "/DOutputDir=$output" "installer/DesktopDrawer.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $installer = Join-Path $output "DesktopDrawer-Setup-$version.exe"
+          $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "$installer.sha256" -Value "$hash  DesktopDrawer-Setup-$version.exe" -NoNewline
+
+          "INSTALLER=$installer" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Create GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $zip = $env:ZIP
+          $installer = $env:INSTALLER
           $tag = "${{ github.ref_name }}"
           $arguments = @(
             $tag,
             $zip,
             "$zip.sha256",
+            $installer,
+            "$installer.sha256",
             '--title', "Desktop Drawer $tag",
             '--notes', "Desktop Drawer $tag"
           )

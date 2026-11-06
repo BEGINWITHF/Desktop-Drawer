@@ -29,6 +29,23 @@
 
 程序是单实例的，重复启动不会叠出第二个桌面。
 
+### 安装包
+
+```powershell
+.\installer.ps1 -Version 1.0.0
+```
+
+生成 `installer\Output\DesktopDrawer-Setup-1.0.0.exe`，双击安装即可：
+
+- 按当前用户安装到 `%LocalAppData%\DesktopDrawer`，不需要管理员权限
+- 创建开始菜单快捷方式，并在“应用和功能”里注册卸载项
+- 安装前检查 .NET 9 桌面运行时
+- 安装器支持 English / 简体中文 / 繁體中文 / 日本語
+- 更新或卸载时保留 `%APPDATA%\DesktopDrawer` 里的设置、布局和颜色
+- 需要本机安装 Inno Setup 6：`winget install JRSoftware.InnoSetup`
+
+推送 `v*` 标签时 GitHub Actions 会自动生成安装包并上传到 Release。当前安装包未做代码签名，首次运行可能出现 SmartScreen 提示。
+
 ## 操作速查
 
 | 操作 | 方式 |
