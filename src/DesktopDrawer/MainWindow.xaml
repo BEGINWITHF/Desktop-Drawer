@@ -547,8 +547,8 @@
                     Background="{DynamicResource PagerSurfaceBrush}"
                     BorderBrush="{DynamicResource PagerBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="18"
-                    Padding="9,3">
+                    CornerRadius="20"
+                    Padding="8,4">
                 <StackPanel Orientation="Horizontal">
                     <Button x:Name="PrevButton"
                             Style="{StaticResource IconButton}"
@@ -571,9 +571,9 @@
                                 IsHitTestVisible="False"
                                 Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
                             <Border x:Name="PageIndicator"
-                                    Width="26"
-                                    Height="26"
-                                    CornerRadius="13"
+                                    Width="40"
+                                    Height="28"
+                                    CornerRadius="14"
                                     Background="{DynamicResource AccentBrush}"
                                     Visibility="Collapsed">
                                 <Border.RenderTransform>
@@ -597,6 +597,44 @@
                                             ToolTip="{Binding Tooltip}"
                                             Tag="{Binding Index}"
                                             Click="PageDot_Click" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- A second, clipped copy of the tab row: the clip window travels
+                             with the accent pill, so only the digits under the pill are drawn
+                             in the contrast colour (the label changes colour only where the
+                             pill covers it). -->
+                        <ItemsControl x:Name="ActivePageItems"
+                                      Width="{Binding ActualWidth, ElementName=DotsHost}"
+                                      HorizontalAlignment="Left"
+                                      VerticalAlignment="Center"
+                                      ItemsSource="{Binding PageDots}"
+                                      IsHitTestVisible="False"
+                                      Focusable="False"
+                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.Clip>
+                                <RectangleGeometry Rect="0,0,40,28">
+                                    <RectangleGeometry.Transform>
+                                        <TranslateTransform x:Name="ActiveClipGeometryTransform" />
+                                    </RectangleGeometry.Transform>
+                                </RectangleGeometry>
+                            </ItemsControl.Clip>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Width="40" Height="28" Margin="1,0" IsHitTestVisible="False">
+                                        <TextBlock Text="{Binding Label}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource OnAccentBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

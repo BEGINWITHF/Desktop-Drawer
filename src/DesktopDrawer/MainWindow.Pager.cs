@@ -8,19 +8,17 @@ using DesktopDrawer.Helpers;
 namespace DesktopDrawer;
 
 /// <summary>
-/// The pager uses one shared highlight that slides between page numbers, so the
-/// indicator reads as a single object travelling with the page change instead of
-/// a background that pops from button to button.
+/// The pager uses one shared pill that slides between page numbers with spring
+/// physics. A second, clipped copy of the tab row travels with it, so the digit
+/// under the pill is the only one drawn in the contrast colour - exactly like a
+/// label that changes colour only where the pill covers it.
 /// </summary>
 public partial class MainWindow
 {
-    private readonly HashSet<SolidColorBrush> _pagerBrushes = new();
-
     private bool _indicatorReady;
-    private int _pagerLastIndex = -1;
 
     /// <summary>Queues a pager refresh for after the new items have been laid out.</summary>
-    private void SchedulePagerUpdate(int previousIndex)
+    private void SchedulePagerUpdate()
     {
         Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
         {
@@ -29,11 +27,11 @@ public partial class MainWindow
                 return;
             }
 
-            UpdatePagerVisuals(previousIndex);
+            UpdatePagerVisuals();
         }));
     }
 
-    private void UpdatePagerVisuals(int previousIndex)
+    private void UpdatePagerVisuals()
     {
         if (!ShowPageDots || PageDots.Count == 0)
         {
@@ -56,129 +54,76 @@ public partial class MainWindow
 
         if (!_indicatorReady)
         {
-            IndicatorTransform.BeginAnimation(TranslateTransform.XProperty, null);
-            IndicatorTransform.X = targetX;
+            SetIndicatorPosition(targetX);
             _indicatorReady = true;
         }
         else
         {
-            AnimateIndicatorTo(targetX, previousIndex);
+            AnimateIndicatorTo(targetX);
         }
-
-        AnimateDots();
     }
 
-    private void AnimateIndicatorTo(double targetX, int previousIndex)
+    private void AnimateIndicatorTo(double targetX)
     {
         // Read the effective value (animations included), not the base value.
         double currentX = (double)IndicatorTransform.GetValue(TranslateTransform.XProperty);
 
         if (Math.Abs(targetX - currentX) < 0.5)
         {
+            SetIndicatorPosition(currentX);
             return;
         }
 
-        // Continue from where the highlight is actually drawn, so a flip during
-        // an ongoing animation does not jump back to the previous target.
-        IndicatorTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        IndicatorTransform.X = currentX;
+        // Continue from where the pill is actually drawn, so a flip during an
+        // ongoing animation does not jump back to the previous target.
+        SetIndicatorPosition(currentX);
 
-        int from = previousIndex < 0 ? _pageIndex : previousIndex;
-        int distance = Math.Abs(_pageIndex - from);
-        double milliseconds = Math.Clamp(180 + (distance * 20), 140, 300);
+        TimeSpan duration = TimeSpan.FromMilliseconds(430);
 
-        var animation = new DoubleAnimation(currentX, targetX, TimeSpan.FromMilliseconds(milliseconds))
+        var indicatorAnimation = new DoubleAnimation(currentX, targetX, duration)
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = CreateSpring()
+        };
+
+        var clipAnimation = new DoubleAnimation(currentX, targetX, duration)
+        {
+            EasingFunction = CreateSpring()
         };
 
         IndicatorTransform.BeginAnimation(
             TranslateTransform.XProperty,
-            animation,
+            indicatorAnimation,
+            HandoffBehavior.SnapshotAndReplace);
+
+        ActiveClipGeometryTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            clipAnimation,
             HandoffBehavior.SnapshotAndReplace);
     }
 
-    private void AnimateDots()
+    /// <summary>
+    /// The reference motion is a damped spring: a quick glide with a small
+    /// overshoot that settles in roughly a third of a second.
+    /// </summary>
+    private static SpringEase CreateSpring() => new()
     {
-        Color muted = ((SolidColorBrush)FindResource("TextMutedBrush")).Color;
+        Stiffness = 240,
+        Damping = 24,
+        Seconds = 0.43,
+        EasingMode = EasingMode.EaseIn
+    };
 
-        // The active digit sits on the accent pill, so it uses the same contrast
-        // colour as text on accent buttons.
-        Color active = ((SolidColorBrush)FindResource("OnAccentBrush")).Color;
-
-        for (int index = 0; index < PageDots.Count; index++)
-        {
-            Button? button = GetPageButton(index);
-            if (button is null)
-            {
-                continue;
-            }
-
-            bool current = index == _pageIndex;
-            AnimateDotColor(button, current ? active : muted);
-            AnimateDotScale(button, current ? 1.04 : 1.0);
-        }
-    }
-
-    private void AnimateDotColor(Button button, Color target)
+    /// <summary>
+    /// Pins the pill and its clip window at the same position, so the contrast
+    /// digit is only ever visible directly under the pill.
+    /// </summary>
+    private void SetIndicatorPosition(double x)
     {
-        if (button.Foreground is not SolidColorBrush brush || !_pagerBrushes.Contains(brush))
-        {
-            Color start = button.Foreground is SolidColorBrush existing
-                ? existing.Color
-                : ((SolidColorBrush)FindResource("TextMutedBrush")).Color;
+        IndicatorTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        IndicatorTransform.X = x;
 
-            brush = new SolidColorBrush(start);
-            _pagerBrushes.Add(brush);
-            button.Foreground = brush;
-        }
-
-        Color current = brush.Color;
-        brush.BeginAnimation(SolidColorBrush.ColorProperty, null);
-        brush.Color = current;
-
-        var animation = new ColorAnimation(current, target, TimeSpan.FromMilliseconds(180))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        brush.BeginAnimation(
-            SolidColorBrush.ColorProperty,
-            animation,
-            HandoffBehavior.SnapshotAndReplace);
-    }
-
-    private void AnimateDotScale(Button button, double target)
-    {
-        if (button.RenderTransform is not ScaleTransform scale)
-        {
-            scale = new ScaleTransform(1, 1);
-            button.RenderTransform = scale;
-        }
-
-        double current = scale.ScaleX;
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        scale.ScaleX = current;
-        scale.ScaleY = current;
-
-        if (Math.Abs(target - current) < 0.001)
-        {
-            return;
-        }
-
-        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
-        TimeSpan duration = TimeSpan.FromMilliseconds(180);
-
-        scale.BeginAnimation(
-            ScaleTransform.ScaleXProperty,
-            new DoubleAnimation(current, target, duration) { EasingFunction = easing },
-            HandoffBehavior.SnapshotAndReplace);
-
-        scale.BeginAnimation(
-            ScaleTransform.ScaleYProperty,
-            new DoubleAnimation(current, target, duration) { EasingFunction = easing },
-            HandoffBehavior.SnapshotAndReplace);
+        ActiveClipGeometryTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        ActiveClipGeometryTransform.X = x;
     }
 
     private double GetPageIndicatorX(int index)
@@ -250,14 +195,6 @@ public partial class MainWindow
             return;
         }
 
-        x = SnapToPixel(x);
-
-        if (Math.Abs(x - IndicatorTransform.X) < 0.5)
-        {
-            return;
-        }
-
-        IndicatorTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        IndicatorTransform.X = x;
+        SetIndicatorPosition(SnapToPixel(x));
     }
 }

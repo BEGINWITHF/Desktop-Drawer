@@ -228,7 +228,6 @@ public partial class MainWindow
 
         ThemeService.Apply(preview);
         ApplyWallpaperDim();
-        AnimateDots();
     }
 
     private void ColorChannelSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -342,7 +341,6 @@ public partial class MainWindow
         SaveSettings();
         ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
-        AnimateDots();
         UpdateColorRows();
         CloseColorPicker();
     }
@@ -376,7 +374,6 @@ public partial class MainWindow
     {
         ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
-        AnimateDots();
         UpdateColorRows();
         CloseColorPicker();
     }
@@ -395,7 +392,6 @@ public partial class MainWindow
         SaveSettings();
         ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
-        AnimateDots();
         UpdateColorRows();
         CloseColorPicker();
         ShowToast("All colors reset to the default look.");

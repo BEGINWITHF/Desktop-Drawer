@@ -989,9 +989,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageDots.Clear();
         }
 
-        int pagerPreviousIndex = _pagerLastIndex;
-        _pagerLastIndex = _pageIndex;
-        SchedulePagerUpdate(pagerPreviousIndex);
+        SchedulePagerUpdate();
 
         CurrentPageLabel = BuildPageLabel(slice, pageCount);
         PrevButton.IsEnabled = _pageIndex > 0;
