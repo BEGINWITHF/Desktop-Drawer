@@ -54,4 +54,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $zip = $env:ZIP
-          gh release create "${{ github.ref_name }}" $zip "$zip.sha256" --title "Desktop Drawer ${{ github.ref_name }}" --notes "Desktop Drawer ${{ github.ref_name }}"
+          $tag = "${{ github.ref_name }}"
+          $arguments = @(
+            $tag,
+            $zip,
+            "$zip.sha256",
+            '--title', "Desktop Drawer $tag",
+            '--notes', "Desktop Drawer $tag"
+          )
+          if ($tag -match '-') {
+            $arguments += '--prerelease'
+          }
+          gh release create @arguments
