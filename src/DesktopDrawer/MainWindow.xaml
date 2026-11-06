@@ -562,6 +562,9 @@
                                    FontSize="11" />
                     </Button>
                     <TextBlock Text="{Binding CurrentPageLabel}"
+                               Width="90"
+                               TextAlignment="Right"
+                               TextTrimming="CharacterEllipsis"
                                FontSize="10.5"
                                Foreground="{DynamicResource TextMutedBrush}"
                                Margin="9,0"
