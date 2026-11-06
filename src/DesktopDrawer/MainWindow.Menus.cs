@@ -207,6 +207,7 @@ public partial class MainWindow
             OpenDesktopFolderButton_Click(this, new RoutedEventArgs());
         });
         AddMenuItem(menu, "Settings", "\uE713", null, OpenSettings);
+        AddMenuItem(menu, "Restart Desktop Drawer", "\uE895", null, RestartApplication);
         menu.Items.Add(new Separator());
         MenuItem exit = AddMenuItem(menu, "Exit Desktop Drawer", "\uE8BB", null, ExitApplication);
         exit.Foreground = (Brush)FindResource("DangerBrush");

@@ -488,6 +488,17 @@ public partial class MainWindow
         Application.Current.Shutdown();
     }
 
+    private void RestartApplication()
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        App.RequestRestart();
+        ExitApplication();
+    }
+
     private void SearchBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         SearchBox.SelectAll();

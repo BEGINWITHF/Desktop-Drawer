@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
@@ -13,6 +14,11 @@ public partial class App : Application
     private EventWaitHandle? _activateEvent;
     private bool _shuttingDown;
     private Thread? _activationThread;
+
+    /// <summary>Set just before shutdown when the app should start itself again.</summary>
+    public static bool RestartRequested { get; private set; }
+
+    public static void RequestRestart() => RestartRequested = true;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -142,6 +148,37 @@ public partial class App : Application
         _mutex?.Dispose();
         _mutex = null;
 
+        // The single-instance objects are released now, so a replacement process
+        // can start without racing the mutex.
+        if (RestartRequested)
+        {
+            RestartRequested = false;
+            LaunchReplacementInstance();
+        }
+
         base.OnExit(e);
+    }
+
+    private static void LaunchReplacementInstance()
+    {
+        try
+        {
+            string? executable = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(executable))
+            {
+                AppLog.Write("Could not restart Desktop Drawer: the executable path is unknown.");
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo(executable)
+            {
+                UseShellExecute = true,
+                WorkingDirectory = AppContext.BaseDirectory
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Write(ex, "Could not restart Desktop Drawer");
+        }
     }
 }
