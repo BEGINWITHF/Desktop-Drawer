@@ -93,7 +93,7 @@ public partial class MainWindow
         StartWithWindowsToggle.IsChecked = _settings.StartWithWindows;
         HideIconsOnLaunchToggle.IsChecked = _settings.HideIconsOnLaunch;
         HideIconsSettingsToggle.IsChecked = _desktopIconsService.AreHidden();
-        LayoutEditToggle.IsChecked = _layoutEditing;
+        UpdateLayoutEditButton();
 
         UpdateColorRows();
         WallpaperDimSlider.Value = Math.Clamp(_settings.WallpaperDim, 0, 60);
@@ -269,14 +269,16 @@ public partial class MainWindow
         SetDesktopIconsHidden(HideIconsToggle.IsChecked == true);
     }
 
-    private void LayoutEditToggle_Changed(object sender, RoutedEventArgs e)
+    private void LayoutEditButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_initializingSettings)
+        if (_layoutEditing)
         {
+            SetLayoutEditing(false);
             return;
         }
 
-        SetLayoutEditing(LayoutEditToggle.IsChecked == true);
+        SetLayoutEditing(true);
+        CloseSettings();
     }
 
     private void ResetLayoutButton_Click(object sender, RoutedEventArgs e)
@@ -284,7 +286,7 @@ public partial class MainWindow
         _settings.Layout.Clear();
         SaveSettings();
         ApplyChromeLayout();
-        ShowToast("Layout positions reset.");
+        ShowToast("Layout reset to the default positions and sizes.");
     }
 
     private void HideIconsSettingsToggle_Changed(object sender, RoutedEventArgs e)

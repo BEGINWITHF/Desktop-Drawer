@@ -5,12 +5,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Shapes = System.Windows.Shapes;
 using System.Windows.Threading;
 using DesktopDrawer.Helpers;
 using DesktopDrawer.Interop;
@@ -81,7 +82,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _dragStartPoint;
     private Thickness _dragStartMargin;
     private readonly Dictionary<FrameworkElement, string> _chromeElements = new();
-    private readonly Dictionary<FrameworkElement, ChromeOutlineAdorner> _chromeAdorners = new();
+    private readonly Dictionary<FrameworkElement, ScaleTransform> _chromeScalers = new();
+    private readonly Dictionary<FrameworkElement, Shapes.Rectangle> _layoutOutlines = new();
+    private readonly Dictionary<FrameworkElement, Thumb> _layoutGrips = new();
+    private FrameworkElement? _resizeElement;
+    private double _resizeStartScale;
+    private double _resizeReference;
+
+    private const double MinChromeScale = 0.5;
+    private const double MaxChromeScale = 2.5;
+    private const double ResizeGripSize = 14;
     private bool _embeddedInDesktop;
     private int _embedAttempts;
     private GlobalShortcutHook? _shortcutHook;
@@ -1522,9 +1532,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach (FrameworkElement element in _chromeElements.Keys)
         {
+            var scaler = new ScaleTransform(1, 1);
+            element.RenderTransformOrigin = new Point(0, 0);
+            element.RenderTransform = scaler;
+            _chromeScalers[element] = scaler;
+
             element.PreviewMouseLeftButtonDown += Chrome_PreviewMouseDown;
             element.PreviewMouseMove += Chrome_PreviewMouseMove;
             element.PreviewMouseLeftButtonUp += Chrome_PreviewMouseUp;
+            element.SizeChanged += (_, _) => UpdateLayoutEditorOverlays();
         }
 
         RootGrid.SizeChanged += (_, _) => ApplyChromeLayout();
@@ -1541,8 +1557,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach ((FrameworkElement element, string key) in _chromeElements)
         {
-            double elementWidth = element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width;
-            double elementHeight = element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height;
+            double scale = GetChromeScale(key);
+            SetChromeScale(element, scale);
+
+            double baseWidth = element.ActualWidth > 0 ? element.ActualWidth : element.DesiredSize.Width;
+            double baseHeight = element.ActualHeight > 0 ? element.ActualHeight : element.DesiredSize.Height;
+            double elementWidth = baseWidth * scale;
+            double elementHeight = baseHeight * scale;
 
             double x;
             double y;
@@ -1570,6 +1591,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             y = Math.Clamp(y, 0, Math.Max(0, height - elementHeight));
             element.Margin = new Thickness(x, y, 0, 0);
         }
+
+        UpdateLayoutEditorOverlays();
+    }
+
+    private double GetChromeScale(string key)
+    {
+        if (_settings.Layout.TryGetValue(key, out ChromePosition? saved) && saved.Scale.HasValue)
+        {
+            return Math.Clamp(saved.Scale.Value, MinChromeScale, MaxChromeScale);
+        }
+
+        return 1;
+    }
+
+    private double GetElementScale(FrameworkElement element) =>
+        _chromeScalers.TryGetValue(element, out ScaleTransform? scaler) ? scaler.ScaleX : 1;
+
+    private void SetChromeScale(FrameworkElement element, double scale)
+    {
+        if (_chromeScalers.TryGetValue(element, out ScaleTransform? scaler))
+        {
+            scaler.ScaleX = scale;
+            scaler.ScaleY = scale;
+        }
     }
 
     private void Chrome_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -1596,8 +1641,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Point point = e.GetPosition(RootGrid);
         double width = RootGrid.ActualWidth;
         double height = RootGrid.ActualHeight;
-        double elementWidth = _dragElement.ActualWidth;
-        double elementHeight = _dragElement.ActualHeight;
+        double scale = GetElementScale(_dragElement);
+        double elementWidth = _dragElement.ActualWidth * scale;
+        double elementHeight = _dragElement.ActualHeight * scale;
 
         double x = _dragStartMargin.Left + (point.X - _dragStartPoint.X);
         double y = _dragStartMargin.Top + (point.Y - _dragStartPoint.Y);
@@ -1611,6 +1657,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         x = Math.Clamp(x, 0, Math.Max(0, width - elementWidth));
         y = Math.Clamp(y, 0, Math.Max(0, height - elementHeight));
         _dragElement.Margin = new Thickness(x, y, 0, 0);
+        UpdateLayoutEditorOverlays();
         e.Handled = true;
     }
 
@@ -1630,23 +1677,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if (_chromeElements.TryGetValue(element, out string? key))
+        SaveChromePosition(element);
+        e.Handled = true;
+    }
+
+    private void SaveChromePosition(FrameworkElement element)
+    {
+        if (!_chromeElements.TryGetValue(element, out string? key))
         {
-            double width = Math.Max(1, RootGrid.ActualWidth);
-            double height = Math.Max(1, RootGrid.ActualHeight);
-
-            if (!_settings.Layout.TryGetValue(key, out ChromePosition? position))
-            {
-                position = new ChromePosition();
-                _settings.Layout[key] = position;
-            }
-
-            position.X = element.Margin.Left / width;
-            position.Y = element.Margin.Top / height;
-            SaveSettings();
+            return;
         }
 
-        e.Handled = true;
+        double width = Math.Max(1, RootGrid.ActualWidth);
+        double height = Math.Max(1, RootGrid.ActualHeight);
+
+        if (!_settings.Layout.TryGetValue(key, out ChromePosition? position))
+        {
+            position = new ChromePosition();
+            _settings.Layout[key] = position;
+        }
+
+        position.X = element.Margin.Left / width;
+        position.Y = element.Margin.Top / height;
+        position.Scale = GetElementScale(element);
+        SaveSettings();
     }
 
     private void SetLayoutEditing(bool enabled)
@@ -1658,41 +1712,192 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _layoutEditing = enabled;
 
-        foreach (FrameworkElement element in _chromeElements.Keys)
+        if (enabled)
         {
-            AdornerLayer? layer = AdornerLayer.GetAdornerLayer(element);
+            BuildLayoutEditor();
 
-            if (enabled)
+            foreach (FrameworkElement element in _chromeElements.Keys)
             {
                 element.Cursor = Cursors.SizeAll;
-                if (layer is not null && !_chromeAdorners.ContainsKey(element))
-                {
-                    var adorner = new ChromeOutlineAdorner(element);
-                    layer.Add(adorner);
-                    _chromeAdorners[element] = adorner;
-                }
             }
-            else
+        }
+        else
+        {
+            if (_dragElement is not null)
+            {
+                _dragElement.ReleaseMouseCapture();
+                _dragElement = null;
+            }
+
+            _resizeElement = null;
+            LayoutEditorCanvas.Visibility = Visibility.Collapsed;
+            LayoutEditorCanvas.Children.Clear();
+            _layoutOutlines.Clear();
+            _layoutGrips.Clear();
+
+            foreach (FrameworkElement element in _chromeElements.Keys)
             {
                 element.Cursor = Cursors.Arrow;
-                if (_chromeAdorners.Remove(element, out ChromeOutlineAdorner? adorner))
-                {
-                    layer?.Remove(adorner);
-                }
             }
         }
 
+        UpdateLayoutEditButton();
         ShowChrome();
-
-        if (LayoutEditToggle.IsChecked != enabled)
-        {
-            LayoutEditToggle.IsChecked = enabled;
-        }
 
         if (enabled)
         {
-            ShowToast("Drag the header, pager, summary and hint. Press Esc when done.");
+            ShowToast("Drag to move, drag a corner grip to resize. Press Esc when done.");
         }
+    }
+
+    private void UpdateLayoutEditButton()
+    {
+        if (LayoutEditButton is not null)
+        {
+            LayoutEditButton.Content = _layoutEditing ? "Done adjusting" : "Adjust layout";
+        }
+    }
+
+    private void BuildLayoutEditor()
+    {
+        LayoutEditorCanvas.Children.Clear();
+        _layoutOutlines.Clear();
+        _layoutGrips.Clear();
+
+        foreach (FrameworkElement element in _chromeElements.Keys)
+        {
+            var outline = new Shapes.Rectangle
+            {
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection { 4, 3 },
+                RadiusX = 10,
+                RadiusY = 10,
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+            outline.SetResourceReference(Shapes.Shape.StrokeProperty, "AccentBrush");
+
+            var grip = new Thumb
+            {
+                Style = (Style)FindResource("LayoutGripThumb"),
+                Tag = element,
+                Width = ResizeGripSize,
+                Height = ResizeGripSize
+            };
+
+            grip.DragStarted += Grip_DragStarted;
+            grip.DragDelta += Grip_DragDelta;
+            grip.DragCompleted += Grip_DragCompleted;
+
+            _layoutOutlines[element] = outline;
+            _layoutGrips[element] = grip;
+            LayoutEditorCanvas.Children.Add(outline);
+            LayoutEditorCanvas.Children.Add(grip);
+        }
+
+        LayoutEditorCanvas.Visibility = Visibility.Visible;
+        UpdateLayoutEditorOverlays();
+    }
+
+    private void UpdateLayoutEditorOverlays()
+    {
+        if (!_layoutEditing || LayoutEditorCanvas.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        foreach (FrameworkElement element in _chromeElements.Keys)
+        {
+            bool visible = element.IsVisible && element.ActualWidth > 1 && element.ActualHeight > 1;
+            double scale = GetElementScale(element);
+            double width = element.ActualWidth * scale;
+            double height = element.ActualHeight * scale;
+            double x = element.Margin.Left;
+            double y = element.Margin.Top;
+
+            if (_layoutOutlines.TryGetValue(element, out Shapes.Rectangle? outline))
+            {
+                outline.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+                outline.Width = Math.Max(0, width);
+                outline.Height = Math.Max(0, height);
+                Canvas.SetLeft(outline, x);
+                Canvas.SetTop(outline, y);
+            }
+
+            if (_layoutGrips.TryGetValue(element, out Thumb? grip))
+            {
+                grip.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+                double gripX = Math.Clamp(
+                    x + width - (ResizeGripSize / 2),
+                    0,
+                    Math.Max(0, RootGrid.ActualWidth - ResizeGripSize));
+
+                double gripY = Math.Clamp(
+                    y + height - (ResizeGripSize / 2),
+                    0,
+                    Math.Max(0, RootGrid.ActualHeight - ResizeGripSize));
+
+                Canvas.SetLeft(grip, gripX);
+                Canvas.SetTop(grip, gripY);
+            }
+        }
+    }
+
+    private void Grip_DragStarted(object sender, DragStartedEventArgs e)
+    {
+        if (!_layoutEditing || sender is not Thumb { Tag: FrameworkElement element })
+        {
+            return;
+        }
+
+        _resizeElement = element;
+        _resizeStartScale = GetElementScale(element);
+        _resizeReference = Math.Max(80, (element.ActualWidth + element.ActualHeight) * _resizeStartScale);
+    }
+
+    private void Grip_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (!_layoutEditing || _resizeElement is null)
+        {
+            return;
+        }
+
+        FrameworkElement element = _resizeElement;
+        double delta = (e.HorizontalChange + e.VerticalChange) / _resizeReference;
+        double scale = Math.Clamp(GetElementScale(element) + delta, MinChromeScale, MaxChromeScale);
+
+        SetChromeScale(element, scale);
+        ClampChromePosition(element);
+        UpdateLayoutEditorOverlays();
+        e.Handled = true;
+    }
+
+    private void Grip_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        if (_resizeElement is null)
+        {
+            return;
+        }
+
+        FrameworkElement element = _resizeElement;
+        _resizeElement = null;
+        SaveChromePosition(element);
+        ApplyChromeLayout();
+        e.Handled = true;
+    }
+
+    private void ClampChromePosition(FrameworkElement element)
+    {
+        double width = RootGrid.ActualWidth;
+        double height = RootGrid.ActualHeight;
+        double scale = GetElementScale(element);
+        double elementWidth = element.ActualWidth * scale;
+        double elementHeight = element.ActualHeight * scale;
+
+        double x = Math.Clamp(element.Margin.Left, 0, Math.Max(0, width - elementWidth));
+        double y = Math.Clamp(element.Margin.Top, 0, Math.Max(0, height - elementHeight));
+        element.Margin = new Thickness(x, y, 0, 0);
     }
 
     private string BuildPageLabel(PageSlice slice, int pageCount)
@@ -1955,41 +2160,4 @@ internal sealed class PageSlice
     public int GroupPage { get; init; } = 1;
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
-}
-
-/// <summary>
-/// Dashed rectangle shown around a chrome element while the layout editor is on.
-/// </summary>
-internal sealed class ChromeOutlineAdorner : Adorner
-{
-    private static readonly Pen OutlinePen = CreatePen();
-
-    public ChromeOutlineAdorner(UIElement adornedElement) : base(adornedElement)
-    {
-        IsHitTestVisible = false;
-    }
-
-    protected override void OnRender(DrawingContext drawingContext)
-    {
-        var bounds = new Rect(AdornedElement.RenderSize);
-        if (bounds.Width < 2 || bounds.Height < 2)
-        {
-            return;
-        }
-
-        drawingContext.DrawRoundedRectangle(null, OutlinePen, bounds, 10, 10);
-    }
-
-    private static Pen CreatePen()
-    {
-        var brush = new SolidColorBrush(Color.FromArgb(0xC0, 0x5A, 0xA0, 0xFF));
-        brush.Freeze();
-
-        var pen = new Pen(brush, 1)
-        {
-            DashStyle = new DashStyle(new double[] { 4, 3 }, 0)
-        };
-        pen.Freeze();
-        return pen;
-    }
 }

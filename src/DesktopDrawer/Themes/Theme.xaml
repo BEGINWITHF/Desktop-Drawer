@@ -789,6 +789,28 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="LayoutGripThumb" TargetType="{x:Type Thumb}">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Cursor" Value="SizeNWSE" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Grid>
+                        <Ellipse Fill="{DynamicResource AccentBrush}"
+                                 Stroke="{DynamicResource OnAccentBrush}"
+                                 StrokeThickness="1" />
+                        <Path Data="M 4,10 L 10,4 M 7,10 L 10,7"
+                              Stroke="{DynamicResource OnAccentBrush}"
+                              StrokeThickness="1.2"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="ColorRowButton" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="8,6,9,6" />

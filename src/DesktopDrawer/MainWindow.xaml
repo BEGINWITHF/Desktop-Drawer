@@ -754,6 +754,12 @@
                            FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
             </Border>
+
+            <!-- Layout editor: dashed outlines and a resize grip per chrome element.
+                 The canvas itself has no background, so only the grips are hit-testable. -->
+            <Canvas x:Name="LayoutEditorCanvas"
+                    Panel.ZIndex="40"
+                    Visibility="Collapsed" />
         </Grid>
 
         <Grid x:Name="SettingsOverlay"
@@ -823,18 +829,21 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Adjust layout" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Drag the header, pager, summary and hint anywhere on the desktop."
+                                    <TextBlock Text="Desktop controls" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Move the header, pager, summary, hint and group badge, and drag a corner grip to resize them."
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
-                                <CheckBox x:Name="LayoutEditToggle"
-                                          Grid.Column="1"
-                                          Style="{StaticResource ToggleSwitch}"
-                                          VerticalAlignment="Center"
-                                          Checked="LayoutEditToggle_Changed"
-                                          Unchecked="LayoutEditToggle_Changed" />
+                                <Button x:Name="LayoutEditButton"
+                                        Grid.Column="1"
+                                        Style="{StaticResource GhostButton}"
+                                        Content="Adjust layout"
+                                        Height="30"
+                                        Padding="12,0"
+                                        FontSize="11.5"
+                                        VerticalAlignment="Center"
+                                        Click="LayoutEditButton_Click" />
                             </Grid>
-                            <Button Content="Reset positions"
+                            <Button Content="Reset layout"
                                     Style="{StaticResource ToolbarButton}"
                                     HorizontalAlignment="Left"
                                     Padding="12,0"
