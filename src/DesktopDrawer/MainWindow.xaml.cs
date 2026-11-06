@@ -55,8 +55,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private string _searchText = string.Empty;
     private bool _isSearchFocused;
-    private string _itemSummary = "Reading desktop...";
-    private string _currentPageLabel = "Page 1 of 1";
+    private string _itemSummary = string.Empty;
+    private string _currentPageLabel = string.Empty;
     private bool _showPageDots;
     private string _currentGroupText = string.Empty;
     private bool _showGroupBadge;
@@ -153,6 +153,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settings = _settingsService.Load();
         I18n.Apply(_settings.Language);
         _settings.Language = I18n.Current;
+        _itemSummary = I18n.T("Summary.Reading");
+        _currentPageLabel = I18n.T("Pager.OnePage");
         _desktopService = new DesktopService();
         _iconService = new IconService();
         _shellService = new ShellService();

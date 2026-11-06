@@ -60,7 +60,7 @@ public sealed class ShellService
                 item.FullPath,
                 null))
         {
-            throw new ShellOperationException("Windows could not open the properties for this item.");
+            throw new ShellOperationException(I18n.T("Error.OpenProperties"));
         }
     }
 
@@ -107,9 +107,9 @@ public sealed class ShellService
             if (result != 0 || operation.fAnyOperationsAborted != 0)
             {
                 throw new ShellOperationException(
-                    move
-                        ? "Windows could not move the items to the desktop."
-                        : "Windows could not copy the items to the desktop.");
+                    I18n.T(move
+                        ? "Error.MoveToDesktop"
+                        : "Error.CopyToDesktop"));
             }
         }
         finally
@@ -158,8 +158,8 @@ public sealed class ShellService
         {
             throw new ShellOperationException(
                 errors.Count == 1
-                    ? $"Could not delete \"{errors[0]}\"."
-                    : $"Could not delete {errors.Count} items.");
+                    ? I18n.F("Error.DeleteOne", errors[0])
+                    : I18n.F("Error.DeleteMany", errors.Count));
         }
     }
 
@@ -201,7 +201,7 @@ public sealed class ShellService
 
         if (File.Exists(destination) || Directory.Exists(destination))
         {
-            throw new ShellOperationException($"\"{targetName}\" already exists.");
+            throw new ShellOperationException(I18n.F("Error.AlreadyExists", targetName));
         }
 
         if (item.IsFolder)
@@ -218,13 +218,14 @@ public sealed class ShellService
 
     public string CreateNewFolder(string parentDirectory)
     {
-        string name = "New folder";
+        string baseName = I18n.T("NewFolder.Name");
+        string name = baseName;
         string path = Path.Combine(parentDirectory, name);
         int suffix = 2;
 
         while (Directory.Exists(path))
         {
-            name = $"New folder ({suffix++})";
+            name = $"{baseName} ({suffix++})";
             path = Path.Combine(parentDirectory, name);
         }
 
@@ -290,33 +291,33 @@ public sealed class ShellService
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ShellOperationException("The name cannot be empty.");
+            throw new ShellOperationException(I18n.T("Error.NameEmpty"));
         }
 
         if (name is "." or "..")
         {
-            throw new ShellOperationException("That name is reserved.");
+            throw new ShellOperationException(I18n.T("Error.NameReserved"));
         }
 
         if (name.Length > 255)
         {
-            throw new ShellOperationException("The name is too long.");
+            throw new ShellOperationException(I18n.T("Error.NameTooLong"));
         }
 
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
-            throw new ShellOperationException("The name contains a character that is not allowed.");
+            throw new ShellOperationException(I18n.T("Error.NameInvalidChar"));
         }
 
         if (name.EndsWith(' ') || name.EndsWith('.'))
         {
-            throw new ShellOperationException("A name cannot end with a space or a period.");
+            throw new ShellOperationException(I18n.T("Error.NameEndsWithSpace"));
         }
 
         string baseName = name.Split('.')[0];
         if (ReservedNames.Contains(baseName))
         {
-            throw new ShellOperationException("That name is reserved by Windows.");
+            throw new ShellOperationException(I18n.T("Error.NameReservedWindows"));
         }
     }
 

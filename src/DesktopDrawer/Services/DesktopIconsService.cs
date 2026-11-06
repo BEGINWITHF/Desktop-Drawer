@@ -57,7 +57,7 @@ public sealed class DesktopIconsService
         catch (Exception ex)
         {
             AppLog.Write(ex, "Could not change desktop icon visibility");
-            throw new InvalidOperationException("Windows did not allow the desktop icon setting to change.", ex);
+            throw new InvalidOperationException(I18n.T("Error.IconSetting"), ex);
         }
     }
 
