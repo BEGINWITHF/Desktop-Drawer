@@ -6,7 +6,7 @@
 
 Turn the Windows desktop into a **paged desktop**. Desktop Drawer never moves, renames, or deletes your files. It draws a native-like icon grid over the wallpaper so a crowded desktop stays manageable.
 
-## Highlights
+## Features
 
 - Icons are drawn directly on the wallpaper: no large title bar and no window frame.
 - The window is **truly transparent**; wallpaper changes, slideshows, and live wallpapers show through.
@@ -18,17 +18,9 @@ Turn the Windows desktop into a **paged desktop**. Desktop Drawer never moves, r
 
 ## Installation
 
-Download the latest installer from [Releases](https://github.com/BEGINWITHF/Desktop-Drawer/releases) and run it. It installs per-user to `%LocalAppData%\DesktopDrawer` without administrator rights, adds a Start menu shortcut, and registers an uninstaller. The installer UI supports English / 简体中文 / 繁體中文 / 日本語.
+Download the installer from the Releases page and run it. It installs per-user to `%LocalAppData%\DesktopDrawer` without administrator rights, adds a Start menu shortcut, and registers an uninstaller.
 
-Requirements: Windows 10/11 and the .NET 9 Desktop Runtime.
-
-From source:
-
-```powershell
-.\build.ps1
-```
-
-The app is single-instance; launching it again will not create a second desktop.
+Requires Windows 10/11 and the .NET 9 Desktop Runtime.
 
 ## Shortcuts
 
@@ -78,22 +70,14 @@ All settings save instantly.
 
 ## Layout and grouping
 
-**Layout**: Settings → LAYOUT → **Adjust layout**. Drag the header, pager, group badge, summary, and hint to move them; drag the edge and corner grips to resize. **Reset** restores the defaults and **Done** exits. Positions and sizes are stored proportionally in `settings.json`.
+**Layout**: Settings → LAYOUT → **Adjust layout**. Drag the header, pager, group badge, summary, and hint to move them; drag the edge and corner grips to resize. **Reset** restores the defaults and **Done** exits.
 
 **Grouping**: Right-click the desktop and choose **Group by** to group by type, name, or date modified. Files are never moved; icons in the same group are simply placed on the same page range. Choose **None** to return to ungrouped pages.
 
 ## Updates
 
-Use **Update now** in ABOUT to check GitHub Releases. It downloads and verifies the update, replaces the app files, and restarts automatically. Settings, layout, and colors are preserved. Pre-release builds are not offered automatically.
+Use **Update now** in ABOUT to check for updates, install them, and restart automatically. Settings are preserved.
 
 ## Native desktop icons
 
 Desktop Drawer hides the native Windows desktop icons while it is running and restores them when it exits, including after a crash. Closing to the tray also restores them first.
-
-## Data
-
-Settings are stored in `%APPDATA%\DesktopDrawer\settings.json`. Delete that file to reset the app.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
