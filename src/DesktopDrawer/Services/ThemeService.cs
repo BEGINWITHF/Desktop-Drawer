@@ -101,10 +101,10 @@ internal static class ThemeService
         SetBrush("NavPressedBrush", WithAlpha(surface, 0x2A));
 
         // Strong panels (settings, menus, toasts, the pager and badges).
-        SetBrush("SettingsPanelBrush", WithAlpha(panel, 0xF5));
-        SetBrush("PanelStrongBrush", WithAlpha(panel, 0xF2));
-        SetBrush("MenuSurfaceBrush", WithAlpha(panel, 0xF5));
-        SetBrush("ToastSurfaceBrush", WithAlpha(panel, 0xF5));
+        SetBrush("SettingsPanelBrush", WithAlpha(panel, 0xFF));
+        SetBrush("PanelStrongBrush", WithAlpha(panel, 0xFF));
+        SetBrush("MenuSurfaceBrush", WithAlpha(panel, 0xFF));
+        SetBrush("ToastSurfaceBrush", WithAlpha(panel, 0xFF));
         SetBrush("PagerSurfaceBrush", WithAlpha(Blend(panel, shade, 0.45), 0xA6));
         SetBrush("BadgePanelBrush", WithAlpha(Blend(panel, shade, 0.45), 0xB3));
         SetBrush("CloseSurfaceBrush", WithAlpha(Blend(panel, Colors.White, 0.16), 0xD9));
