@@ -14,7 +14,7 @@
         ShowActivated="False"
         WindowStartupLocation="Manual"
         Background="Transparent"
-        Foreground="{StaticResource TextPrimaryBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
         FontFamily="{StaticResource UiFont}"
         FontSize="13"
         UseLayoutRounding="True"
@@ -53,8 +53,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Card" Property="Background" Value="#10FFFFFF" />
-                                <Setter TargetName="Card" Property="BorderBrush" Value="#18FFFFFF" />
+                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource TileHoverBrush}" />
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource TileHoverBorderBrush}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Panel.ZIndex" Value="10" />
@@ -68,10 +68,10 @@
         </Style>
 
         <Style x:Key="RenameTextBox" TargetType="{x:Type TextBox}">
-            <Setter Property="Background" Value="#26FFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource RenameSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
             <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
             <Setter Property="SelectionOpacity" Value="0.35" />
@@ -109,16 +109,16 @@
                                        TextWrapping="Wrap" />
                             <TextBlock Text="{Binding TypeLabel}"
                                        FontSize="11"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        Margin="0,4,0,0" />
                             <TextBlock Text="{Binding FullPath}"
                                        FontSize="10.5"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,7,0,0" />
                             <TextBlock Text="{Binding ModifiedText}"
                                        FontSize="10.5"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,3,0,0" />
                         </StackPanel>
                     </ToolTip>
@@ -145,13 +145,13 @@
                                    Style="{StaticResource Glyph}"
                                    Text="&#xE7C3;"
                                    FontSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                   Foreground="#66FFFFFF"
+                                   Foreground="{DynamicResource IconPlaceholderBrush}"
                                    Visibility="Collapsed" />
                         <TextBlock x:Name="FolderGlyph"
                                    Style="{StaticResource Glyph}"
                                    Text="&#xE8B7;"
                                    FontSize="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                                   Foreground="#66FFFFFF"
+                                   Foreground="{DynamicResource IconPlaceholderBrush}"
                                    Visibility="Collapsed" />
                     </Grid>
 
@@ -170,7 +170,7 @@
                                    TextTrimming="CharacterEllipsis"
                                    TextAlignment="Center"
                                    LineHeight="16"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                     </Canvas>
 
                     <TextBox x:Name="RenameBox"
@@ -243,8 +243,8 @@
                         <Border Width="34"
                                 Height="34"
                                 CornerRadius="9"
-                                Background="#0EFFFFFF"
-                                BorderBrush="#18FFFFFF"
+                                Background="{DynamicResource BadgeSurfaceBrush}"
+                                BorderBrush="{DynamicResource BadgeBorderBrush}"
                                 BorderThickness="1">
                             <Image Source="Assets/app.png"
                                    Width="32"
@@ -258,7 +258,7 @@
                                        FontWeight="SemiBold" />
                             <TextBlock Text="A paged desktop"
                                        FontSize="10"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,0,0" />
                         </StackPanel>
                     </StackPanel>
@@ -281,7 +281,7 @@
                             <Path Grid.Column="0"
                                   Width="14"
                                   Height="14"
-                                  Stroke="{StaticResource TextMutedBrush}"
+                                  Stroke="{DynamicResource TextMutedBrush}"
                                   StrokeThickness="1.5"
                                   StrokeStartLineCap="Round"
                                   StrokeEndLineCap="Round"
@@ -298,7 +298,7 @@
                                          GotKeyboardFocus="SearchBox_GotKeyboardFocus" />
                                 <TextBlock Text="Search desktop"
                                            FontSize="12.5"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            VerticalAlignment="Center"
                                            IsHitTestVisible="False"
                                            Visibility="{Binding HasSearchText, Converter={StaticResource InverseBoolToVisibility}}" />
@@ -333,7 +333,7 @@
                                            Text="&#xE8CB;"
                                            FontSize="12"
                                            Margin="0,0,5,0"
-                                           Foreground="{StaticResource TextMutedBrush}" />
+                                           Foreground="{DynamicResource TextMutedBrush}" />
                                 <TextBlock x:Name="SortLabelText"
                                            Text="Name"
                                            FontSize="11.5"
@@ -342,7 +342,7 @@
                                       Height="4"
                                       Margin="5,1,0,0"
                                       Stretch="Fill"
-                                      Fill="{StaticResource TextMutedBrush}"
+                                      Fill="{DynamicResource TextMutedBrush}"
                                       Data="M 0,0 L 8,0 L 4,5 Z"
                                       VerticalAlignment="Center" />
                             </StackPanel>
@@ -411,7 +411,7 @@
 
                         <Border Width="1"
                                 Height="16"
-                                Background="#1AFFFFFF"
+                                Background="{DynamicResource DividerStrongBrush}"
                                 Margin="5,0" />
 
                         <Button Style="{StaticResource IconButton}"
@@ -482,9 +482,9 @@
                             IsHitTestVisible="False"
                             ClipToBounds="True">
                         <Border x:Name="SelectionRect"
-                                BorderBrush="#FF5AA0FF"
+                                BorderBrush="{DynamicResource SelectionBorderBrush}"
                                 BorderThickness="1"
-                                Background="#335AA0FF"
+                                Background="{DynamicResource SelectionFillBrush}"
                                 Visibility="Collapsed" />
                     </Canvas>
 
@@ -496,7 +496,7 @@
                         <TextBlock Style="{StaticResource Glyph}"
                                    Text="&#xE8B7;"
                                    FontSize="52"
-                                   Foreground="#2EFFFFFF" />
+                                   Foreground="{DynamicResource EmptyGlyphBrush}" />
                         <TextBlock x:Name="EmptyTitle"
                                    Text="Nothing here yet"
                                    FontFamily="{StaticResource DisplayFont}"
@@ -507,7 +507,7 @@
                         <TextBlock x:Name="EmptySubtitle"
                                    Text="New files on your desktop will show up here."
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center"
                                    Margin="0,6,0,0" />
                     </StackPanel>
@@ -517,8 +517,8 @@
                             VerticalAlignment="Bottom"
                             Margin="0,0,0,16"
                             Padding="14,9"
-                            Background="#F5191D27"
-                            BorderBrush="#2AFFFFFF"
+                            Background="{DynamicResource ToastSurfaceBrush}"
+                            BorderBrush="{DynamicResource ToastBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="10"
                             Visibility="Collapsed"
@@ -535,7 +535,7 @@
                             <TextBlock x:Name="ToastText"
                                        Text=""
                                        FontSize="12"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -544,8 +544,8 @@
             <Border x:Name="PagerBar"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    Background="#A60B0E16"
-                    BorderBrush="#3DFFFFFF"
+                    Background="{DynamicResource PagerSurfaceBrush}"
+                    BorderBrush="{DynamicResource PagerBorderBrush}"
                     BorderThickness="1"
                     CornerRadius="18"
                     Padding="9,3">
@@ -563,7 +563,7 @@
                     </Button>
                     <TextBlock Text="{Binding CurrentPageLabel}"
                                FontSize="10.5"
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                Margin="9,0"
                                VerticalAlignment="Center" />
                     <Grid x:Name="DotsHost" VerticalAlignment="Center">
@@ -621,27 +621,27 @@
                        FontSize="11"
                        HorizontalAlignment="Left"
                        VerticalAlignment="Top"
-                       Foreground="{StaticResource TextSecondaryBrush}" />
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
 
             <TextBlock x:Name="HintText"
                        Text="Scroll or use PgUp / PgDn"
                        FontSize="10.5"
                        HorizontalAlignment="Left"
                        VerticalAlignment="Top"
-                       Foreground="{StaticResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}" />
 
             <Border x:Name="GroupBadge"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
-                    Background="#B30B0E16"
-                    BorderBrush="#33FFFFFF"
+                    Background="{DynamicResource BadgePanelBrush}"
+                    BorderBrush="{DynamicResource StrokeStrongBrush}"
                     BorderThickness="1"
                     CornerRadius="10"
                     Padding="10,4"
                     Visibility="{Binding ShowGroupBadge, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Text="{Binding CurrentGroupText}"
                            FontSize="11"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
             </Border>
         </Grid>
 
@@ -649,14 +649,14 @@
               Visibility="Collapsed"
               Panel.ZIndex="20">
             <Border x:Name="SettingsBackdrop"
-                    Background="#8C000000"
+                    Background="{DynamicResource ScrimBrush}"
                     MouseDown="SettingsBackdrop_MouseDown" />
 
             <Border x:Name="SettingsPanel"
                     Width="404"
                     HorizontalAlignment="Right"
-                    Background="#F5161A23"
-                    BorderBrush="#22FFFFFF"
+                    Background="{DynamicResource SettingsPanelBrush}"
+                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
                     BorderThickness="1,0,0,1"
                     CornerRadius="18,0,0,18">
                 <Border.Effect>
@@ -686,7 +686,7 @@
                                            FontWeight="SemiBold" />
                                 <TextBlock Text="Desktop Drawer"
                                            FontSize="10.5"
-                                           Foreground="{StaticResource TextMutedBrush}" />
+                                           Foreground="{DynamicResource TextMutedBrush}" />
                             </StackPanel>
                         </StackPanel>
                         <Button HorizontalAlignment="Right"
@@ -736,8 +736,8 @@
                             <TextBlock Text="Icon size" Style="{StaticResource SettingTitle}" />
                             <TextBlock Text="Choose how large desktop items appear. Smaller tiles fit more items on each page."
                                        Style="{StaticResource SettingDescription}" />
-                            <Border Background="#0FFFFFFF"
-                                    BorderBrush="{StaticResource StrokeBrush}"
+                            <Border Background="{DynamicResource SegmentSurfaceBrush}"
+                                    BorderBrush="{DynamicResource StrokeBrush}"
                                     BorderThickness="1"
                                     CornerRadius="10"
                                     Padding="2"
@@ -775,7 +775,7 @@
                                            Grid.Column="1"
                                            Text="72 px"
                                            FontSize="11"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </Grid>
                             <Slider x:Name="IconSizeSlider"
                                     Minimum="24"
@@ -791,46 +791,28 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Accent color" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="Selection outlines, focus rings, links and highlights."
+                                    <TextBlock Text="Colors" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="Every colour in the overlay is editable. Pick one to open the RGB picker."
                                                Style="{StaticResource SettingDescription}" />
                                 </StackPanel>
-                            </Grid>
-
-                            <WrapPanel x:Name="AccentSwatchesPanel"
-                                       Orientation="Horizontal"
-                                       Margin="0,10,10,0" />
-
-                            <Grid Margin="0,10,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Custom"
-                                           VerticalAlignment="Center"
-                                           FontSize="11.5"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           Margin="0,0,10,0" />
-                                <TextBox x:Name="AccentHexBox"
-                                         Grid.Column="1"
-                                         Height="30"
-                                         Padding="10,0"
-                                         VerticalContentAlignment="Center"
-                                         FontSize="11.5"
-                                         MaxLength="9"
-                                         Text="#7C9CFF"
-                                         KeyDown="AccentHexBox_KeyDown"
-                                         LostFocus="AccentHexBox_LostFocus" />
-                                <Button Grid.Column="2"
-                                        Content="Apply"
+                                <Button Grid.Column="1"
+                                        Content="Reset"
                                         Style="{StaticResource GhostButton}"
-                                        Padding="12,0"
-                                        Height="30"
-                                        Margin="8,0,0,0"
-                                        FontSize="11.5"
-                                        Click="AccentApplyButton_Click" />
+                                        Padding="10,0"
+                                        Height="28"
+                                        FontSize="11"
+                                        VerticalAlignment="Center"
+                                        Click="ResetColorsButton_Click" />
                             </Grid>
+
+                            <Border Margin="0,10,10,0"
+                                    Padding="6"
+                                    CornerRadius="12"
+                                    Background="{DynamicResource SegmentSurfaceBrush}"
+                                    BorderBrush="{DynamicResource StrokeBrush}"
+                                    BorderThickness="1">
+                                <StackPanel x:Name="ColorRowsPanel" />
+                            </Border>
 
                             <Grid Margin="0,16,10,0">
                                 <Grid.ColumnDefinitions>
@@ -842,7 +824,7 @@
                                            Grid.Column="1"
                                            Text="0%"
                                            FontSize="11"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </Grid>
                             <TextBlock Text="Darkens the wallpaper behind the icons. 0% keeps it untouched."
                                        Style="{StaticResource SettingDescription}" />
@@ -854,7 +836,7 @@
                                     Margin="0,8,10,0"
                                     ValueChanged="WallpaperDimSlider_ValueChanged" />
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,18,10,16" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,18,10,16" />
 
                             <TextBlock Text="GRID" Style="{StaticResource SectionLabel}" />
 
@@ -897,7 +879,7 @@
                                            FontSize="11"
                                            HorizontalAlignment="Right"
                                            VerticalAlignment="Center"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </Grid>
 
                             <Grid Margin="0,8,10,0">
@@ -921,10 +903,10 @@
                                            FontSize="11"
                                            HorizontalAlignment="Right"
                                            VerticalAlignment="Center"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </Grid>
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <TextBlock Text="SORTING" Style="{StaticResource SectionLabel}" />
 
@@ -964,7 +946,7 @@
                                           Unchecked="ShowHiddenToggle_Changed" />
                             </Grid>
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <TextBlock Text="BEHAVIOR" Style="{StaticResource SectionLabel}" />
 
@@ -1022,7 +1004,7 @@
                                           Unchecked="StartWithWindowsToggle_Changed" />
                             </Grid>
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <TextBlock Text="WINDOWS DESKTOP" Style="{StaticResource SectionLabel}" />
 
@@ -1064,7 +1046,7 @@
 
                             <TextBlock Text="Desktop icon visibility is restored when Desktop Drawer exits."
                                        Style="{StaticResource SettingDescription}"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,10,12" />
 
                             <WrapPanel Margin="0,0,10,0">
@@ -1078,7 +1060,7 @@
                                         Click="RefreshIconsButton_Click" />
                             </WrapPanel>
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <TextBlock Text="DIAGNOSTICS" Style="{StaticResource SectionLabel}" />
 
@@ -1097,7 +1079,7 @@
                                         Click="OpenDiagnosticFolderButton_Click" />
                             </WrapPanel>
 
-                            <Border Height="1" Background="#12FFFFFF" Margin="0,20,10,18" />
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <TextBlock Text="ABOUT" Style="{StaticResource SectionLabel}" />
                             <TextBlock Text="Desktop Drawer 1.0"
@@ -1111,7 +1093,7 @@
                                         Click="OpenDataFolderButton_Click" />
                                 <Button Style="{StaticResource GhostButton}"
                                         Content="Exit Desktop Drawer"
-                                        Foreground="{StaticResource DangerBrush}"
+                                        Foreground="{DynamicResource DangerBrush}"
                                         Margin="0,0,8,8"
                                         Click="ExitApplicationButton_Click" />
                             </WrapPanel>
@@ -1121,10 +1103,221 @@
                     <TextBlock Grid.Row="2"
                                Text="Changes are saved automatically."
                                FontSize="10.5"
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                Margin="0,12,10,0" />
                 </Grid>
             </Border>
+
+            <Grid x:Name="ColorPickerOverlay"
+                  Background="{DynamicResource PickerScrimBrush}"
+                  Visibility="Collapsed"
+                  Panel.ZIndex="30"
+                  MouseDown="ColorPickerBackdrop_MouseDown">
+                <Border x:Name="ColorPickerCard"
+                        Width="360"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Padding="22,20,22,18"
+                        CornerRadius="18"
+                        Background="{DynamicResource SettingsPanelBrush}"
+                        BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
+                        BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="36" ShadowDepth="10" Opacity="0.55" Color="#000000" />
+                    </Border.Effect>
+
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Text="Choose a color"
+                                           FontFamily="{StaticResource DisplayFont}"
+                                           FontSize="17"
+                                           FontWeight="SemiBold" />
+                                <TextBlock x:Name="PickerTokenLabel"
+                                           Text="Accent"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           Margin="0,3,0,0" />
+                            </StackPanel>
+                            <Button HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Style="{StaticResource IconButton}"
+                                    Width="30"
+                                    Height="30"
+                                    Click="ColorPickerCancel_Click"
+                                    ToolTip="Close the color picker">
+                                <TextBlock Style="{StaticResource Glyph}"
+                                           Text="&#xE8BB;"
+                                           FontSize="10" />
+                            </Button>
+                        </Grid>
+
+                        <Border x:Name="PickerPreviewBorder"
+                                Height="56"
+                                Margin="0,14,0,0"
+                                CornerRadius="10"
+                                BorderBrush="{DynamicResource StrokeBrush}"
+                                BorderThickness="1">
+                            <Border.Background>
+                                <SolidColorBrush x:Name="PickerPreviewBrush" Color="#7C9CFF" />
+                            </Border.Background>
+                            <TextBlock x:Name="PickerPreviewText"
+                                       Text="#7C9CFF"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+
+                        <UniformGrid x:Name="PickerPaletteGrid"
+                                     Columns="8"
+                                     Margin="0,14,0,0" />
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="48" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="R"
+                                       FontSize="11.5"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <Grid Grid.Column="1" Margin="0,0,12,0">
+                                <Border Height="8"
+                                        Margin="8,0"
+                                        CornerRadius="4"
+                                        VerticalAlignment="Center"
+                                        Background="{StaticResource RedChannelBrush}" />
+                                <Slider x:Name="RedSlider"
+                                        AutomationProperties.Name="Red"
+                                        Style="{StaticResource ChannelSlider}"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        ValueChanged="ColorChannelSlider_ValueChanged" />
+                            </Grid>
+                            <TextBox x:Name="RedBox"
+                                     AutomationProperties.Name="Red value"
+                                     Grid.Column="2"
+                                     Style="{StaticResource PickerValueBox}"
+                                     MaxLength="3"
+                                     KeyDown="ColorChannelBox_KeyDown"
+                                     LostFocus="ColorChannelBox_LostFocus" />
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="48" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="G"
+                                       FontSize="11.5"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <Grid Grid.Column="1" Margin="0,0,12,0">
+                                <Border Height="8"
+                                        Margin="8,0"
+                                        CornerRadius="4"
+                                        VerticalAlignment="Center"
+                                        Background="{StaticResource GreenChannelBrush}" />
+                                <Slider x:Name="GreenSlider"
+                                        AutomationProperties.Name="Green"
+                                        Style="{StaticResource ChannelSlider}"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        ValueChanged="ColorChannelSlider_ValueChanged" />
+                            </Grid>
+                            <TextBox x:Name="GreenBox"
+                                     AutomationProperties.Name="Green value"
+                                     Grid.Column="2"
+                                     Style="{StaticResource PickerValueBox}"
+                                     MaxLength="3"
+                                     KeyDown="ColorChannelBox_KeyDown"
+                                     LostFocus="ColorChannelBox_LostFocus" />
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="48" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="B"
+                                       FontSize="11.5"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <Grid Grid.Column="1" Margin="0,0,12,0">
+                                <Border Height="8"
+                                        Margin="8,0"
+                                        CornerRadius="4"
+                                        VerticalAlignment="Center"
+                                        Background="{StaticResource BlueChannelBrush}" />
+                                <Slider x:Name="BlueSlider"
+                                        AutomationProperties.Name="Blue"
+                                        Style="{StaticResource ChannelSlider}"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        ValueChanged="ColorChannelSlider_ValueChanged" />
+                            </Grid>
+                            <TextBox x:Name="BlueBox"
+                                     AutomationProperties.Name="Blue value"
+                                     Grid.Column="2"
+                                     Style="{StaticResource PickerValueBox}"
+                                     MaxLength="3"
+                                     KeyDown="ColorChannelBox_KeyDown"
+                                     LostFocus="ColorChannelBox_LostFocus" />
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Hex"
+                                       FontSize="11.5"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,0,12,0" />
+                            <TextBox x:Name="PickerHexBox"
+                                     AutomationProperties.Name="Hex value"
+                                     Grid.Column="1"
+                                     Height="28"
+                                     Style="{StaticResource PickerValueBox}"
+                                     MaxLength="7"
+                                     KeyDown="PickerHexBox_KeyDown"
+                                     TextChanged="PickerHexBox_TextChanged"
+                                     LostFocus="PickerHexBox_LostFocus" />
+                        </Grid>
+
+                        <Grid Margin="0,16,0,0">
+                            <Button Content="Reset"
+                                    Style="{StaticResource GhostButton}"
+                                    HorizontalAlignment="Left"
+                                    Height="30"
+                                    Padding="12,0"
+                                    FontSize="11.5"
+                                    Click="ColorPickerReset_Click" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Cancel"
+                                        Style="{StaticResource GhostButton}"
+                                        Height="30"
+                                        Padding="14,0"
+                                        FontSize="11.5"
+                                        Click="ColorPickerCancel_Click" />
+                                <Button Content="Apply"
+                                        AutomationProperties.Name="Apply color"
+                                        Style="{StaticResource AccentButton}"
+                                        Height="30"
+                                        Padding="16,0"
+                                        FontSize="11.5"
+                                        Margin="8,0,0,0"
+                                        Click="ColorPickerApply_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

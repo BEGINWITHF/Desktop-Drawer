@@ -45,7 +45,8 @@ public sealed class AppSettings
     public bool CloseToTray { get; set; } = true;
     public bool StartWithWindows { get; set; } = true;
     public bool HideIconsOnLaunch { get; set; } = true;
-    public string AccentColor { get; set; } = string.Empty;   // empty = default accent
+    public string AccentColor { get; set; } = string.Empty;   // legacy, migrated into Colors
+    public Dictionary<string, string> Colors { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public int WallpaperDim { get; set; }                      // 0..60 percent
     public bool AlwaysShowChrome { get; set; }
     public Dictionary<string, ChromePosition> Layout { get; set; } = new(StringComparer.OrdinalIgnoreCase);

@@ -154,8 +154,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         InitializeComponent();
         DataContext = this;
 
-        BuildAccentSwatches();
-        ThemeService.ApplyAccent(_settings.AccentColor);
+        BuildColorRows();
+        ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
 
         PageList.RenderTransform = new TranslateTransform();

@@ -38,6 +38,7 @@ public sealed class SettingsService
 
             string json = File.ReadAllText(SettingsPath);
             AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+            settings.Colors ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             if (settings.SettingsVersion < CurrentSettingsVersion)
             {
@@ -54,7 +55,7 @@ public sealed class SettingsService
         }
     }
 
-    private const int CurrentSettingsVersion = 3;
+    private const int CurrentSettingsVersion = 4;
 
     private static void Migrate(AppSettings settings)
     {
@@ -69,6 +70,19 @@ public sealed class SettingsService
         {
             settings.StartWithWindows = true;
             settings.SettingsVersion = 3;
+        }
+
+        if (settings.SettingsVersion < 4)
+        {
+            // The single accent colour became a full palette. Keep the old choice.
+            if (!string.IsNullOrWhiteSpace(settings.AccentColor) &&
+                !settings.Colors.ContainsKey(ThemeColorTokens.Accent))
+            {
+                settings.Colors[ThemeColorTokens.Accent] = settings.AccentColor;
+            }
+
+            settings.AccentColor = string.Empty;
+            settings.SettingsVersion = 4;
         }
     }
 

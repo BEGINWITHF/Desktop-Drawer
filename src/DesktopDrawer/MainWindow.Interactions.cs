@@ -45,7 +45,11 @@ public partial class MainWindow
 
         if (e.Key == Key.Escape)
         {
-            if (_rubberBandActive)
+            if (ColorPickerOverlay.Visibility == Visibility.Visible)
+            {
+                CancelColorPicker();
+            }
+            else if (_rubberBandActive)
             {
                 EndRubberBand();
             }
