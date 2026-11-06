@@ -38,7 +38,7 @@
     <SolidColorBrush x:Key="PanelStrongBrush" Color="#FF0D0D0D" />
     <SolidColorBrush x:Key="PanelHoverBrush" Color="#16FFFFFF" />
     <SolidColorBrush x:Key="StrokeBrush" Color="#30FFFFFF" />
-    <SolidColorBrush x:Key="StrokeStrongBrush" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="StrokeStrongBrush" Color="#33FFFFFF" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#66FFFFFF" />
     <SolidColorBrush x:Key="WindowTextBrush" Color="#F0F0F0" />
@@ -62,30 +62,30 @@
     <SolidColorBrush x:Key="RenameSurfaceBrush" Color="#26FFFFFF" />
     <SolidColorBrush x:Key="TrackBrush" Color="#26FFFFFF" />
     <SolidColorBrush x:Key="GhostPressedBrush" Color="#26FFFFFF" />
-    <SolidColorBrush x:Key="NavPressedBrush" Color="#2AFFFFFF" />
+    <SolidColorBrush x:Key="NavPressedBrush" Color="#18FFFFFF" />
 
     <SolidColorBrush x:Key="SettingsPanelBrush" Color="#FF0D0D0D" />
     <SolidColorBrush x:Key="MenuSurfaceBrush" Color="#FF0D0D0D" />
     <SolidColorBrush x:Key="ToastSurfaceBrush" Color="#FF0D0D0D" />
-    <SolidColorBrush x:Key="PagerSurfaceBrush" Color="#F2080808" />
-    <SolidColorBrush x:Key="BadgePanelBrush" Color="#F2080808" />
+    <SolidColorBrush x:Key="PagerSurfaceBrush" Color="#A6080808" />
+    <SolidColorBrush x:Key="BadgePanelBrush" Color="#B3080808" />
     <SolidColorBrush x:Key="CloseSurfaceBrush" Color="#D93B4048" />
     <SolidColorBrush x:Key="CloseHoverBrush" Color="#F04A4F58" />
-    <SolidColorBrush x:Key="SearchSurfaceBrush" Color="#E60D0D0D" />
-    <SolidColorBrush x:Key="SearchFocusSurfaceBrush" Color="#F20D0D0D" />
+    <SolidColorBrush x:Key="SearchSurfaceBrush" Color="#8C0D0D0D" />
+    <SolidColorBrush x:Key="SearchFocusSurfaceBrush" Color="#B30D0D0D" />
 
     <SolidColorBrush x:Key="DividerBrush" Color="#20FFFFFF" />
-    <SolidColorBrush x:Key="MenuDividerBrush" Color="#2AFFFFFF" />
-    <SolidColorBrush x:Key="TileHoverBorderBrush" Color="#2AFFFFFF" />
-    <SolidColorBrush x:Key="BadgeBorderBrush" Color="#2AFFFFFF" />
-    <SolidColorBrush x:Key="DividerStrongBrush" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="MenuDividerBrush" Color="#18FFFFFF" />
+    <SolidColorBrush x:Key="TileHoverBorderBrush" Color="#18FFFFFF" />
+    <SolidColorBrush x:Key="BadgeBorderBrush" Color="#18FFFFFF" />
+    <SolidColorBrush x:Key="DividerStrongBrush" Color="#1AFFFFFF" />
     <SolidColorBrush x:Key="SettingsPanelBorderBrush" Color="#3DFFFFFF" />
     <SolidColorBrush x:Key="MenuBorderBrush" Color="#40FFFFFF" />
     <SolidColorBrush x:Key="ToastBorderBrush" Color="#40FFFFFF" />
     <SolidColorBrush x:Key="TrackBorderBrush" Color="#40FFFFFF" />
     <SolidColorBrush x:Key="ScrollThumbBrush" Color="#40FFFFFF" />
-    <SolidColorBrush x:Key="PagerBorderBrush" Color="#4DFFFFFF" />
-    <SolidColorBrush x:Key="SearchBorderBrush" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="PagerBorderBrush" Color="#3DFFFFFF" />
+    <SolidColorBrush x:Key="SearchBorderBrush" Color="#3DFFFFFF" />
     <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#66FFFFFF" />
     <SolidColorBrush x:Key="ScrimBrush" Color="#8C000000" />
     <SolidColorBrush x:Key="PickerScrimBrush" Color="#B3000000" />
@@ -188,7 +188,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0"
+                            CornerRadius="9"
                             SnapsToDevicePixels="True">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
@@ -219,7 +219,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0"
+                            CornerRadius="9"
                             SnapsToDevicePixels="True">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
@@ -289,7 +289,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0">
+                            CornerRadius="9">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
                                           TextElement.Foreground="{TemplateBinding Foreground}" />
@@ -323,7 +323,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0"
+                            CornerRadius="9"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
@@ -362,7 +362,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0">
+                            CornerRadius="21">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
                                           TextElement.Foreground="{TemplateBinding Foreground}" />
@@ -391,7 +391,7 @@
         <Setter Property="Margin" Value="1,0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
         <Setter Property="Cursor" Value="Hand" />
@@ -401,7 +401,7 @@
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border x:Name="Root"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="0"
+                            CornerRadius="14"
                             BorderBrush="Transparent"
                             BorderThickness="1">
                         <ContentPresenter HorizontalAlignment="Center"
@@ -529,7 +529,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
-                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="0">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="11">
                         <ContentPresenter HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
                                           TextElement.Foreground="{TemplateBinding Foreground}" />
@@ -546,33 +546,33 @@
     </Style>
 
     <Style x:Key="ToggleSwitch" TargetType="{x:Type CheckBox}">
-        <Setter Property="Width" Value="42" />
-        <Setter Property="Height" Value="24" />
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="18" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type CheckBox}">
-                    <Grid Width="42" Height="24" Background="Transparent">
+                    <Grid Width="34" Height="18" Background="Transparent">
                         <Border x:Name="Track"
                                 CornerRadius="0"
                                 Background="{DynamicResource TrackBrush}"
                                 BorderBrush="{DynamicResource TrackBorderBrush}"
                                 BorderThickness="1" />
                         <Border x:Name="Thumb"
-                                Width="14"
-                                Height="14"
+                                Width="10"
+                                Height="12"
                                 CornerRadius="0"
                                 Background="{DynamicResource TextPrimaryBrush}"
                                 HorizontalAlignment="Left"
-                                Margin="5,0,0,0" />
+                                Margin="3,0,0,0" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
-                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,5,0" />
+                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0" />
                             <Setter TargetName="Thumb" Property="Background" Value="{DynamicResource OnAccentBrush}" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -589,9 +589,9 @@
 
     <Style x:Key="SegmentRadio" TargetType="{x:Type RadioButton}">
         <Setter Property="Margin" Value="2,0" />
-        <Setter Property="Padding" Value="13,7" />
+        <Setter Property="Padding" Value="10,5" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="11.5" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">

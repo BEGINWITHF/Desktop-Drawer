@@ -47,7 +47,7 @@
                                 Background="Transparent"
                                 BorderBrush="Transparent"
                                 BorderThickness="1"
-                                CornerRadius="0"
+                                CornerRadius="14"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter x:Name="ContentHost" />
                         </Border>
@@ -84,7 +84,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="0"
+                                CornerRadius="7"
                                 Padding="4,3">
                             <ScrollViewer x:Name="PART_ContentHost"
                                           VerticalAlignment="Center"
@@ -105,7 +105,7 @@
                         <StackPanel MaxWidth="360">
                             <TextBlock Text="{Binding DisplayName}"
                                        FontSize="{DynamicResource FontSize125}"
-                                       FontWeight="Bold"
+                                       FontWeight="SemiBold"
                                        TextWrapping="Wrap" />
                             <TextBlock Text="{Binding TypeLabel}"
                                        FontSize="{DynamicResource FontSize11}"
@@ -255,7 +255,7 @@
                             <TextBlock Text="{DynamicResource Str.App.Title}"
                                        FontFamily="{StaticResource DisplayFont}"
                                        FontSize="{DynamicResource FontSize14}"
-                                       FontWeight="Bold" />
+                                       FontWeight="SemiBold" />
                             <TextBlock Text="{DynamicResource Str.App.Subtitle}"
                                        FontSize="{DynamicResource FontSize10}"
                                        Foreground="{DynamicResource TextMutedBrush}"
@@ -280,14 +280,14 @@
                                 Background="{DynamicResource PanelHoverBrush}"
                                 BorderBrush="{DynamicResource TileHoverBorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="0"
+                                CornerRadius="10"
                                 Opacity="0"
                                 IsHitTestVisible="False" />
                         <Border x:Name="SearchFocusLayer"
                                 Background="{DynamicResource SearchFocusSurfaceBrush}"
                                 BorderBrush="{DynamicResource AccentBorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="0"
+                                CornerRadius="10"
                                 Opacity="0"
                                 IsHitTestVisible="False" />
 
@@ -571,7 +571,7 @@
                                    Text="{DynamicResource Str.Empty.ClearTitle}"
                                    FontFamily="{StaticResource DisplayFont}"
                                    FontSize="{DynamicResource FontSize17}"
-                                   FontWeight="Bold"
+                                   FontWeight="SemiBold"
                                    HorizontalAlignment="Center"
                                    Margin="0,12,0,0" />
                         <TextBlock x:Name="EmptySubtitle"
@@ -614,7 +614,7 @@
                     Background="{DynamicResource PagerSurfaceBrush}"
                     BorderBrush="{DynamicResource PagerBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="0"
+                    CornerRadius="20"
                     Padding="8,4">
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Center"
@@ -645,7 +645,7 @@
                             <Border x:Name="PageIndicator"
                                     Width="40"
                                     Height="28"
-                                    CornerRadius="0"
+                                    CornerRadius="14"
                                     Background="{DynamicResource AccentBrush}"
                                     Visibility="Collapsed">
                                 <Border.RenderTransform>
@@ -702,7 +702,7 @@
                                     <Grid Width="40" Height="28" Margin="1,0" IsHitTestVisible="False">
                                         <TextBlock Text="{Binding Label}"
                                                    FontSize="{DynamicResource FontSize11}"
-                                                   FontWeight="Bold"
+                                                   FontWeight="SemiBold"
                                                    Foreground="{DynamicResource OnAccentBrush}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center" />
@@ -752,7 +752,7 @@
                     Background="{DynamicResource BadgePanelBrush}"
                     BorderBrush="{DynamicResource StrokeStrongBrush}"
                     BorderThickness="1"
-                    CornerRadius="0"
+                    CornerRadius="10"
                     Padding="10,4"
                     Visibility="{Binding ShowGroupBadge, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Text="{Binding CurrentGroupText}"
@@ -911,7 +911,7 @@
                                         Click="LayoutEditButton_Click" />
                             </Grid>
                             <Button Content="{DynamicResource Str.Layout.Reset}"
-                                    Style="{StaticResource ToolbarButton}"
+                                    Style="{StaticResource GhostButton}"
                                     HorizontalAlignment="Left"
                                     Padding="12,0"
                                     Height="30"
