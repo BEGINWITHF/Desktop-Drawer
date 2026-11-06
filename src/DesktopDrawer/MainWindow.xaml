@@ -334,17 +334,12 @@
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="Opacity" Value="1" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasSearchText}" Value="True">
-                                                    <DataTrigger.EnterActions>
-                                                        <BeginStoryboard>
-                                                            <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                                 To="0"
-                                                                                 Duration="0:0:0.1" />
-                                                            </Storyboard>
-                                                        </BeginStoryboard>
-                                                    </DataTrigger.EnterActions>
-                                                    <DataTrigger.ExitActions>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding HasSearchText}" Value="False" />
+                                                        <Condition Binding="{Binding IsSearchFocused}" Value="False" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.EnterActions>
                                                         <BeginStoryboard>
                                                             <Storyboard>
                                                                 <DoubleAnimation Storyboard.TargetProperty="Opacity"
@@ -352,8 +347,17 @@
                                                                                  Duration="0:0:0.18" />
                                                             </Storyboard>
                                                         </BeginStoryboard>
-                                                    </DataTrigger.ExitActions>
-                                                </DataTrigger>
+                                                    </MultiDataTrigger.EnterActions>
+                                                    <MultiDataTrigger.ExitActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                 To="0"
+                                                                                 Duration="0:0:0.1" />
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </MultiDataTrigger.ExitActions>
+                                                </MultiDataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>

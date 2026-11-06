@@ -53,6 +53,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _tileHeight = 152;
 
     private string _searchText = string.Empty;
+    private bool _isSearchFocused;
     private string _itemSummary = "Reading desktop...";
     private string _currentPageLabel = "Page 1 of 1";
     private bool _showPageDots;
@@ -239,6 +240,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     public bool HasSearchText => !string.IsNullOrWhiteSpace(_searchText);
+
+    /// <summary>True while the search field owns the keyboard focus.</summary>
+    public bool IsSearchFocused
+    {
+        get => _isSearchFocused;
+        private set => SetField(ref _isSearchFocused, value);
+    }
 
     public string ItemSummary
     {

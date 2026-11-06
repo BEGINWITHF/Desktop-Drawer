@@ -508,6 +508,7 @@ public partial class MainWindow
     private void SearchField_IsKeyboardFocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         bool focused = SearchField.IsKeyboardFocusWithin;
+        IsSearchFocused = focused;
 
         AnimateSearchLayer(SearchFocusLayer, focused ? 1 : 0, focused ? 150 : 220);
         AnimateSearchLayer(SearchIconAccent, focused ? 1 : 0, focused ? 150 : 220);
