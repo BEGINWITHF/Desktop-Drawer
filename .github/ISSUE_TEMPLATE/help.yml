@@ -1,0 +1,42 @@
+name: Help
+description: Ask for help using Desktop Drawer.
+title: "[Help]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for questions about installation or usage. For a reproducible bug, please use **Bug report** instead.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      description: Describe your goal and what is blocking you.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Optional. Mention any steps or workarounds you already tried.
+    validations:
+      required: false
+
+  - type: input
+    id: desktop_drawer_version
+    attributes:
+      label: Desktop Drawer version
+      description: Optional. Shown in Settings → ABOUT.
+      placeholder: "1.0.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional. Add screenshots, logs, or anything else that helps.
+    validations:
+      required: false

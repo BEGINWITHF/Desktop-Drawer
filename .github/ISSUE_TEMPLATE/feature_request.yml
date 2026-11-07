@@ -1,70 +1,33 @@
 name: Feature request
-description: Suggest an improvement or a new feature for Desktop Drawer.
+description: Suggest an idea or improvement for Desktop Drawer.
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. Please search existing requests before opening a new one.
+        Describe what you would like and why it would help.
 
   - type: textarea
-    id: problem
+    id: idea
     attributes:
-      label: Problem
-      description: What problem would this feature solve?
-      placeholder: I often need to ...
+      label: What would you like?
+      description: Describe the feature or change.
     validations:
       required: true
 
   - type: textarea
-    id: proposed_solution
+    id: why
     attributes:
-      label: Proposed solution
-      description: Describe how you would like it to work.
-      placeholder: Desktop Drawer could ...
-    validations:
-      required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives considered
-      description: Any workarounds or other approaches you have tried.
+      label: Why is it useful?
+      description: Optional. Describe the problem it solves.
     validations:
       required: false
 
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      description: Which part of the app does this affect?
-      options:
-        - Desktop layout
-        - Paging
-        - Settings
-        - Colors and appearance
-        - File operations
-        - Localization
-        - Performance
-        - Other
-    validations:
-      required: true
-
   - type: textarea
-    id: additional_context
+    id: context
     attributes:
       label: Additional context
-      description: Mockups, examples, or anything else that helps.
+      description: Optional. Add examples, mockups, or related issues.
     validations:
       required: false
-
-  - type: checkboxes
-    id: checklist
-    attributes:
-      label: Checklist
-      options:
-        - label: I searched existing feature requests and did not find a duplicate.
-          required: true
-        - label: I understand this may not be implemented exactly as proposed.
-          required: false
