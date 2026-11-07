@@ -74,7 +74,7 @@ All settings save instantly.
 
 **Manual adjustment**: Drag a single icon onto another to pin its position. The remaining icons keep sorting automatically; choose **Reset manual positions** in the sort menu to clear all pins.
 
-**Custom groups**: Create your own categories in Settings → CUSTOM GROUPS, then right-click icons and choose **Groups** to assign them. Choose **Group by → Custom** to show those categories in the page bar.
+**Custom groups**: Create, rename and reorder your own categories in Settings → CUSTOM GROUPS, then right-click icons and choose **Groups** to assign them. Choose **Group by → Custom** to show those categories in the page bar.
 
 **Grouping**: Right-click the desktop and choose **Group by** to group by type, name, or date modified. Files are never moved; icons in the same group are simply placed on the same page range. Choose **None** to return to ungrouped pages.
 

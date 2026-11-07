@@ -30,20 +30,40 @@ public partial class MainWindow
 
         foreach (CustomGroup group in _settings.CustomGroups)
         {
+            int index = _settings.CustomGroups.IndexOf(group);
+
             var row = new Grid { Margin = new Thickness(0, 0, 10, 0) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var name = new TextBlock
+            var nameBox = new TextBox
             {
                 Text = group.Name,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(2, 0, 8, 0)
+                Style = (Style)FindResource("PickerValueBox"),
+                Height = 26,
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalContentAlignment = VerticalAlignment.Center
             };
-            name.SetResourceReference(TextBlock.FontSizeProperty, "FontSize12");
-            name.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+            nameBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+            nameBox.SetResourceReference(Control.FontSizeProperty, "FontSize12");
+            nameBox.LostFocus += (_, _) => CommitCustomGroupRename(group, nameBox);
+            nameBox.KeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    e.Handled = true;
+                    Keyboard.ClearFocus();
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    nameBox.Text = group.Name;
+                    e.Handled = true;
+                    Keyboard.ClearFocus();
+                }
+            };
 
             string itemCount = group.Items.Count == 1
                 ? I18n.T("Groups.ItemOne")
@@ -58,27 +78,32 @@ public partial class MainWindow
             count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
             count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
 
-            var delete = new Button
-            {
-                Style = (Style)FindResource("PanelIconButton"),
-                Width = 24,
-                Height = 24,
-                ToolTip = I18n.T("Groups.Delete")
-            };
-            delete.Content = new TextBlock
-            {
-                Text = "\uE74D",
-                FontFamily = (FontFamily)FindResource("IconFont"),
-                FontSize = 10,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            delete.Click += (_, _) => DeleteCustomGroup(group);
+            Button up = CreateGroupRowButton(
+                "\uE70E",
+                I18n.T("Groups.MoveUp"),
+                index > 0,
+                () => MoveCustomGroup(group, -1));
+
+            Button down = CreateGroupRowButton(
+                "\uE70D",
+                I18n.T("Groups.MoveDown"),
+                index < _settings.CustomGroups.Count - 1,
+                () => MoveCustomGroup(group, 1));
+
+            Button delete = CreateGroupRowButton(
+                "\uE74D",
+                I18n.T("Groups.Delete"),
+                true,
+                () => DeleteCustomGroup(group));
 
             Grid.SetColumn(count, 1);
-            Grid.SetColumn(delete, 2);
-            row.Children.Add(name);
+            Grid.SetColumn(up, 2);
+            Grid.SetColumn(down, 3);
+            Grid.SetColumn(delete, 4);
+            row.Children.Add(nameBox);
             row.Children.Add(count);
+            row.Children.Add(up);
+            row.Children.Add(down);
             row.Children.Add(delete);
 
             var border = new Border
@@ -89,6 +114,99 @@ public partial class MainWindow
             };
             border.SetResourceReference(Border.BorderBrushProperty, "DividerBrush");
             CustomGroupsPanel.Children.Add(border);
+        }
+    }
+
+    private Button CreateGroupRowButton(string glyph, string tooltip, bool enabled, Action action)
+    {
+        var button = new Button
+        {
+            Style = (Style)FindResource("PanelIconButton"),
+            Width = 20,
+            Height = 20,
+            Margin = new Thickness(2, 0, 0, 0),
+            ToolTip = tooltip,
+            IsEnabled = enabled
+        };
+
+        button.Content = new TextBlock
+        {
+            Text = glyph,
+            FontFamily = (FontFamily)FindResource("IconFont"),
+            FontSize = 9,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        button.Click += (_, _) => action();
+        return button;
+    }
+
+    private void CommitCustomGroupRename(CustomGroup group, TextBox box)
+    {
+        string name = box.Text.Trim();
+
+        if (string.Equals(name, group.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (name.Length == 0)
+        {
+            ShowToast(I18n.T("Toast.GroupNameEmpty"));
+            box.Text = group.Name;
+            return;
+        }
+
+        if (string.Equals(name, I18n.T("Group.Ungrouped"), StringComparison.OrdinalIgnoreCase))
+        {
+            ShowToast(I18n.T("Toast.GroupNameReserved"));
+            box.Text = group.Name;
+            return;
+        }
+
+        if (_settings.CustomGroups.Any(other =>
+                !ReferenceEquals(other, group) &&
+                string.Equals(other.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowToast(I18n.T("Toast.GroupAlreadyExists"));
+            box.Text = group.Name;
+            return;
+        }
+
+        group.Name = name;
+        SaveSettings();
+        BuildCustomGroupRows();
+
+        if (_settings.GroupMode == GroupMode.Custom)
+        {
+            RebuildFilteredItems();
+            UpdatePage();
+        }
+
+        ShowToast(I18n.F("Toast.GroupRenamed", name));
+    }
+
+    private void MoveCustomGroup(CustomGroup group, int delta)
+    {
+        int index = _settings.CustomGroups.IndexOf(group);
+        int target = index + delta;
+
+        if (index < 0 || target < 0 || target >= _settings.CustomGroups.Count)
+        {
+            return;
+        }
+
+        (_settings.CustomGroups[index], _settings.CustomGroups[target]) =
+            (_settings.CustomGroups[target], _settings.CustomGroups[index]);
+
+        SaveSettings();
+        BuildCustomGroupRows();
+
+        if (_settings.GroupMode == GroupMode.Custom)
+        {
+            RebuildFilteredItems();
+            UpdatePage();
         }
     }
 
