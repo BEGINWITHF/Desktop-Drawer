@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the README
+    url: https://github.com/BEGINWITHF/Desktop-Drawer#readme
+    about: Installation, shortcuts and settings.
+  - name: Download the latest release
+    url: https://github.com/BEGINWITHF/Desktop-Drawer/releases
+    about: Get the installer or portable build.

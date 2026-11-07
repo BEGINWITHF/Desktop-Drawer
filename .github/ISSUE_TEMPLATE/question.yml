@@ -1,0 +1,56 @@
+name: Question
+description: Ask for help using Desktop Drawer.
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the README first. It covers installation, shortcuts and settings.
+        For bugs, use the bug report template instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do?
+      placeholder: How do I ...
+    validations:
+      required: true
+
+  - type: input
+    id: desktop_drawer_version
+    attributes:
+      label: Desktop Drawer version
+      description: Shown in Settings → ABOUT.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      description: Run `winver` to find the version and build number.
+      placeholder: Windows 11 23H2 (22631.xxxx)
+    validations:
+      required: false
+
+  - type: textarea
+    id: log_excerpt
+    attributes:
+      label: Log excerpt
+      description: |
+        If something is not working, paste the last 50-100 lines of
+        `%APPDATA%\DesktopDrawer\desktop-drawer.log`.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I read the README and searched existing issues.
+          required: true

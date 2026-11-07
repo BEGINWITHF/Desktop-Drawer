@@ -1,0 +1,110 @@
+name: Bug report
+description: Report a reproducible problem with Desktop Drawer.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+        Please search existing issues first and make sure you are running the latest release.
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen instead.
+      placeholder: When I ..., Desktop Drawer ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A short, reliable sequence that triggers the problem.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: desktop_drawer_version
+    attributes:
+      label: Desktop Drawer version
+      description: Shown in Settings → ABOUT.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation_type
+    attributes:
+      label: Installation type
+      options:
+        - Installer
+        - Portable ZIP
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      description: Run `winver` to find the version and build number.
+      placeholder: Windows 11 23H2 (22631.xxxx)
+    validations:
+      required: true
+
+  - type: input
+    id: dotnet_version
+    attributes:
+      label: .NET Desktop Runtime
+      description: Paste the `Microsoft.WindowsDesktop.App` line from `dotnet --list-runtimes`.
+      placeholder: Microsoft.WindowsDesktop.App 9.0.x
+    validations:
+      required: true
+
+  - type: input
+    id: display_setup
+    attributes:
+      label: Display setup
+      description: Resolution, scaling and monitor count.
+      placeholder: 2560x1440 @ 150%, 2 monitors
+    validations:
+      required: false
+
+  - type: textarea
+    id: log_excerpt
+    attributes:
+      label: Log excerpt
+      description: |
+        Paste the last 50-100 lines of `%APPDATA%\DesktopDrawer\desktop-drawer.log`.
+        If the issue is about updates, include `update.log` too. Remove personal paths if needed.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Screenshots or additional context
+      description: Drag images here or add anything else that helps.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I am running the latest release.
+          required: true
+        - label: I removed personal or sensitive information from logs and screenshots.
+          required: true
