@@ -72,6 +72,8 @@ All settings save instantly.
 
 **Layout**: Settings → LAYOUT → **Adjust layout**. Drag the header, pager, group badge, summary, and hint to move them; drag the edge and corner grips to resize. **Reset** restores the defaults and **Done** exits.
 
+**Manual adjustment**: Drag a single icon onto another to pin its position. The remaining icons keep sorting automatically; choose **Reset manual positions** in the sort menu to clear all pins.
+
 **Grouping**: Right-click the desktop and choose **Group by** to group by type, name, or date modified. Files are never moved; icons in the same group are simply placed on the same page range. Choose **None** to return to ungrouped pages.
 
 ## Updates

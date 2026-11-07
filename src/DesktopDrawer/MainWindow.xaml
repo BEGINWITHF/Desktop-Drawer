@@ -408,6 +408,13 @@
                                            Text="{DynamicResource Str.Sort.Name}"
                                            FontSize="{DynamicResource FontSize115}"
                                            VerticalAlignment="Center" />
+                                <TextBlock x:Name="ManualOrderGlyph"
+                                           Style="{StaticResource Glyph}"
+                                           Text="&#xE718;"
+                                           FontSize="{DynamicResource FontSize105}"
+                                           Margin="4,0,0,0"
+                                           Foreground="{DynamicResource AccentLightBrush}"
+                                           Visibility="Collapsed" />
                                 <Path Width="7"
                                       Height="4"
                                       Margin="5,1,0,0"
@@ -522,6 +529,10 @@
                              BorderThickness="0"
                              Padding="0"
                              SelectionMode="Extended"
+                             AllowDrop="True"
+                             DragOver="PageList_DragOver"
+                             DragLeave="PageList_DragLeave"
+                             Drop="PageList_Drop"
                              SelectionChanged="PageList_SelectionChanged"
                              MouseDoubleClick="PageList_MouseDoubleClick"
                              PreviewMouseLeftButtonDown="PageList_PreviewMouseLeftButtonDown"
@@ -555,6 +566,11 @@
                                 BorderBrush="{DynamicResource SelectionBorderBrush}"
                                 BorderThickness="1"
                                 Background="{DynamicResource SelectionFillBrush}"
+                                Visibility="Collapsed" />
+                        <Border x:Name="ReorderMarker"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="2"
+                                Background="Transparent"
                                 Visibility="Collapsed" />
                     </Canvas>
 

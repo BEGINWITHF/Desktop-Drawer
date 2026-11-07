@@ -53,6 +53,7 @@
   "Sort.GroupBy": "Group by",
   "Sort.None": "None",
   "Sort.Refresh": "Refresh",
+  "Sort.ResetManual": "Reset manual positions",
   "Group.Today": "Today",
   "Group.Yesterday": "Yesterday",
   "Group.ThisWeek": "This week",
@@ -216,6 +217,8 @@
   "ColorToken.Shade": "Shade",
   "ColorToken.ShadeHint": "Dimming behind the overlay and the wallpaper.",
 
+  "Toast.PositionPinned": "Position pinned",
+  "Toast.ManualReset": "Manual positions cleared",
   "Toast.GroupingOff": "Grouping off",
   "Toast.GroupedBy": "Grouped by {0}",
   "Toast.IconsHidden": "Windows desktop icons hidden",

@@ -39,6 +39,7 @@ public sealed class SettingsService
             string json = File.ReadAllText(SettingsPath);
             AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
             settings.Colors ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            settings.ManualOrder = NormalizeManualOrder(settings.ManualOrder);
 
             if (settings.SettingsVersion < CurrentSettingsVersion)
             {
@@ -56,6 +57,26 @@ public sealed class SettingsService
     }
 
     private const int CurrentSettingsVersion = 4;
+
+    private static Dictionary<string, int> NormalizeManualOrder(Dictionary<string, int>? order)
+    {
+        var normalized = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        if (order is null)
+        {
+            return normalized;
+        }
+
+        foreach ((string path, int position) in order)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                normalized[path.ToLowerInvariant()] = position;
+            }
+        }
+
+        return normalized;
+    }
 
     private static void Migrate(AppSettings settings)
     {

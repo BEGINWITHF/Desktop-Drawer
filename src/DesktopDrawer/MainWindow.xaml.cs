@@ -800,6 +800,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             _allItems = merged;
+            PruneManualOrder();
             _hasLoadedOnce = true;
             RebuildFilteredItems();
 
@@ -865,6 +866,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         var filtered = query.ToList();
         filtered.Sort(CompareItems);
+
+        if (!HasSearchText)
+        {
+            ApplyManualOrder(filtered);
+        }
+
         _filteredItems = filtered;
     }
 
@@ -1388,6 +1395,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             SortMode.Size => I18n.T("Sort.Size"),
             _ => I18n.T("Sort.Name")
         };
+
+        ManualOrderGlyph.Visibility = _settings.ManualOrder.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void UpdateTrayText()

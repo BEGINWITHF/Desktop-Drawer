@@ -53,6 +53,7 @@
   "Sort.GroupBy": "分组方式",
   "Sort.None": "无",
   "Sort.Refresh": "刷新",
+  "Sort.ResetManual": "重置手动位置",
   "Group.Today": "今天",
   "Group.Yesterday": "昨天",
   "Group.ThisWeek": "本周",
@@ -216,6 +217,8 @@
   "ColorToken.Shade": "遮罩",
   "ColorToken.ShadeHint": "界面背后的暗化层，以及壁纸调暗效果。",
 
+  "Toast.PositionPinned": "已固定位置",
+  "Toast.ManualReset": "已清除手动位置",
   "Toast.GroupingOff": "已取消分组",
   "Toast.GroupedBy": "已按“{0}”分组",
   "Toast.IconsHidden": "已隐藏 Windows 桌面图标",

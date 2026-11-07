@@ -988,6 +988,11 @@ public partial class MainWindow
 
         var data = new DataObject(DataFormats.FileDrop, paths);
 
+        if (items.Count == 1 && !HasSearchText)
+        {
+            data.SetData(ReorderFormat, dragItem.FullPath);
+        }
+
         try
         {
             DragDrop.DoDragDrop(
@@ -1316,6 +1321,14 @@ public partial class MainWindow
 
     private void Window_DragOver(object sender, DragEventArgs e)
     {
+        if (e.Data.GetDataPresent(ReorderFormat))
+        {
+            HideReorderMarker();
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
         if (_settingsOpen || !e.Data.GetDataPresent(DataFormats.FileDrop))
         {
             e.Effects = DragDropEffects.None;
@@ -1329,6 +1342,13 @@ public partial class MainWindow
 
     private async void Window_Drop(object sender, DragEventArgs e)
     {
+        if (e.Data.GetDataPresent(ReorderFormat))
+        {
+            HideReorderMarker();
+            e.Handled = true;
+            return;
+        }
+
         if (_settingsOpen || !e.Data.GetDataPresent(DataFormats.FileDrop))
         {
             return;

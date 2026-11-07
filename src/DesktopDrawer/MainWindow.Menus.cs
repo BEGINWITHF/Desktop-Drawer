@@ -45,6 +45,13 @@ public partial class MainWindow
         AddCheckableItem(menu, I18n.T("Sort.FoldersFirst"), _settings.FoldersFirst, ToggleFoldersFirst);
         AddCheckableItem(menu, I18n.T("Sort.ShowHidden"), _settings.ShowHidden, ToggleShowHidden);
         menu.Items.Add(BuildGroupByMenu());
+
+        if (_settings.ManualOrder.Count > 0)
+        {
+            menu.Items.Add(new Separator());
+            AddMenuItem(menu, I18n.T("Sort.ResetManual"), "\uE894", null, ResetManualOrder);
+        }
+
         menu.Items.Add(new Separator());
         AddMenuItem(menu, I18n.T("Sort.Refresh"), "\uE72C", "F5", () => _ = RefreshAsync());
 

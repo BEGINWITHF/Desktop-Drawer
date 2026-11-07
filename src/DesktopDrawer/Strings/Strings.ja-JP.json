@@ -53,6 +53,7 @@
   "Sort.GroupBy": "グループ化",
   "Sort.None": "なし",
   "Sort.Refresh": "更新",
+  "Sort.ResetManual": "手動配置をリセット",
   "Group.Today": "今日",
   "Group.Yesterday": "昨日",
   "Group.ThisWeek": "今週",
@@ -216,6 +217,8 @@
   "ColorToken.Shade": "シェード",
   "ColorToken.ShadeHint": "オーバーレイの背景を暗くする層と、壁紙の明るさ調整。",
 
+  "Toast.PositionPinned": "位置を固定しました",
+  "Toast.ManualReset": "手動配置をクリアしました",
   "Toast.GroupingOff": "グループ化を解除しました",
   "Toast.GroupedBy": "「{0}」でグループ化しました",
   "Toast.IconsHidden": "Windows のデスクトップ アイコンを隠しました",
