@@ -20,7 +20,8 @@ public enum GroupMode
     None,
     Type,
     Name,
-    Date
+    Date,
+    Custom
 }
 
 /// <summary>
@@ -51,6 +52,7 @@ public sealed class AppSettings
     public int GridRows { get; set; }          // 0 = fit to the window
     public SortMode SortMode { get; set; } = SortMode.Name;
     public GroupMode GroupMode { get; set; } = GroupMode.None;
+    public List<CustomGroup> CustomGroups { get; set; } = [];
     public Dictionary<string, int> ManualOrder { get; set; } = new(StringComparer.Ordinal); // lower-cased path -> pinned position
     public bool FoldersFirst { get; set; } = true;
     public bool ShowHidden { get; set; }

@@ -801,6 +801,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             _allItems = merged;
             PruneManualOrder();
+            PruneCustomGroups();
             _hasLoadedOnce = true;
             RebuildFilteredItems();
 
@@ -2249,6 +2250,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             GroupMode.Type => groups.OrderBy(group => TypeGroupOrder(group.Key)).ThenBy(group => group.Key),
             GroupMode.Name => groups.OrderBy(group => group.Key, StringComparer.CurrentCultureIgnoreCase),
             GroupMode.Date => groups.OrderBy(group => DateGroupOrder(group.Key)),
+            GroupMode.Custom => groups
+                .OrderBy(group => CustomGroupOrder(group.Key))
+                .ThenBy(group => group.Key, StringComparer.CurrentCultureIgnoreCase),
             _ => groups
         };
 
@@ -2278,8 +2282,37 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         GroupMode.Type => GetTypeGroup(item),
         GroupMode.Name => GetNameGroup(item),
         GroupMode.Date => GetDateGroup(item),
+        GroupMode.Custom => GetCustomGroupName(item),
         _ => string.Empty
     };
+
+    private string GetCustomGroupName(DesktopItem item)
+    {
+        string key = PathKey(item.FullPath);
+
+        foreach (CustomGroup group in _settings.CustomGroups)
+        {
+            if (group.Items.Contains(key))
+            {
+                return group.Name;
+            }
+        }
+
+        return I18n.T("Group.Ungrouped");
+    }
+
+    private int CustomGroupOrder(string name)
+    {
+        for (int i = 0; i < _settings.CustomGroups.Count; i++)
+        {
+            if (string.Equals(_settings.CustomGroups[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return int.MaxValue;
+    }
 
     private static string GetTypeGroup(DesktopItem item)
     {

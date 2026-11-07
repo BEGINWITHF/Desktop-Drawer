@@ -40,6 +40,7 @@ public sealed class SettingsService
             AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
             settings.Colors ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.ManualOrder = NormalizeManualOrder(settings.ManualOrder);
+            settings.CustomGroups = NormalizeCustomGroups(settings.CustomGroups);
 
             if (settings.SettingsVersion < CurrentSettingsVersion)
             {
@@ -73,6 +74,42 @@ public sealed class SettingsService
             {
                 normalized[path.ToLowerInvariant()] = position;
             }
+        }
+
+        return normalized;
+    }
+
+    private static List<CustomGroup> NormalizeCustomGroups(List<CustomGroup>? groups)
+    {
+        var normalized = new List<CustomGroup>();
+
+        if (groups is null)
+        {
+            return normalized;
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (CustomGroup? group in groups)
+        {
+            if (group is null || string.IsNullOrWhiteSpace(group.Name))
+            {
+                continue;
+            }
+
+            string name = group.Name.Trim();
+            if (!names.Add(name))
+            {
+                continue;
+            }
+
+            List<string> items = (group.Items ?? [])
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => path.ToLowerInvariant())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            normalized.Add(new CustomGroup { Name = name, Items = items });
         }
 
         return normalized;

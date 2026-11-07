@@ -1222,6 +1222,39 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
+                            <StackPanel x:Name="CustomGroupsSection">
+                                <ContentControl Content="{DynamicResource Str.Section.Groups}" Style="{StaticResource SectionHeader}" />
+                                <TextBlock Text="{DynamicResource Str.Groups.Description}"
+                                           Style="{StaticResource SettingDescription}" />
+
+                                <Grid Margin="0,10,10,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewGroupNameBox"
+                                             Style="{StaticResource PickerValueBox}"
+                                             Height="30"
+                                             Margin="0,0,8,0"
+                                             VerticalContentAlignment="Center"
+                                             ToolTip="{DynamicResource Str.Groups.NamePlaceholder}"
+                                             KeyDown="NewGroupNameBox_KeyDown" />
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource GhostButton}"
+                                            Content="{DynamicResource Str.Groups.Add}"
+                                            Height="30"
+                                            Padding="12,0"
+                                            Click="AddCustomGroupButton_Click" />
+                                </Grid>
+
+                                <TextBlock Text="{DynamicResource Str.Groups.Hint}"
+                                           Style="{StaticResource SettingDescription}"
+                                           Margin="0,8,10,0" />
+                                <StackPanel x:Name="CustomGroupsPanel" Margin="0,6,0,0" />
+                            </StackPanel>
+
+                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
+
                             <ContentControl Content="{DynamicResource Str.Section.Behavior}" Style="{StaticResource SectionHeader}" />
 
                             <Grid Margin="0,0,10,15">

@@ -36,7 +36,7 @@ public partial class MainWindow
         int insertIndex = Math.Clamp(targetIndex + (after ? 1 : 0), 0, order.Count);
         order.Insert(insertIndex, dragged);
 
-        _settings.ManualOrder[ManualKey(dragged.FullPath)] = 0;
+        _settings.ManualOrder[PathKey(dragged.FullPath)] = 0;
         RenumberManualOrder(order);
         SaveSettings();
         RebuildFilteredItems();
@@ -77,7 +77,7 @@ public partial class MainWindow
         var pinned = new List<(DesktopItem Item, int Position)>();
         foreach (DesktopItem item in items)
         {
-            if (_settings.ManualOrder.TryGetValue(ManualKey(item.FullPath), out int position))
+            if (_settings.ManualOrder.TryGetValue(PathKey(item.FullPath), out int position))
             {
                 pinned.Add((item, position));
             }
@@ -91,11 +91,11 @@ public partial class MainWindow
         pinned.Sort((left, right) => left.Position.CompareTo(right.Position));
 
         var pinnedPaths = pinned
-            .Select(entry => ManualKey(entry.Item.FullPath))
+            .Select(entry => PathKey(entry.Item.FullPath))
             .ToHashSet(StringComparer.Ordinal);
 
         var result = items
-            .Where(item => !pinnedPaths.Contains(ManualKey(item.FullPath)))
+            .Where(item => !pinnedPaths.Contains(PathKey(item.FullPath)))
             .ToList();
 
         foreach ((DesktopItem item, int position) in pinned)
@@ -113,7 +113,7 @@ public partial class MainWindow
 
         for (int i = 0; i < order.Count; i++)
         {
-            string key = ManualKey(order[i].FullPath);
+            string key = PathKey(order[i].FullPath);
             if (_settings.ManualOrder.ContainsKey(key))
             {
                 _settings.ManualOrder[key] = i;
@@ -132,13 +132,13 @@ public partial class MainWindow
 
     private void PruneManualOrder()
     {
-        if (_settings.ManualOrder.Count == 0)
+        if (_settings.ManualOrder.Count == 0 || _allItems.Count == 0)
         {
             return;
         }
 
         var paths = _allItems
-            .Select(item => ManualKey(item.FullPath))
+            .Select(item => PathKey(item.FullPath))
             .ToHashSet(StringComparer.Ordinal);
 
         List<string> stale = _settings.ManualOrder.Keys
@@ -159,7 +159,7 @@ public partial class MainWindow
         UpdateSortLabel();
     }
 
-    private static string ManualKey(string path) => path.ToLowerInvariant();
+    private static string PathKey(string path) => path.ToLowerInvariant();
 
     private void PageList_DragOver(object sender, DragEventArgs e)
     {

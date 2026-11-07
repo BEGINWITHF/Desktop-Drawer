@@ -105,6 +105,7 @@ public partial class MainWindow
         ApplyWallpaperDim();
 
         UpdateSortLabel();
+        BuildCustomGroupRows();
         VersionText.Text = I18n.F("About.Version", UpdateService.CurrentVersionText);
         CloseButton.ToolTip = I18n.T(_settings.CloseToTray ? "Header.CloseTray" : "Header.Close");
     }
@@ -148,6 +149,7 @@ public partial class MainWindow
 
         BuildColorRows();
         UpdateColorRows();
+        BuildCustomGroupRows();
 
         foreach (DesktopItem item in _allItems)
         {

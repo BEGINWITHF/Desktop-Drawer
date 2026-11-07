@@ -65,6 +65,7 @@ public partial class MainWindow
         AddCheckableItem(menu.Items, I18n.T("Sort.Type"), _settings.GroupMode == GroupMode.Type, () => SetGroupMode(GroupMode.Type));
         AddCheckableItem(menu.Items, I18n.T("Sort.Name"), _settings.GroupMode == GroupMode.Name, () => SetGroupMode(GroupMode.Name));
         AddCheckableItem(menu.Items, I18n.T("Sort.Date"), _settings.GroupMode == GroupMode.Date, () => SetGroupMode(GroupMode.Date));
+        AddCheckableItem(menu.Items, I18n.T("Sort.Custom"), _settings.GroupMode == GroupMode.Custom, () => SetGroupMode(GroupMode.Custom));
         return menu;
     }
 
@@ -96,6 +97,7 @@ public partial class MainWindow
         GroupMode.Type => I18n.T("Group.Type"),
         GroupMode.Name => I18n.T("Group.Name"),
         GroupMode.Date => I18n.T("Group.Date"),
+        GroupMode.Custom => I18n.T("Sort.Custom"),
         _ => I18n.T("Group.None")
     };
 
@@ -154,6 +156,8 @@ public partial class MainWindow
             delete.Foreground = (Brush)FindResource("DangerBrush");
             menu.Items.Add(new Separator());
             AddMenuItem(menu, I18n.T("Menu.Properties"), "\uE946", null, ShowSelectedProperties);
+            menu.Items.Add(new Separator());
+            menu.Items.Add(BuildGroupsMenu(selected));
         }
         else
         {
@@ -168,6 +172,8 @@ public partial class MainWindow
                 "Del",
                 () => DeleteItems(selected));
             delete.Foreground = (Brush)FindResource("DangerBrush");
+            menu.Items.Add(new Separator());
+            menu.Items.Add(BuildGroupsMenu(selected));
         }
 
         menu.Items.Add(new Separator());
@@ -218,6 +224,7 @@ public partial class MainWindow
         menu.Items.Add(new Separator());
         AddCheckableItem(menu, I18n.T("Sort.ShowHidden"), _settings.ShowHidden, ToggleShowHidden);
         menu.Items.Add(BuildGroupByMenu());
+        AddMenuItem(menu, I18n.T("Menu.ManageGroups"), "\uE713", null, OpenGroupsSettings);
         bool iconsHidden = _desktopIconsService.AreHidden();
         AddCheckableItem(
             menu,
