@@ -108,24 +108,7 @@ public partial class MainWindow
     /// </summary>
     private bool IsPagerContentOverflowing()
     {
-        if (PageDots.Count == 0)
-        {
-            return false;
-        }
-
-        double dotsWidth = PageItems.DesiredSize.Width;
-        if (dotsWidth <= 0)
-        {
-            dotsWidth = PageDots.Count * 42.0;
-        }
-
-        double contentWidth =
-            WidthOf(PrevButton, 28) +
-            WidthOf(PagerPageLabel, 90) +
-            PagerPageLabel.Margin.Left + PagerPageLabel.Margin.Right +
-            dotsWidth +
-            WidthOf(NextButton, 28) +
-            NextButton.Margin.Left + NextButton.Margin.Right;
+        double contentWidth = MeasurePagerContentWidth();
 
         double width = PagerBar.Width;
         if (double.IsNaN(width) || width <= 0)
@@ -145,6 +128,27 @@ public partial class MainWindow
             PagerBar.BorderThickness.Right;
 
         return innerWidth > 0 && contentWidth > innerWidth + 0.5;
+    }
+
+    private double MeasurePagerContentWidth()
+    {
+        if (PageDots.Count == 0)
+        {
+            return 0;
+        }
+
+        double dotsWidth = PageItems.DesiredSize.Width;
+        if (dotsWidth <= 0)
+        {
+            dotsWidth = PageDots.Count * 42.0;
+        }
+
+        return WidthOf(PrevButton, 28) +
+            WidthOf(PagerPageLabel, 90) +
+            PagerPageLabel.Margin.Left + PagerPageLabel.Margin.Right +
+            dotsWidth +
+            WidthOf(NextButton, 28) +
+            NextButton.Margin.Left + NextButton.Margin.Right;
     }
 
     private static double WidthOf(FrameworkElement element, double fallback) =>
@@ -195,8 +199,11 @@ public partial class MainWindow
 
         // Use the live content width instead of the cached overflow flag, so
         // the fade also follows a width change while the pager is being resized.
-        if (PageDots.Count == 0 ||
-            PagerContent.ActualWidth <= innerWidth + 0.5)
+        double contentWidth = Math.Max(
+            PagerContent.ActualWidth,
+            MeasurePagerContentWidth());
+
+        if (PageDots.Count == 0 || contentWidth <= innerWidth + 0.5)
         {
             ResetPagerFade();
             return;
