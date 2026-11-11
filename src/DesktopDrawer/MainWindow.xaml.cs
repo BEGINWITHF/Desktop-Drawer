@@ -1586,6 +1586,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             };
         }
 
+        PagerBar.SizeChanged += (_, _) =>
+        {
+            UpdatePagerFade();
+
+            if (_resizeElement is null && _dragElement is null)
+            {
+                SchedulePagerUpdate();
+            }
+        };
+
         RootGrid.SizeChanged += (_, _) => ApplyChromeLayout();
     }
 
@@ -1692,6 +1702,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             HeaderBar.HorizontalAlignment = saved?.Width.HasValue == true
                 ? HorizontalAlignment.Left
                 : HorizontalAlignment.Stretch;
+        }
+
+        if (key == "pager")
+        {
+            // The configured width is the resting size. While the page dots
+            // overflow, the bar gets a short tail for the fade-out.
+            double baseWidth = saved?.Width ?? defaultWidth;
+            element.Height = saved?.Height ?? defaultHeight;
+            element.Width = _pagerOverflow && !double.IsNaN(baseWidth)
+                ? baseWidth + PagerFadeTail
+                : baseWidth;
+            return;
         }
 
         element.Width = saved?.Width ?? defaultWidth;
@@ -1913,9 +1935,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         position.X = element.Margin.Left / width;
         position.Y = element.Margin.Top / height;
-        position.Width = element.Width is double elementWidth && !double.IsNaN(elementWidth)
+        double? savedWidth = element.Width is double elementWidth && !double.IsNaN(elementWidth)
             ? elementWidth
             : null;
+
+        // The fade tail is a transient part of the pager, not its resting size.
+        if (key == "pager" && _pagerOverflow && savedWidth.HasValue)
+        {
+            savedWidth = Math.Max(1, savedWidth.Value - PagerFadeTail);
+        }
+
+        position.Width = savedWidth;
         position.Height = element.Height is double elementHeight && !double.IsNaN(elementHeight)
             ? elementHeight
             : null;
