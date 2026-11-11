@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -107,22 +108,36 @@ public partial class MainWindow
             row.Children.Add(down);
             row.Children.Add(delete);
 
-            var rulesRow = new Grid { Margin = new Thickness(0, 6, 10, 0) };
-            rulesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            rulesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var rulesPanel = new StackPanel { Margin = new Thickness(0, 6, 10, 0) };
 
             var rulesLabel = new TextBlock
             {
                 Text = I18n.T("Groups.Extensions"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(2, 0, 8, 0)
+                Margin = new Thickness(2, 0, 0, 4)
             };
             rulesLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
             rulesLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            rulesPanel.Children.Add(rulesLabel);
+
+            if (group.Extensions.Count > 0)
+            {
+                var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+
+                foreach (string extension in group.Extensions)
+                {
+                    chips.Children.Add(CreateExtensionChip(group, extension));
+                }
+
+                rulesPanel.Children.Add(chips);
+            }
+
+            var inputRow = new Grid();
+            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var extensionBox = new TextBox
             {
-                Text = CustomGroup.FormatExtensions(group.Extensions),
                 Style = (Style)FindResource("PickerValueBox"),
                 Height = 24,
                 Margin = new Thickness(0, 0, 6, 0),
@@ -131,30 +146,53 @@ public partial class MainWindow
             };
             extensionBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
             extensionBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
-            extensionBox.LostFocus += (_, _) => CommitCustomGroupExtensions(group, extensionBox);
             extensionBox.KeyDown += (_, e) =>
             {
                 if (e.Key == Key.Enter)
                 {
                     e.Handled = true;
-                    Keyboard.ClearFocus();
-                }
-                else if (e.Key == Key.Escape)
-                {
-                    extensionBox.Text = CustomGroup.FormatExtensions(group.Extensions);
-                    e.Handled = true;
-                    Keyboard.ClearFocus();
+                    AddExtensionsFromInput(group, extensionBox);
                 }
             };
 
-            Grid.SetColumn(rulesLabel, 0);
-            Grid.SetColumn(extensionBox, 1);
-            rulesRow.Children.Add(rulesLabel);
-            rulesRow.Children.Add(extensionBox);
+            var addButton = new Button
+            {
+                Style = (Style)FindResource("GhostButton"),
+                Content = I18n.T("Groups.TypeAdd"),
+                Height = 24,
+                Padding = new Thickness(10, 0, 10, 0),
+                Margin = new Thickness(0, 0, 6, 0)
+            };
+            addButton.Click += (_, _) => AddExtensionsFromInput(group, extensionBox);
+
+            var browseButton = new Button
+            {
+                Style = (Style)FindResource("PanelIconButton"),
+                Width = 24,
+                Height = 24,
+                ToolTip = I18n.T("Groups.TypeBrowse")
+            };
+            browseButton.Content = new TextBlock
+            {
+                Text = "\uE8E5",
+                FontFamily = (FontFamily)FindResource("IconFont"),
+                FontSize = 10,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            browseButton.Click += (_, _) => BrowseExtensionsForGroup(group);
+
+            Grid.SetColumn(extensionBox, 0);
+            Grid.SetColumn(addButton, 1);
+            Grid.SetColumn(browseButton, 2);
+            inputRow.Children.Add(extensionBox);
+            inputRow.Children.Add(addButton);
+            inputRow.Children.Add(browseButton);
+            rulesPanel.Children.Add(inputRow);
 
             var entry = new StackPanel();
             entry.Children.Add(row);
-            entry.Children.Add(rulesRow);
+            entry.Children.Add(rulesPanel);
 
             var border = new Border
             {
@@ -240,31 +278,145 @@ public partial class MainWindow
     private int CountItemsInCustomGroup(CustomGroup group) =>
         _allItems.Count(item => IsItemInCustomGroup(group, item));
 
-    private void CommitCustomGroupExtensions(CustomGroup group, TextBox box)
+    private Border CreateExtensionChip(CustomGroup group, string extension)
+    {
+        var chip = new Border
+        {
+            CornerRadius = new CornerRadius(9),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(8, 2, 3, 2),
+            Margin = new Thickness(0, 0, 4, 4)
+        };
+        chip.SetResourceReference(Border.BackgroundProperty, "BadgePanelBrush");
+        chip.SetResourceReference(Border.BorderBrushProperty, "StrokeStrongBrush");
+
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+
+        var label = new TextBlock
+        {
+            Text = extension.TrimStart('.'),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        label.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+        label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+
+        var remove = new Button
+        {
+            Style = (Style)FindResource("PanelIconButton"),
+            Width = 16,
+            Height = 16,
+            Margin = new Thickness(4, 0, 0, 0),
+            ToolTip = I18n.T("Groups.TypeRemove")
+        };
+        remove.Content = new TextBlock
+        {
+            Text = "\uE711",
+            FontFamily = (FontFamily)FindResource("IconFont"),
+            FontSize = 8,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        remove.Click += (_, _) => RemoveCustomGroupExtension(group, extension);
+
+        content.Children.Add(label);
+        content.Children.Add(remove);
+        chip.Child = content;
+        return chip;
+    }
+
+    private void AddExtensionsFromInput(CustomGroup group, TextBox box)
     {
         List<string> extensions = CustomGroup.ParseExtensions(box.Text);
-        box.Text = CustomGroup.FormatExtensions(extensions);
 
-        if (extensions.SequenceEqual(group.Extensions))
+        if (extensions.Count == 0)
+        {
+            box.Focus();
+            return;
+        }
+
+        box.Text = string.Empty;
+        AddCustomGroupExtensions(group, extensions);
+    }
+
+    private void AddCustomGroupExtensions(CustomGroup group, IEnumerable<string> extensions)
+    {
+        bool changed = false;
+
+        foreach (string extension in extensions)
+        {
+            string? normalized = CustomGroup.NormalizeExtension(extension);
+
+            if (normalized is not null && !group.Extensions.Contains(normalized))
+            {
+                group.Extensions.Add(normalized);
+                changed = true;
+            }
+        }
+
+        if (!changed)
         {
             return;
         }
 
-        group.Extensions = extensions;
         group.Excluded.Clear();
 
-        if (extensions.Count > 0)
+        if (group.Extensions.Count > 0)
         {
             _settings.GroupMode = GroupMode.Custom;
         }
 
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void RemoveCustomGroupExtension(CustomGroup group, string extension)
+    {
+        if (!group.Extensions.Remove(extension))
+        {
+            return;
+        }
+
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void ApplyCustomGroupRuleChange()
+    {
         SaveSettings();
         BuildCustomGroupRows();
         RebuildFilteredItems();
         _pageIndex = 0;
         UpdatePage();
+    }
 
-        ShowToast(I18n.F("Toast.GroupRulesSaved", group.Name));
+    private void BrowseExtensionsForGroup(CustomGroup group)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = I18n.T("Groups.TypeBrowse"),
+            Multiselect = true,
+            CheckFileExists = true,
+            Filter = "All files (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        List<string> extensions = dialog.FileNames
+            .Select(Path.GetExtension)
+            .Select(CustomGroup.NormalizeExtension)
+            .Where(extension => extension is not null)
+            .Select(extension => extension!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (extensions.Count == 0)
+        {
+            ShowToast(I18n.T("Toast.FileTypeNoExtension"));
+            return;
+        }
+
+        AddCustomGroupExtensions(group, extensions);
     }
 
     private void MoveCustomGroup(CustomGroup group, int delta)
