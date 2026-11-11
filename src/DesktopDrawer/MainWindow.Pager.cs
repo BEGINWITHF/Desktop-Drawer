@@ -78,16 +78,17 @@ public partial class MainWindow
         PageIndicator.Visibility = Visibility.Visible;
 
         SetPagerOverflow(IsPagerContentOverflowing());
-        UpdatePagerFade();
 
         double targetX = GetPageIndicatorX(_pageIndex);
         if (double.IsNaN(targetX))
         {
             _indicatorReady = false;
+            UpdatePagerFade();
             return;
         }
 
         targetX = SnapToPixel(targetX);
+        UpdatePagerFade(targetX);
 
         if (!_indicatorReady)
         {
@@ -160,7 +161,7 @@ public partial class MainWindow
 
         if (!overflow)
         {
-            PagerContent.OpacityMask = null;
+            ResetPagerFade();
         }
 
         ApplyChromeLayout();
@@ -168,15 +169,16 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Fades the page dots and the sliding pill near the trailing edge so an
-    /// overflowing tab row dissolves instead of being clipped. The bar surface
-    /// and its outer border stay fully drawn, which keeps the pager silhouette.
+    /// Fades the page dots, the label, the next arrow and the sliding pill near
+    /// the trailing edge so an overflowing tab row dissolves instead of being
+    /// clipped. Gradient brushes are used instead of an opacity mask, so the
+    /// rounded pill keeps crisp, vector-rendered edges.
     /// </summary>
-    private void UpdatePagerFade()
+    private void UpdatePagerFade(double? indicatorX = null)
     {
         if (!_pagerOverflow)
         {
-            PagerContent.OpacityMask = null;
+            ResetPagerFade();
             return;
         }
 
@@ -186,85 +188,195 @@ public partial class MainWindow
             width = PagerBar.ActualWidth;
         }
 
-        double contentWidth = PagerContent.ActualWidth;
-        if (width <= 1 || contentWidth <= 1)
-        {
-            return;
-        }
-
-        Point origin;
-        try
-        {
-            origin = PagerContent.TransformToAncestor(PagerBar).Transform(new Point(0, 0));
-        }
-        catch (InvalidOperationException)
+        if (width <= 1)
         {
             return;
         }
 
         // The fade starts a little before the resting edge and reaches full
-        // transparency at the end of the tail. That makes the extra length read
-        // as the end of the bar dissolving, not as a clipped dot.
-        double baseWidth = width - PagerFadeTail;
-        double baseInnerRight = baseWidth -
-            PagerBar.BorderThickness.Right -
-            PagerBar.Padding.Right;
+        // transparency at the end of the tail.
         double innerRight = width -
             PagerBar.BorderThickness.Right -
             PagerBar.Padding.Right;
+        double fadeEnd = innerRight;
+        double fadeStart = Math.Max(0, innerRight - PagerFadeTail - PagerFadeLead);
 
-        double fadeStart = Math.Max(0, baseInnerRight - origin.X - PagerFadeLead);
-        double fadeEnd = innerRight - origin.X;
-
-        if (fadeEnd <= 0)
+        double? pillLeft = null;
+        if (indicatorX.HasValue)
         {
-            PagerContent.OpacityMask = null;
+            try
+            {
+                Point dotsOrigin = DotsHost
+                    .TransformToAncestor(PagerBar)
+                    .Transform(new Point(0, 0));
+                pillLeft = dotsOrigin.X + indicatorX.Value;
+            }
+            catch (InvalidOperationException)
+            {
+                // Fall back to the live position.
+            }
+        }
+
+        ApplyPagerFade(
+            PageIndicator,
+            Border.BackgroundProperty,
+            GetThemeColor("AccentBrush", Colors.White),
+            fadeStart,
+            fadeEnd,
+            "AccentBrush",
+            pillLeft);
+
+        ApplyPagerFade(
+            PagerPageLabel,
+            TextBlock.ForegroundProperty,
+            GetThemeColor("TextMutedBrush", Colors.Gray),
+            fadeStart,
+            fadeEnd,
+            "TextMutedBrush");
+
+        ApplyPagerFade(
+            NextButton,
+            Control.ForegroundProperty,
+            GetThemeColor("TextSecondaryBrush", Colors.Gray),
+            fadeStart,
+            fadeEnd,
+            null);
+
+        for (int i = 0; i < PageDots.Count; i++)
+        {
+            Button? button = GetPageButton(i);
+            if (button is null)
+            {
+                continue;
+            }
+
+            ApplyPagerFade(
+                button,
+                Control.ForegroundProperty,
+                GetThemeColor("TextMutedBrush", Colors.Gray),
+                fadeStart,
+                fadeEnd,
+                null);
+        }
+    }
+
+    private void ResetPagerFade()
+    {
+        PageIndicator.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        PagerPageLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+        NextButton.ClearValue(Control.ForegroundProperty);
+
+        for (int i = 0; i < PageDots.Count; i++)
+        {
+            GetPageButton(i)?.ClearValue(Control.ForegroundProperty);
+        }
+    }
+
+    private Color GetThemeColor(string key, Color fallback) =>
+        TryFindResource(key) is SolidColorBrush brush ? brush.Color : fallback;
+
+    private void ApplyPagerFade(
+        FrameworkElement element,
+        DependencyProperty property,
+        Color color,
+        double fadeStart,
+        double fadeEnd,
+        string? restoreResource,
+        double? leftOverride = null)
+    {
+        double width = element.ActualWidth;
+        if (width <= 1)
+        {
             return;
         }
 
-        fadeEnd = Math.Min(fadeEnd, contentWidth);
-        fadeStart = Math.Min(fadeStart, fadeEnd);
-        double fadeSpan = fadeEnd - fadeStart;
+        double left;
+        if (leftOverride.HasValue)
+        {
+            left = leftOverride.Value;
+        }
+        else
+        {
+            try
+            {
+                left = element.TransformToAncestor(PagerBar).Transform(new Point(0, 0)).X;
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+        }
+
+        LinearGradientBrush? brush = CreatePagerFadeBrush(
+            color,
+            width,
+            fadeStart - left,
+            fadeEnd - left);
+
+        if (brush is null)
+        {
+            if (restoreResource is null)
+            {
+                element.ClearValue(property);
+            }
+            else
+            {
+                element.SetResourceReference(property, restoreResource);
+            }
+
+            return;
+        }
+
+        element.SetValue(property, brush);
+    }
+
+    private static LinearGradientBrush? CreatePagerFadeBrush(
+        Color color,
+        double width,
+        double start,
+        double end)
+    {
+        start = Math.Max(0, start);
+        end = Math.Min(width, end);
+
+        if (width <= 1 || end <= 0 || start >= width || end <= start)
+        {
+            return null;
+        }
 
         var brush = new LinearGradientBrush
         {
             MappingMode = BrushMappingMode.Absolute,
             StartPoint = new Point(0, 0),
-            EndPoint = new Point(contentWidth, 0)
+            EndPoint = new Point(width, 0)
         };
 
-        double solid = Math.Clamp(fadeStart / contentWidth, 0, 1);
-        brush.GradientStops.Add(new GradientStop(Colors.White, 0));
+        double solid = start / width;
+        brush.GradientStops.Add(new GradientStop(color, 0));
 
-        if (fadeSpan <= 0.5)
+        if (solid > 0)
         {
-            brush.GradientStops.Add(new GradientStop(
-                Color.FromArgb(0, 255, 255, 255),
-                solid));
+            brush.GradientStops.Add(new GradientStop(color, solid));
         }
-        else
-        {
-            brush.GradientStops.Add(new GradientStop(Colors.White, solid));
 
-            foreach ((double offset, double opacity) in PagerFadeRamp)
+        foreach ((double offset, double opacity) in PagerFadeRamp)
+        {
+            if (offset <= 0)
             {
-                if (offset <= 0)
-                {
-                    continue;
-                }
-
-                byte alpha = (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255);
-                double position = Math.Clamp(
-                    (fadeStart + fadeSpan * offset) / contentWidth,
-                    solid,
-                    1);
-                brush.GradientStops.Add(new GradientStop(
-                    Color.FromArgb(alpha, 255, 255, 255),
-                    position));
+                continue;
             }
+
+            byte alpha = (byte)Math.Round(color.A * Math.Clamp(opacity, 0, 1));
+            double position = Math.Clamp(
+                (start + (end - start) * offset) / width,
+                solid,
+                1);
+            brush.GradientStops.Add(new GradientStop(
+                Color.FromArgb(alpha, color.R, color.G, color.B),
+                position));
         }
 
-        PagerContent.OpacityMask = brush;
+        return brush;
     }
 
     private void AnimateIndicatorTo(double targetX)
