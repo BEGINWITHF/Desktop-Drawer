@@ -22,13 +22,33 @@ public partial class MainWindow
     /// Extra room added to the trailing end of the pager when the page dots no
     /// longer fit, so the last dot has space to fade out instead of being cut.
     /// </summary>
-    private const double PagerFadeTail = 26;
+    private const double PagerFadeTail = 28;
 
     /// <summary>
     /// How far before the resting edge the dissolve begins. Together with the
     /// tail this is the length of the gradient.
     /// </summary>
-    private const double PagerFadeLead = 2;
+    private const double PagerFadeLead = 6;
+
+    /// <summary>
+    /// Eased opacity ramp for the dissolve, following a cosine curve so the
+    /// gradient starts and ends without the hard shoulders of a linear fade.
+    /// Values are offsets into the fade span with the matching opacity.
+    /// </summary>
+    private static readonly (double Offset, double Opacity)[] PagerFadeRamp =
+    [
+        (0.00, 1.000),
+        (0.10, 0.976),
+        (0.20, 0.905),
+        (0.30, 0.794),
+        (0.40, 0.655),
+        (0.50, 0.500),
+        (0.60, 0.345),
+        (0.70, 0.206),
+        (0.80, 0.095),
+        (0.90, 0.024),
+        (1.00, 0.000)
+    ];
 
     /// <summary>Queues a pager refresh for after the new items have been laid out.</summary>
     private void SchedulePagerUpdate()
@@ -204,6 +224,7 @@ public partial class MainWindow
 
         fadeEnd = Math.Min(fadeEnd, contentWidth);
         fadeStart = Math.Min(fadeStart, fadeEnd);
+        double fadeSpan = fadeEnd - fadeStart;
 
         var brush = new LinearGradientBrush
         {
@@ -212,13 +233,36 @@ public partial class MainWindow
             EndPoint = new Point(contentWidth, 0)
         };
 
+        double solid = Math.Clamp(fadeStart / contentWidth, 0, 1);
         brush.GradientStops.Add(new GradientStop(Colors.White, 0));
-        brush.GradientStops.Add(new GradientStop(
-            Colors.White,
-            Math.Clamp(fadeStart / contentWidth, 0, 1)));
-        brush.GradientStops.Add(new GradientStop(
-            Color.FromArgb(0, 255, 255, 255),
-            Math.Clamp(fadeEnd / contentWidth, 0, 1)));
+
+        if (fadeSpan <= 0.5)
+        {
+            brush.GradientStops.Add(new GradientStop(
+                Color.FromArgb(0, 255, 255, 255),
+                solid));
+        }
+        else
+        {
+            brush.GradientStops.Add(new GradientStop(Colors.White, solid));
+
+            foreach ((double offset, double opacity) in PagerFadeRamp)
+            {
+                if (offset <= 0)
+                {
+                    continue;
+                }
+
+                byte alpha = (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255);
+                double position = Math.Clamp(
+                    (fadeStart + fadeSpan * offset) / contentWidth,
+                    solid,
+                    1);
+                brush.GradientStops.Add(new GradientStop(
+                    Color.FromArgb(alpha, 255, 255, 255),
+                    position));
+            }
+        }
 
         PagerContent.OpacityMask = brush;
     }
