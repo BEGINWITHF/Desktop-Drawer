@@ -16,6 +16,19 @@ namespace DesktopDrawer;
 public partial class MainWindow
 {
     private bool _indicatorReady;
+    private bool _pagerOverflow;
+
+    /// <summary>
+    /// Extra room added to the trailing end of the pager when the page dots no
+    /// longer fit, so the last dot has space to fade out instead of being cut.
+    /// </summary>
+    private const double PagerFadeTail = 26;
+
+    /// <summary>
+    /// How far before the resting edge the dissolve begins. Together with the
+    /// tail this is the length of the gradient.
+    /// </summary>
+    private const double PagerFadeLead = 2;
 
     /// <summary>Queues a pager refresh for after the new items have been laid out.</summary>
     private void SchedulePagerUpdate()
@@ -37,11 +50,15 @@ public partial class MainWindow
         {
             _indicatorReady = false;
             PageIndicator.Visibility = Visibility.Collapsed;
+            SetPagerOverflow(false);
             return;
         }
 
         PageItems.UpdateLayout();
         PageIndicator.Visibility = Visibility.Visible;
+
+        SetPagerOverflow(IsPagerContentOverflowing());
+        UpdatePagerFade();
 
         double targetX = GetPageIndicatorX(_pageIndex);
         if (double.IsNaN(targetX))
@@ -61,6 +78,149 @@ public partial class MainWindow
         {
             AnimateIndicatorTo(targetX);
         }
+    }
+
+    /// <summary>
+    /// True when the tab row is wider than the pager's configured width. The
+    /// test uses the base width without the fade tail, so extending the bar
+    /// cannot make it flip back and forth.
+    /// </summary>
+    private bool IsPagerContentOverflowing()
+    {
+        if (PageDots.Count == 0)
+        {
+            return false;
+        }
+
+        double dotsWidth = PageItems.DesiredSize.Width;
+        if (dotsWidth <= 0)
+        {
+            dotsWidth = PageDots.Count * 42.0;
+        }
+
+        double contentWidth =
+            WidthOf(PrevButton, 28) +
+            WidthOf(PagerPageLabel, 90) +
+            PagerPageLabel.Margin.Left + PagerPageLabel.Margin.Right +
+            dotsWidth +
+            WidthOf(NextButton, 28) +
+            NextButton.Margin.Left + NextButton.Margin.Right;
+
+        double width = PagerBar.Width;
+        if (double.IsNaN(width) || width <= 0)
+        {
+            width = PagerBar.ActualWidth;
+        }
+
+        if (_pagerOverflow)
+        {
+            width -= PagerFadeTail;
+        }
+
+        double innerWidth = width -
+            PagerBar.Padding.Left -
+            PagerBar.Padding.Right -
+            PagerBar.BorderThickness.Left -
+            PagerBar.BorderThickness.Right;
+
+        return innerWidth > 0 && contentWidth > innerWidth + 0.5;
+    }
+
+    private static double WidthOf(FrameworkElement element, double fallback) =>
+        element.ActualWidth > 0 ? element.ActualWidth : fallback;
+
+    private void SetPagerOverflow(bool overflow)
+    {
+        if (_pagerOverflow == overflow)
+        {
+            return;
+        }
+
+        _pagerOverflow = overflow;
+
+        if (!overflow)
+        {
+            PagerContent.OpacityMask = null;
+        }
+
+        ApplyChromeLayout();
+        PagerBar.UpdateLayout();
+    }
+
+    /// <summary>
+    /// Fades the page dots and the sliding pill near the trailing edge so an
+    /// overflowing tab row dissolves instead of being clipped. The bar surface
+    /// and its outer border stay fully drawn, which keeps the pager silhouette.
+    /// </summary>
+    private void UpdatePagerFade()
+    {
+        if (!_pagerOverflow)
+        {
+            PagerContent.OpacityMask = null;
+            return;
+        }
+
+        double width = PagerBar.Width;
+        if (double.IsNaN(width) || width <= 0)
+        {
+            width = PagerBar.ActualWidth;
+        }
+
+        double contentWidth = PagerContent.ActualWidth;
+        if (width <= 1 || contentWidth <= 1)
+        {
+            return;
+        }
+
+        Point origin;
+        try
+        {
+            origin = PagerContent.TransformToAncestor(PagerBar).Transform(new Point(0, 0));
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        // The fade starts a little before the resting edge and reaches full
+        // transparency at the end of the tail. That makes the extra length read
+        // as the end of the bar dissolving, not as a clipped dot.
+        double baseWidth = width - PagerFadeTail;
+        double baseInnerRight = baseWidth -
+            PagerBar.BorderThickness.Right -
+            PagerBar.Padding.Right;
+        double innerRight = width -
+            PagerBar.BorderThickness.Right -
+            PagerBar.Padding.Right;
+
+        double fadeStart = Math.Max(0, baseInnerRight - origin.X - PagerFadeLead);
+        double fadeEnd = innerRight - origin.X;
+
+        if (fadeEnd <= 0)
+        {
+            PagerContent.OpacityMask = null;
+            return;
+        }
+
+        fadeEnd = Math.Min(fadeEnd, contentWidth);
+        fadeStart = Math.Min(fadeStart, fadeEnd);
+
+        var brush = new LinearGradientBrush
+        {
+            MappingMode = BrushMappingMode.Absolute,
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(contentWidth, 0)
+        };
+
+        brush.GradientStops.Add(new GradientStop(Colors.White, 0));
+        brush.GradientStops.Add(new GradientStop(
+            Colors.White,
+            Math.Clamp(fadeStart / contentWidth, 0, 1)));
+        brush.GradientStops.Add(new GradientStop(
+            Color.FromArgb(0, 255, 255, 255),
+            Math.Clamp(fadeEnd / contentWidth, 0, 1)));
+
+        PagerContent.OpacityMask = brush;
     }
 
     private void AnimateIndicatorTo(double targetX)
