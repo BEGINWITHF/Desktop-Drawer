@@ -632,7 +632,8 @@
                     BorderThickness="1"
                     CornerRadius="20"
                     Padding="8,4">
-                <StackPanel Orientation="Horizontal"
+                <StackPanel x:Name="PagerContent"
+                            Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                     <Button x:Name="PrevButton"
@@ -646,7 +647,8 @@
                                    Text="&#xE76B;"
                                    FontSize="{DynamicResource FontSize11}" />
                     </Button>
-                    <TextBlock Text="{Binding CurrentPageLabel}"
+                    <TextBlock x:Name="PagerPageLabel"
+                               Text="{Binding CurrentPageLabel}"
                                Width="90"
                                TextAlignment="Right"
                                TextTrimming="CharacterEllipsis"
