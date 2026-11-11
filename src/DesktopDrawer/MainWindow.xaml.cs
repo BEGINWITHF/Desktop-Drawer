@@ -2380,6 +2380,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             UpdateDesktopIconsUi();
         }
 
+        if (!_cleanedUp)
+        {
+            DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
+        }
+
         if (!IsKeyboardFocusWithin && !_settingsOpen && !_cleanedUp)
         {
             PageList.Focus();

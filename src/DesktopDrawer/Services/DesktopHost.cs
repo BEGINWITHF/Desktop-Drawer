@@ -78,28 +78,96 @@ public static class DesktopHost
     /// </summary>
     public static void RaiseAboveDesktop(IntPtr window)
     {
-        IntPtr progman = NativeMethods.FindWindow("Progman", null);
-        if (progman == IntPtr.Zero || window == IntPtr.Zero)
+        if (window == IntPtr.Zero)
         {
             return;
         }
 
-        // SetWindowPos inserts the window *below* the given handle, so use the
-        // window that currently sits directly above the desktop.
-        IntPtr insertAfter = NativeMethods.GetWindow(progman, NativeMethods.GwHwndPrev);
-        if (insertAfter == window)
+        IntPtr desktop = FindDesktopAnchor();
+        if (desktop == IntPtr.Zero)
         {
             return;
         }
 
+        // Touchpad and task-view gestures can put the overlay into the topmost
+        // band. Remove that flag before inserting it back into the normal band.
         NativeMethods.SetWindowPos(
             window,
-            insertAfter,
+            NativeMethods.HwndNotTopmost,
             0,
             0,
             0,
             0,
-            NativeMethods.SwpNoMove | NativeMethods.SwpNoSize | NativeMethods.SwpNoActivate);
+            NativeMethods.SwpNoMove |
+            NativeMethods.SwpNoSize |
+            NativeMethods.SwpNoActivate |
+            NativeMethods.SwpNoOwnerZOrder);
+
+        // SetWindowPos inserts the window *below* hWndInsertAfter. Walk upward
+        // from the desktop and use the first window that accepts the insertion:
+        // shell/IME windows often reject being used as an insertion anchor.
+        IntPtr candidate = NativeMethods.GetWindow(desktop, NativeMethods.GwHwndPrev);
+
+        for (int i = 0; i < 64 && candidate != IntPtr.Zero; i++)
+        {
+            if (candidate != window)
+            {
+                bool moved = NativeMethods.SetWindowPos(
+                    window,
+                    candidate,
+                    0,
+                    0,
+                    0,
+                    0,
+                    NativeMethods.SwpNoMove |
+                    NativeMethods.SwpNoSize |
+                    NativeMethods.SwpNoActivate |
+                    NativeMethods.SwpNoOwnerZOrder);
+
+                if (moved)
+                {
+                    return;
+                }
+            }
+
+            candidate = NativeMethods.GetWindow(candidate, NativeMethods.GwHwndPrev);
+        }
+    }
+
+    private static IntPtr FindDesktopAnchor()
+    {
+        IntPtr withIconView = IntPtr.Zero;
+        IntPtr fallback = IntPtr.Zero;
+
+        NativeMethods.EnumWindows(
+            (window, _) =>
+            {
+                string? className = GetClassName(window);
+                if (className is not ("Progman" or "WorkerW"))
+                {
+                    return true;
+                }
+
+                if (NativeMethods.FindWindowEx(
+                        window,
+                        IntPtr.Zero,
+                        "SHELLDLL_DefView",
+                        null) != IntPtr.Zero)
+                {
+                    withIconView = window;
+                    return false;
+                }
+
+                if (className == "Progman")
+                {
+                    fallback = window;
+                }
+
+                return true;
+            },
+            IntPtr.Zero);
+
+        return withIconView != IntPtr.Zero ? withIconView : fallback;
     }
 
     public static bool IsDesktopWindowAt(int x, int y)
@@ -125,7 +193,7 @@ public static class DesktopHost
 
     private static IntPtr FindIconView()
     {
-        IntPtr progman = NativeMethods.FindWindow("Progman", null);
+        IntPtr progman = FindDesktopAnchor();
 
         if (progman != IntPtr.Zero)
         {
