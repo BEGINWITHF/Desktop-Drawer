@@ -176,12 +176,6 @@ public partial class MainWindow
     /// </summary>
     private void UpdatePagerFade(double? indicatorX = null)
     {
-        if (!_pagerOverflow)
-        {
-            ResetPagerFade();
-            return;
-        }
-
         double width = PagerBar.Width;
         if (double.IsNaN(width) || width <= 0)
         {
@@ -190,6 +184,21 @@ public partial class MainWindow
 
         if (width <= 1)
         {
+            return;
+        }
+
+        double innerWidth = width -
+            PagerBar.Padding.Left -
+            PagerBar.Padding.Right -
+            PagerBar.BorderThickness.Left -
+            PagerBar.BorderThickness.Right;
+
+        // Use the live content width instead of the cached overflow flag, so
+        // the fade also follows a width change while the pager is being resized.
+        if (PageDots.Count == 0 ||
+            PagerContent.ActualWidth <= innerWidth + 0.5)
+        {
+            ResetPagerFade();
             return;
         }
 
