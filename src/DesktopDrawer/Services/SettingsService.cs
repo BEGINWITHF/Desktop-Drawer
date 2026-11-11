@@ -109,7 +109,19 @@ public sealed class SettingsService
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            normalized.Add(new CustomGroup { Name = name, Items = items });
+            List<string> excluded = (group.Excluded ?? [])
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => path.ToLowerInvariant())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            normalized.Add(new CustomGroup
+            {
+                Name = name,
+                Items = items,
+                Extensions = CustomGroup.NormalizeExtensions(group.Extensions),
+                Excluded = excluded
+            });
         }
 
         return normalized;

@@ -2328,8 +2328,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
         }
 
+        foreach (CustomGroup group in _settings.CustomGroups)
+        {
+            if (!group.Excluded.Contains(key) && group.MatchesExtension(item.Name))
+            {
+                return group.Name;
+            }
+        }
+
         return I18n.T("Group.Ungrouped");
     }
+
+    private bool IsItemInCustomGroup(CustomGroup group, DesktopItem item) =>
+        string.Equals(
+            GetCustomGroupName(item),
+            group.Name,
+            StringComparison.OrdinalIgnoreCase);
 
     private int CustomGroupOrder(string name)
     {

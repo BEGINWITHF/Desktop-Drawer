@@ -65,9 +65,10 @@ public partial class MainWindow
                 }
             };
 
-            string itemCount = group.Items.Count == 1
+            int memberCount = CountItemsInCustomGroup(group);
+            string itemCount = memberCount == 1
                 ? I18n.T("Groups.ItemOne")
-                : I18n.F("Groups.ItemCount", group.Items.Count);
+                : I18n.F("Groups.ItemCount", memberCount);
 
             var count = new TextBlock
             {
@@ -106,11 +107,60 @@ public partial class MainWindow
             row.Children.Add(down);
             row.Children.Add(delete);
 
+            var rulesRow = new Grid { Margin = new Thickness(0, 6, 10, 0) };
+            rulesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            rulesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var rulesLabel = new TextBlock
+            {
+                Text = I18n.T("Groups.Extensions"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(2, 0, 8, 0)
+            };
+            rulesLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+            rulesLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+
+            var extensionBox = new TextBox
+            {
+                Text = CustomGroup.FormatExtensions(group.Extensions),
+                Style = (Style)FindResource("PickerValueBox"),
+                Height = 24,
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ToolTip = I18n.T("Groups.ExtensionsHint")
+            };
+            extensionBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+            extensionBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
+            extensionBox.LostFocus += (_, _) => CommitCustomGroupExtensions(group, extensionBox);
+            extensionBox.KeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    e.Handled = true;
+                    Keyboard.ClearFocus();
+                }
+                else if (e.Key == Key.Escape)
+                {
+                    extensionBox.Text = CustomGroup.FormatExtensions(group.Extensions);
+                    e.Handled = true;
+                    Keyboard.ClearFocus();
+                }
+            };
+
+            Grid.SetColumn(rulesLabel, 0);
+            Grid.SetColumn(extensionBox, 1);
+            rulesRow.Children.Add(rulesLabel);
+            rulesRow.Children.Add(extensionBox);
+
+            var entry = new StackPanel();
+            entry.Children.Add(row);
+            entry.Children.Add(rulesRow);
+
             var border = new Border
             {
                 BorderThickness = new Thickness(0, 0, 0, 1),
                 Padding = new Thickness(0, 4, 0, 4),
-                Child = row
+                Child = entry
             };
             border.SetResourceReference(Border.BorderBrushProperty, "DividerBrush");
             CustomGroupsPanel.Children.Add(border);
@@ -187,6 +237,36 @@ public partial class MainWindow
         ShowToast(I18n.F("Toast.GroupRenamed", name));
     }
 
+    private int CountItemsInCustomGroup(CustomGroup group) =>
+        _allItems.Count(item => IsItemInCustomGroup(group, item));
+
+    private void CommitCustomGroupExtensions(CustomGroup group, TextBox box)
+    {
+        List<string> extensions = CustomGroup.ParseExtensions(box.Text);
+        box.Text = CustomGroup.FormatExtensions(extensions);
+
+        if (extensions.SequenceEqual(group.Extensions))
+        {
+            return;
+        }
+
+        group.Extensions = extensions;
+        group.Excluded.Clear();
+
+        if (extensions.Count > 0)
+        {
+            _settings.GroupMode = GroupMode.Custom;
+        }
+
+        SaveSettings();
+        BuildCustomGroupRows();
+        RebuildFilteredItems();
+        _pageIndex = 0;
+        UpdatePage();
+
+        ShowToast(I18n.F("Toast.GroupRulesSaved", group.Name));
+    }
+
     private void MoveCustomGroup(CustomGroup group, int delta)
     {
         int index = _settings.CustomGroups.IndexOf(group);
@@ -244,9 +324,13 @@ public partial class MainWindow
         }
 
         _settings.CustomGroups.Add(new CustomGroup { Name = name });
+        _settings.GroupMode = GroupMode.Custom;
         NewGroupNameBox.Text = string.Empty;
         SaveSettings();
         BuildCustomGroupRows();
+        RebuildFilteredItems();
+        _pageIndex = 0;
+        UpdatePage();
         ShowToast(I18n.F("Toast.GroupCreated", name));
     }
 
@@ -278,11 +362,21 @@ public partial class MainWindow
         }
 
         List<string> keys = selected.Select(item => PathKey(item.FullPath)).ToList();
-        bool allInGroup = keys.All(key => group.Items.Contains(key));
+        bool allInGroup = selected.All(item => IsItemInCustomGroup(group, item));
 
         if (allInGroup)
         {
-            group.Items.RemoveAll(key => keys.Contains(key));
+            for (int i = 0; i < selected.Count; i++)
+            {
+                group.Items.Remove(keys[i]);
+
+                if (group.MatchesExtension(selected[i].Name) &&
+                    !group.Excluded.Contains(keys[i]))
+                {
+                    group.Excluded.Add(keys[i]);
+                }
+            }
+
             ShowToast(I18n.F("Toast.RemovedFromGroup", group.Name));
         }
         else
@@ -290,6 +384,7 @@ public partial class MainWindow
             foreach (CustomGroup other in _settings.CustomGroups)
             {
                 other.Items.RemoveAll(key => keys.Contains(key));
+                other.Excluded.RemoveAll(key => keys.Contains(key));
             }
 
             foreach (string key in keys)
@@ -332,6 +427,18 @@ public partial class MainWindow
             if (group.Items.RemoveAll(key => keys.Contains(key)) > 0)
             {
                 changed = true;
+            }
+
+            foreach (DesktopItem item in selected)
+            {
+                string key = PathKey(item.FullPath);
+
+                if (group.MatchesExtension(item.Name) &&
+                    !group.Excluded.Contains(key))
+                {
+                    group.Excluded.Add(key);
+                    changed = true;
+                }
             }
         }
 
@@ -380,6 +487,11 @@ public partial class MainWindow
             {
                 changed = true;
             }
+
+            if (group.Excluded.RemoveAll(key => !paths.Contains(key)) > 0)
+            {
+                changed = true;
+            }
         }
 
         if (!changed)
@@ -425,7 +537,7 @@ public partial class MainWindow
         foreach (CustomGroup group in _settings.CustomGroups)
         {
             bool allInGroup = selected.Count > 0 &&
-                              selected.All(item => group.Items.Contains(PathKey(item.FullPath)));
+                              selected.All(item => IsItemInCustomGroup(group, item));
 
             AddCheckableItem(menu.Items, group.Name, allInGroup, () => AssignToGroup(group));
         }
