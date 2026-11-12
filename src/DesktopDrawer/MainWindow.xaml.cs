@@ -74,6 +74,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _cleanedUp;
     private bool _isExiting;
     private bool _settingsOpen;
+    private bool _groupsOpen;
     private bool _trayHintShown;
     private bool _chromeVisible = true;
     private bool _iconsRestoredForTray;
@@ -511,7 +512,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
-        if (_cleanedUp || _pageCount <= 1 || _settingsOpen)
+        if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen)
         {
             return;
         }
@@ -2475,7 +2476,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
         }
 
-        if (!IsKeyboardFocusWithin && !_settingsOpen && !_cleanedUp)
+        if (!IsKeyboardFocusWithin && !_settingsOpen && !_groupsOpen && !_cleanedUp)
         {
             PageList.Focus();
         }

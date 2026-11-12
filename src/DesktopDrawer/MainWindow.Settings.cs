@@ -504,6 +504,73 @@ public partial class MainWindow
         CloseSettings();
     }
 
+    private void ManageGroupsButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseSettings();
+        OpenGroupsPanel();
+    }
+
+    private void GroupsCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseGroupsPanel();
+    }
+
+    private void GroupsBackdrop_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        CloseGroupsPanel();
+    }
+
+    private void OpenGroupsPanel()
+    {
+        BuildCustomGroupRows();
+        _groupsOpen = true;
+        ShowChrome();
+        GroupsOverlay.Visibility = Visibility.Visible;
+        GroupsOverlay.BeginAnimation(OpacityProperty, null);
+        GroupsOverlay.Opacity = 0;
+        GroupsTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        GroupsTranslate.Y = 18;
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
+        var slide = new DoubleAnimation(18, 0, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        GroupsOverlay.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        GroupsTranslate.BeginAnimation(TranslateTransform.YProperty, slide, HandoffBehavior.SnapshotAndReplace);
+        Dispatcher.BeginInvoke(new Action(() => NewGroupNameBox.Focus()));
+    }
+
+    private void CloseGroupsPanel()
+    {
+        if (!_groupsOpen)
+        {
+            return;
+        }
+
+        _groupsOpen = false;
+        var slide = new DoubleAnimation(0, 18, TimeSpan.FromMilliseconds(160))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(140));
+        fade.Completed += (_, _) =>
+        {
+            if (!_groupsOpen)
+            {
+                GroupsOverlay.Visibility = Visibility.Collapsed;
+                GroupsTranslate.Y = 18;
+            }
+        };
+
+        GroupsTranslate.BeginAnimation(TranslateTransform.YProperty, slide, HandoffBehavior.SnapshotAndReplace);
+        GroupsOverlay.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        PageList.Focus();
+        ShowChrome();
+    }
+
     private void OpenSettings()
     {
         _initializingSettings = true;

@@ -1224,35 +1224,18 @@
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
-                            <StackPanel x:Name="CustomGroupsSection">
+                            <StackPanel>
                                 <ContentControl Content="{DynamicResource Str.Section.Groups}" Style="{StaticResource SectionHeader}" />
                                 <TextBlock Text="{DynamicResource Str.Groups.Description}"
                                            Style="{StaticResource SettingDescription}" />
-
-                                <Grid Margin="0,10,10,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="NewGroupNameBox"
-                                             Style="{StaticResource PickerValueBox}"
-                                             Height="30"
-                                             Margin="0,0,8,0"
-                                             VerticalContentAlignment="Center"
-                                             ToolTip="{DynamicResource Str.Groups.NamePlaceholder}"
-                                             KeyDown="NewGroupNameBox_KeyDown" />
-                                    <Button Grid.Column="1"
-                                            Style="{StaticResource GhostButton}"
-                                            Content="{DynamicResource Str.Groups.Add}"
-                                            Height="30"
-                                            Padding="12,0"
-                                            Click="AddCustomGroupButton_Click" />
-                                </Grid>
-
-                                <TextBlock Text="{DynamicResource Str.Groups.Hint}"
-                                           Style="{StaticResource SettingDescription}"
-                                           Margin="0,8,10,0" />
-                                <StackPanel x:Name="CustomGroupsPanel" Margin="0,6,0,0" />
+                                <Button Content="{DynamicResource Str.Menu.ManageGroups}"
+                                        Style="{StaticResource GhostButton}"
+                                        HorizontalAlignment="Left"
+                                        Padding="12,0"
+                                        Height="30"
+                                        FontSize="{DynamicResource FontSize115}"
+                                        Margin="0,10,0,4"
+                                        Click="ManageGroupsButton_Click" />
                             </StackPanel>
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
@@ -1628,5 +1611,94 @@
                 </Border>
             </Grid>
         </Grid>
+
+        <Grid x:Name="GroupsOverlay"
+              Visibility="Collapsed"
+              Panel.ZIndex="25">
+            <Border x:Name="GroupsBackdrop"
+                    Background="{DynamicResource ScrimBrush}"
+                    MouseDown="GroupsBackdrop_MouseDown" />
+
+            <Border x:Name="GroupsCard"
+                    Width="580"
+                    MaxHeight="620"
+                    Margin="0,36"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SettingsPanelBrush}"
+                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="18">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="GroupsTranslate" Y="18" />
+                </Border.RenderTransform>
+
+                <Grid Margin="24,20,20,18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Str.Section.Groups}"
+                                       FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="{DynamicResource FontSize18}"
+                                       FontWeight="Bold" />
+                            <TextBlock Text="{DynamicResource Str.App.Title}"
+                                       FontSize="{DynamicResource FontSize105}"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                        <Button HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Style="{StaticResource PanelIconButton}"
+                                Width="28"
+                                Height="28"
+                                Click="GroupsCloseButton_Click"
+                                ToolTip="{DynamicResource Str.Settings.Close}">
+                            <TextBlock Style="{StaticResource Glyph}"
+                                       Text="&#xE8BB;"
+                                       FontSize="{DynamicResource FontSize11}" />
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1"
+                                  Margin="0,16,4,0"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="CustomGroupsSection" Margin="0,0,8,4">
+                            <TextBlock Text="{DynamicResource Str.Groups.Description}"
+                                       Style="{StaticResource SettingDescription}" />
+
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="NewGroupNameBox"
+                                         Style="{StaticResource PickerValueBox}"
+                                         Height="30"
+                                         Margin="0,0,8,0"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="{DynamicResource Str.Groups.NamePlaceholder}"
+                                         KeyDown="NewGroupNameBox_KeyDown" />
+                                <Button Grid.Column="1"
+                                        Style="{StaticResource GhostButton}"
+                                        Content="{DynamicResource Str.Groups.Add}"
+                                        Height="30"
+                                        Padding="12,0"
+                                        Click="AddCustomGroupButton_Click" />
+                            </Grid>
+
+                            <TextBlock Text="{DynamicResource Str.Groups.Hint}"
+                                       Style="{StaticResource SettingDescription}"
+                                       Margin="0,10,0,0" />
+                            <StackPanel x:Name="CustomGroupsPanel" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
     </Grid>
 </Window>

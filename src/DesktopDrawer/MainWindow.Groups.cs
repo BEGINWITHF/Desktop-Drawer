@@ -767,7 +767,7 @@ public partial class MainWindow
         RebuildFilteredItems();
         NavigateToItem(selected[0]);
 
-        if (_settingsOpen)
+        if (_settingsOpen || _groupsOpen)
         {
             BuildCustomGroupRows();
         }
@@ -816,7 +816,7 @@ public partial class MainWindow
         RebuildFilteredItems();
         NavigateToItem(selected[0]);
 
-        if (_settingsOpen)
+        if (_settingsOpen || _groupsOpen)
         {
             BuildCustomGroupRows();
         }
@@ -866,7 +866,7 @@ public partial class MainWindow
 
         SaveSettings();
 
-        if (_settingsOpen)
+        if (_settingsOpen || _groupsOpen)
         {
             BuildCustomGroupRows();
         }
@@ -874,13 +874,7 @@ public partial class MainWindow
 
     private void OpenGroupsSettings()
     {
-        OpenSettings();
-
-        Dispatcher.BeginInvoke(new Action(() =>
-        {
-            CustomGroupsSection.BringIntoView();
-            NewGroupNameBox.Focus();
-        }), DispatcherPriority.Background);
+        OpenGroupsPanel();
     }
 
     private MenuItem BuildGroupsMenu(IReadOnlyList<DesktopItem> selected)

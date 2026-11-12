@@ -50,6 +50,10 @@ public partial class MainWindow
             {
                 CancelColorPicker();
             }
+            else if (_groupsOpen)
+            {
+                CloseGroupsPanel();
+            }
             else if (_rubberBandActive)
             {
                 EndRubberBand();
