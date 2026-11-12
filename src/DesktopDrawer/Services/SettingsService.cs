@@ -120,7 +120,8 @@ public sealed class SettingsService
                 Name = name,
                 Items = items,
                 Extensions = CustomGroup.NormalizeExtensions(group.Extensions),
-                Excluded = excluded
+                Excluded = excluded,
+                IncludeFolders = group.IncludeFolders
             });
         }
 

@@ -164,6 +164,7 @@
   "Groups.TypeAdd": "追加",
   "Groups.TypeBrowse": "ファイルを選んで種類を追加",
   "Groups.TypeRemove": "このファイルの種類を削除",
+  "Groups.TypeFolders": "フォルダーを追加",
   "Groups.ItemOne": "1 項目",
   "Groups.ItemCount": "{0} 項目",
   "Groups.Empty": "カスタム グループはまだありません。",

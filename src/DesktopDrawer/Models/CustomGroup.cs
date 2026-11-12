@@ -16,6 +16,11 @@ public sealed class CustomGroup
     public List<string> Extensions { get; set; } = [];
 
     /// <summary>
+    /// When true, folders (which have no suffix) join this group automatically.
+    /// </summary>
+    public bool IncludeFolders { get; set; }
+
+    /// <summary>
     /// Paths the user explicitly removed from this group even though a suffix
     /// rule would otherwise match them.
     /// </summary>

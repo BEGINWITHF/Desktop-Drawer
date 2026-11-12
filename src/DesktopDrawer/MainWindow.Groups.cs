@@ -11,6 +11,59 @@ namespace DesktopDrawer;
 
 public partial class MainWindow
 {
+    /// <summary>
+    /// Seeds the groups that mirror the built-in type categories the first time
+    /// the custom-group feature runs. Names follow the current UI language.
+    /// </summary>
+    private void EnsureDefaultCustomGroups()
+    {
+        if (_settings.CustomGroupsSeeded)
+        {
+            return;
+        }
+
+        _settings.CustomGroupsSeeded = true;
+
+        foreach (CustomGroup group in CreateDefaultCustomGroups())
+        {
+            bool exists = _settings.CustomGroups.Any(existing =>
+                string.Equals(existing.Name, group.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (!exists)
+            {
+                _settings.CustomGroups.Add(group);
+            }
+        }
+
+        SaveSettings();
+    }
+
+    private static List<CustomGroup> CreateDefaultCustomGroups()
+    {
+        (string Key, string[] Extensions)[] defaults =
+        [
+            ("Group.Documents", [".doc", ".docx", ".pdf", ".txt", ".md", ".xls", ".xlsx", ".ppt", ".pptx", ".csv", ".rtf", ".odt"]),
+            ("Group.Images", [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".ico", ".psd", ".tif", ".tiff"]),
+            ("Group.Videos", [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".webm", ".flv", ".m4v"]),
+            ("Group.Audio", [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a", ".wma"]),
+            ("Group.Archives", [".zip", ".rar", ".7z", ".tar", ".gz", ".xz", ".bz2", ".iso"]),
+            ("Group.Programs", [".exe", ".msi", ".bat", ".cmd", ".ps1", ".lnk"])
+        ];
+
+        var groups = new List<CustomGroup>();
+
+        foreach ((string key, string[] extensions) in defaults)
+        {
+            groups.Add(new CustomGroup
+            {
+                Name = I18n.T(key),
+                Extensions = CustomGroup.NormalizeExtensions(extensions)
+            });
+        }
+
+        return groups;
+    }
+
     private void BuildCustomGroupRows()
     {
         CustomGroupsPanel.Children.Clear();
@@ -119,9 +172,14 @@ public partial class MainWindow
             rulesLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
             rulesPanel.Children.Add(rulesLabel);
 
-            if (group.Extensions.Count > 0)
+            if (group.IncludeFolders || group.Extensions.Count > 0)
             {
                 var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+
+                if (group.IncludeFolders)
+                {
+                    chips.Children.Add(CreateFolderChip(group));
+                }
 
                 foreach (string extension in group.Extensions)
                 {
@@ -189,6 +247,21 @@ public partial class MainWindow
             inputRow.Children.Add(addButton);
             inputRow.Children.Add(browseButton);
             rulesPanel.Children.Add(inputRow);
+
+            if (!group.IncludeFolders)
+            {
+                var foldersButton = new Button
+                {
+                    Style = (Style)FindResource("GhostButton"),
+                    Content = I18n.T("Groups.TypeFolders"),
+                    Height = 22,
+                    Padding = new Thickness(8, 0, 8, 0),
+                    Margin = new Thickness(0, 4, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Left
+                };
+                foldersButton.Click += (_, _) => AddFoldersToCustomGroup(group);
+                rulesPanel.Children.Add(foldersButton);
+            }
 
             var entry = new StackPanel();
             entry.Children.Add(row);
@@ -278,7 +351,17 @@ public partial class MainWindow
     private int CountItemsInCustomGroup(CustomGroup group) =>
         _allItems.Count(item => IsItemInCustomGroup(group, item));
 
-    private Border CreateExtensionChip(CustomGroup group, string extension)
+    private Border CreateExtensionChip(CustomGroup group, string extension) =>
+        CreateGroupChip(
+            extension.TrimStart('.'),
+            () => RemoveCustomGroupExtension(group, extension));
+
+    private Border CreateFolderChip(CustomGroup group) =>
+        CreateGroupChip(
+            I18n.T("Group.Folders"),
+            () => RemoveFoldersFromCustomGroup(group));
+
+    private Border CreateGroupChip(string text, Action remove)
     {
         var chip = new Border
         {
@@ -294,13 +377,13 @@ public partial class MainWindow
 
         var label = new TextBlock
         {
-            Text = extension.TrimStart('.'),
+            Text = text,
             VerticalAlignment = VerticalAlignment.Center
         };
         label.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
         label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
 
-        var remove = new Button
+        var removeButton = new Button
         {
             Style = (Style)FindResource("PanelIconButton"),
             Width = 16,
@@ -308,7 +391,7 @@ public partial class MainWindow
             Margin = new Thickness(4, 0, 0, 0),
             ToolTip = I18n.T("Groups.TypeRemove")
         };
-        remove.Content = new TextBlock
+        removeButton.Content = new TextBlock
         {
             Text = "\uE711",
             FontFamily = (FontFamily)FindResource("IconFont"),
@@ -316,10 +399,10 @@ public partial class MainWindow
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        remove.Click += (_, _) => RemoveCustomGroupExtension(group, extension);
+        removeButton.Click += (_, _) => remove();
 
         content.Children.Add(label);
-        content.Children.Add(remove);
+        content.Children.Add(removeButton);
         chip.Child = content;
         return chip;
     }
@@ -375,6 +458,30 @@ public partial class MainWindow
             return;
         }
 
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void AddFoldersToCustomGroup(CustomGroup group)
+    {
+        if (group.IncludeFolders)
+        {
+            return;
+        }
+
+        group.IncludeFolders = true;
+        group.Excluded.Clear();
+        _settings.GroupMode = GroupMode.Custom;
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void RemoveFoldersFromCustomGroup(CustomGroup group)
+    {
+        if (!group.IncludeFolders)
+        {
+            return;
+        }
+
+        group.IncludeFolders = false;
         ApplyCustomGroupRuleChange();
     }
 
@@ -522,8 +629,11 @@ public partial class MainWindow
             {
                 group.Items.Remove(keys[i]);
 
-                if (group.MatchesExtension(selected[i].Name) &&
-                    !group.Excluded.Contains(keys[i]))
+                bool matchesRule =
+                    (group.IncludeFolders && selected[i].IsFolder) ||
+                    group.MatchesExtension(selected[i].Name);
+
+                if (matchesRule && !group.Excluded.Contains(keys[i]))
                 {
                     group.Excluded.Add(keys[i]);
                 }
@@ -585,8 +695,11 @@ public partial class MainWindow
             {
                 string key = PathKey(item.FullPath);
 
-                if (group.MatchesExtension(item.Name) &&
-                    !group.Excluded.Contains(key))
+                bool matchesRule =
+                    (group.IncludeFolders && item.IsFolder) ||
+                    group.MatchesExtension(item.Name);
+
+                if (matchesRule && !group.Excluded.Contains(key))
                 {
                     group.Excluded.Add(key);
                     changed = true;

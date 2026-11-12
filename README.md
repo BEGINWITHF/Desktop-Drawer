@@ -74,7 +74,7 @@ All settings save instantly.
 
 **Manual adjustment**: Drag a single icon onto another to pin its position. The remaining icons keep sorting automatically; choose **Reset manual positions** in the sort menu to clear all pins.
 
-**Custom groups**: Create, rename and reorder your own categories in Settings → CUSTOM GROUPS. Add file types such as `pdf, psd, zip` to a group and matching files join it automatically. Right-click icons and choose **Groups** to override the rules, then choose **Group by → Custom** to show these categories in the page bar.
+**Custom groups**: Create, rename and reorder your own categories in Settings → CUSTOM GROUPS. The built-in categories (Documents, Images, Videos, Audio, Archives, Programs) are pre-created with their file types. Add more types, browse for a file to copy its type, or click **Add folders** so directories join the group. Right-click icons and choose **Groups** to override the rules, then choose **Group by → Custom** to show these categories in the page bar.
 
 **Grouping**: Right-click the desktop and choose **Group by** to group by type, name, or date modified. Files are never moved; icons in the same group are simply placed on the same page range. Choose **None** to return to ungrouped pages.
 

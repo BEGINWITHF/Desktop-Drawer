@@ -164,6 +164,7 @@
   "Groups.TypeAdd": "新增",
   "Groups.TypeBrowse": "選擇檔案並加入它的格式",
   "Groups.TypeRemove": "移除這個檔案類型",
+  "Groups.TypeFolders": "加入資料夾",
   "Groups.ItemOne": "1 個項目",
   "Groups.ItemCount": "{0} 個項目",
   "Groups.Empty": "還沒有自訂分組。",

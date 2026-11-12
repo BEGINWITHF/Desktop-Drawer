@@ -153,6 +153,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _settings = _settingsService.Load();
         I18n.Apply(_settings.Language);
         _settings.Language = I18n.Current;
+        EnsureDefaultCustomGroups();
         _itemSummary = I18n.T("Summary.Reading");
         _currentPageLabel = I18n.T("Pager.OnePage");
         _desktopService = new DesktopService();
@@ -2330,7 +2331,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach (CustomGroup group in _settings.CustomGroups)
         {
-            if (!group.Excluded.Contains(key) && group.MatchesExtension(item.Name))
+            if (!group.Excluded.Contains(key) &&
+                ((group.IncludeFolders && item.IsFolder) ||
+                 group.MatchesExtension(item.Name)))
             {
                 return group.Name;
             }
