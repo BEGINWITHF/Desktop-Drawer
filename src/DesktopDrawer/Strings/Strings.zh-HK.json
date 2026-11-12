@@ -165,6 +165,8 @@
   "Groups.TypeBrowse": "選擇檔案並加入它的格式",
   "Groups.TypeRemove": "移除這個檔案類型",
   "Groups.TypeFolders": "加入資料夾",
+  "Groups.FolderNames": "資料夾名稱包含",
+  "Groups.FolderNamesHint": "只有名稱包含這些詞的資料夾才會歸入。留空表示包含所有資料夾。",
   "Groups.ItemOne": "1 個項目",
   "Groups.ItemCount": "{0} 個項目",
   "Groups.Empty": "還沒有自訂分組。",

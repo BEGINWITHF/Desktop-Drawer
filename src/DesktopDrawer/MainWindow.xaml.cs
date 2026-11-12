@@ -2332,8 +2332,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         foreach (CustomGroup group in _settings.CustomGroups)
         {
             if (!group.Excluded.Contains(key) &&
-                ((group.IncludeFolders && item.IsFolder) ||
-                 group.MatchesExtension(item.Name)))
+                group.Matches(item.Name, item.IsFolder))
             {
                 return group.Name;
             }

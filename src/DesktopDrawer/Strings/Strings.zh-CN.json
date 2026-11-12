@@ -165,6 +165,8 @@
   "Groups.TypeBrowse": "选择文件并添加它的格式",
   "Groups.TypeRemove": "移除这个文件类型",
   "Groups.TypeFolders": "添加文件夹",
+  "Groups.FolderNames": "文件夹名包含",
+  "Groups.FolderNamesHint": "只有名字包含这些词的文件夹才会归入。留空表示包含所有文件夹。",
   "Groups.ItemOne": "1 个项目",
   "Groups.ItemCount": "{0} 个项目",
   "Groups.Empty": "还没有自定义分组。",

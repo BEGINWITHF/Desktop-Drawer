@@ -179,6 +179,11 @@ public partial class MainWindow
                 if (group.IncludeFolders)
                 {
                     chips.Children.Add(CreateFolderChip(group));
+
+                    foreach (string folderName in group.FolderNames)
+                    {
+                        chips.Children.Add(CreateFolderNameChip(group, folderName));
+                    }
                 }
 
                 foreach (string extension in group.Extensions)
@@ -248,7 +253,57 @@ public partial class MainWindow
             inputRow.Children.Add(browseButton);
             rulesPanel.Children.Add(inputRow);
 
-            if (!group.IncludeFolders)
+            if (group.IncludeFolders)
+            {
+                var folderLabel = new TextBlock
+                {
+                    Text = I18n.T("Groups.FolderNames"),
+                    Margin = new Thickness(2, 2, 0, 4)
+                };
+                folderLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+                folderLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+
+                var folderRow = new Grid();
+                folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var folderBox = new TextBox
+                {
+                    Style = (Style)FindResource("PickerValueBox"),
+                    Height = 24,
+                    Margin = new Thickness(0, 0, 6, 0),
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    ToolTip = I18n.T("Groups.FolderNamesHint")
+                };
+                folderBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+                folderBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
+                folderBox.KeyDown += (_, e) =>
+                {
+                    if (e.Key == Key.Enter)
+                    {
+                        e.Handled = true;
+                        AddFolderNamesFromInput(group, folderBox);
+                    }
+                };
+
+                var folderAddButton = new Button
+                {
+                    Style = (Style)FindResource("GhostButton"),
+                    Content = I18n.T("Groups.TypeAdd"),
+                    Height = 24,
+                    Padding = new Thickness(10, 0, 10, 0)
+                };
+                folderAddButton.Click += (_, _) => AddFolderNamesFromInput(group, folderBox);
+
+                Grid.SetColumn(folderBox, 0);
+                Grid.SetColumn(folderAddButton, 1);
+                folderRow.Children.Add(folderBox);
+                folderRow.Children.Add(folderAddButton);
+
+                rulesPanel.Children.Add(folderLabel);
+                rulesPanel.Children.Add(folderRow);
+            }
+            else
             {
                 var foldersButton = new Button
                 {
@@ -360,6 +415,11 @@ public partial class MainWindow
         CreateGroupChip(
             I18n.T("Group.Folders"),
             () => RemoveFoldersFromCustomGroup(group));
+
+    private Border CreateFolderNameChip(CustomGroup group, string folderName) =>
+        CreateGroupChip(
+            folderName,
+            () => RemoveFolderName(group, folderName));
 
     private Border CreateGroupChip(string text, Action remove)
     {
@@ -482,6 +542,50 @@ public partial class MainWindow
         }
 
         group.IncludeFolders = false;
+        group.FolderNames.Clear();
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void AddFolderNamesFromInput(CustomGroup group, TextBox box)
+    {
+        List<string> names = CustomGroup.ParseFolderNames(box.Text);
+
+        if (names.Count == 0)
+        {
+            box.Focus();
+            return;
+        }
+
+        box.Text = string.Empty;
+        bool changed = false;
+
+        foreach (string name in names)
+        {
+            if (!group.FolderNames.Contains(name))
+            {
+                group.FolderNames.Add(name);
+                changed = true;
+            }
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        group.IncludeFolders = true;
+        group.Excluded.Clear();
+        _settings.GroupMode = GroupMode.Custom;
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void RemoveFolderName(CustomGroup group, string folderName)
+    {
+        if (!group.FolderNames.Remove(folderName))
+        {
+            return;
+        }
+
         ApplyCustomGroupRuleChange();
     }
 
@@ -629,9 +733,7 @@ public partial class MainWindow
             {
                 group.Items.Remove(keys[i]);
 
-                bool matchesRule =
-                    (group.IncludeFolders && selected[i].IsFolder) ||
-                    group.MatchesExtension(selected[i].Name);
+                bool matchesRule = group.Matches(selected[i].Name, selected[i].IsFolder);
 
                 if (matchesRule && !group.Excluded.Contains(keys[i]))
                 {
@@ -695,9 +797,7 @@ public partial class MainWindow
             {
                 string key = PathKey(item.FullPath);
 
-                bool matchesRule =
-                    (group.IncludeFolders && item.IsFolder) ||
-                    group.MatchesExtension(item.Name);
+                bool matchesRule = group.Matches(item.Name, item.IsFolder);
 
                 if (matchesRule && !group.Excluded.Contains(key))
                 {
