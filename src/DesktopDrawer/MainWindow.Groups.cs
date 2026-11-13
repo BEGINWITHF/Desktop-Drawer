@@ -11,7 +11,7 @@ namespace DesktopDrawer;
 
 public partial class MainWindow
 {
-    private CustomGroup? _expandedGroup;
+    private CustomGroup? _selectedGroup;
 
     /// <summary>
     /// Seeds the groups that mirror the built-in type categories the first time
@@ -69,6 +69,12 @@ public partial class MainWindow
     private void BuildCustomGroupRows()
     {
         CustomGroupsPanel.Children.Clear();
+        GroupEditorPanel.Children.Clear();
+
+        if (_selectedGroup is null || !_settings.CustomGroups.Contains(_selectedGroup))
+        {
+            _selectedGroup = _settings.CustomGroups.FirstOrDefault();
+        }
 
         if (_settings.CustomGroups.Count == 0)
         {
@@ -81,289 +87,357 @@ public partial class MainWindow
             empty.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
             empty.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
             CustomGroupsPanel.Children.Add(empty);
+
+            var noSelection = new TextBlock
+            {
+                Text = I18n.T("Groups.NoSelection"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(2, 2, 10, 0)
+            };
+            noSelection.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+            noSelection.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            GroupEditorPanel.Children.Add(noSelection);
             return;
         }
 
         foreach (CustomGroup group in _settings.CustomGroups)
         {
-            int index = _settings.CustomGroups.IndexOf(group);
+            CustomGroupsPanel.Children.Add(CreateGroupDirectoryItem(group));
+        }
 
-            var row = new Grid { Margin = new Thickness(0, 0, 10, 0) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        if (_selectedGroup is not null)
+        {
+            BuildGroupEditor(_selectedGroup);
+        }
+    }
 
-            var nameBox = new TextBox
-            {
-                Text = group.Name,
-                Style = (Style)FindResource("PickerValueBox"),
-                Height = 26,
-                Margin = new Thickness(0, 0, 6, 0),
-                VerticalContentAlignment = VerticalAlignment.Center
-            };
-            nameBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
-            nameBox.SetResourceReference(Control.FontSizeProperty, "FontSize12");
-            nameBox.LostFocus += (_, _) => CommitCustomGroupRename(group, nameBox);
-            nameBox.KeyDown += (_, e) =>
-            {
-                if (e.Key == Key.Enter)
-                {
-                    e.Handled = true;
-                    Keyboard.ClearFocus();
-                }
-                else if (e.Key == Key.Escape)
-                {
-                    nameBox.Text = group.Name;
-                    e.Handled = true;
-                    Keyboard.ClearFocus();
-                }
-            };
+    private Button CreateGroupDirectoryItem(CustomGroup group)
+    {
+        bool selected = ReferenceEquals(_selectedGroup, group);
+        int memberCount = CountItemsInCustomGroup(group);
 
-            int memberCount = CountItemsInCustomGroup(group);
-            string itemCount = memberCount == 1
+        var content = new Grid();
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var name = new TextBlock
+        {
+            Text = group.Name,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        name.SetResourceReference(TextBlock.FontSizeProperty, "FontSize12");
+        name.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            selected ? "TextPrimaryBrush" : "TextSecondaryBrush");
+
+        var count = new TextBlock
+        {
+            Text = memberCount == 1
                 ? I18n.T("Groups.ItemOne")
-                : I18n.F("Groups.ItemCount", memberCount);
+                : I18n.F("Groups.ItemCount", memberCount),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0)
+        };
+        count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize95");
+        count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
 
-            var count = new TextBlock
+        Grid.SetColumn(count, 1);
+        content.Children.Add(name);
+        content.Children.Add(count);
+
+        var button = new Button
+        {
+            Style = (Style)FindResource("GhostButton"),
+            Height = 30,
+            Margin = new Thickness(0, 0, 0, 4),
+            Padding = new Thickness(8, 0, 8, 0),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = content,
+            Background = selected
+                ? (Brush)FindResource("PanelHoverBrush")
+                : Brushes.Transparent,
+            BorderBrush = selected
+                ? (Brush)FindResource("StrokeStrongBrush")
+                : Brushes.Transparent
+        };
+        button.Click += (_, _) =>
+        {
+            _selectedGroup = group;
+            BuildCustomGroupRows();
+        };
+        return button;
+    }
+
+    private void BuildGroupEditor(CustomGroup group)
+    {
+        var header = new Grid { Margin = new Thickness(0, 0, 4, 0) };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var nameBox = new TextBox
+        {
+            Text = group.Name,
+            Style = (Style)FindResource("PickerValueBox"),
+            Height = 30,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+        nameBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+        nameBox.SetResourceReference(Control.FontSizeProperty, "FontSize13");
+        nameBox.LostFocus += (_, _) => CommitCustomGroupRename(group, nameBox);
+        nameBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
             {
-                Text = itemCount,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 4, 0)
-            };
-            count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
-            count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
-
-            Button up = CreateGroupRowButton(
-                "\uE70E",
-                I18n.T("Groups.MoveUp"),
-                index > 0,
-                () => MoveCustomGroup(group, -1));
-
-            Button down = CreateGroupRowButton(
-                "\uE70D",
-                I18n.T("Groups.MoveDown"),
-                index < _settings.CustomGroups.Count - 1,
-                () => MoveCustomGroup(group, 1));
-
-            Button delete = CreateGroupRowButton(
-                "\uE74D",
-                I18n.T("Groups.Delete"),
-                true,
-                () => DeleteCustomGroup(group));
-
-            bool expanded = ReferenceEquals(_expandedGroup, group);
-            Button expand = CreateGroupRowButton(
-                expanded ? "\uE70D" : "\uE76C",
-                I18n.T(expanded ? "Groups.HideRules" : "Groups.EditRules"),
-                true,
-                () => ToggleGroupEditor(group));
-            expand.Margin = new Thickness(0, 0, 4, 0);
-
-            Grid.SetColumn(nameBox, 1);
-            Grid.SetColumn(count, 2);
-            Grid.SetColumn(up, 3);
-            Grid.SetColumn(down, 4);
-            Grid.SetColumn(delete, 5);
-            row.Children.Add(expand);
-            row.Children.Add(nameBox);
-            row.Children.Add(count);
-            row.Children.Add(up);
-            row.Children.Add(down);
-            row.Children.Add(delete);
-
-            var rulesPanel = new StackPanel { Margin = new Thickness(26, 6, 10, 0) };
-
-            var rulesLabel = new TextBlock
-            {
-                Text = I18n.T("Groups.Extensions"),
-                Margin = new Thickness(2, 0, 0, 4)
-            };
-            rulesLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
-            rulesLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
-            rulesPanel.Children.Add(rulesLabel);
-
-            if (group.IncludeFolders || group.Extensions.Count > 0)
-            {
-                var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
-
-                if (group.IncludeFolders)
-                {
-                    chips.Children.Add(CreateFolderChip(group));
-
-                    foreach (string folderName in group.FolderNames)
-                    {
-                        chips.Children.Add(CreateFolderNameChip(group, folderName));
-                    }
-                }
-
-                foreach (string extension in group.Extensions)
-                {
-                    chips.Children.Add(CreateExtensionChip(group, extension));
-                }
-
-                rulesPanel.Children.Add(chips);
+                e.Handled = true;
+                Keyboard.ClearFocus();
             }
-
-            var inputRow = new Grid();
-            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var extensionBox = new TextBox
+            else if (e.Key == Key.Escape)
             {
-                Style = (Style)FindResource("PickerValueBox"),
-                Height = 24,
-                Margin = new Thickness(0, 0, 6, 0),
-                VerticalContentAlignment = VerticalAlignment.Center,
-                ToolTip = I18n.T("Groups.ExtensionsHint")
-            };
-            extensionBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
-            extensionBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
-            extensionBox.KeyDown += (_, e) =>
-            {
-                if (e.Key == Key.Enter)
-                {
-                    e.Handled = true;
-                    AddExtensionsFromInput(group, extensionBox);
-                }
-            };
+                nameBox.Text = group.Name;
+                e.Handled = true;
+                Keyboard.ClearFocus();
+            }
+        };
 
-            var addButton = new Button
+        int memberCount = CountItemsInCustomGroup(group);
+        var count = new TextBlock
+        {
+            Text = memberCount == 1
+                ? I18n.T("Groups.ItemOne")
+                : I18n.F("Groups.ItemCount", memberCount),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 6, 0)
+        };
+        count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+        count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+
+        int index = _settings.CustomGroups.IndexOf(group);
+
+        Button up = CreateGroupRowButton(
+            "\uE70E",
+            I18n.T("Groups.MoveUp"),
+            index > 0,
+            () => MoveCustomGroup(group, -1));
+
+        Button down = CreateGroupRowButton(
+            "\uE70D",
+            I18n.T("Groups.MoveDown"),
+            index < _settings.CustomGroups.Count - 1,
+            () => MoveCustomGroup(group, 1));
+
+        Button delete = CreateGroupRowButton(
+            "\uE74D",
+            I18n.T("Groups.Delete"),
+            true,
+            () => DeleteCustomGroup(group));
+
+        Grid.SetColumn(count, 1);
+        Grid.SetColumn(up, 2);
+        Grid.SetColumn(down, 3);
+        Grid.SetColumn(delete, 4);
+        header.Children.Add(nameBox);
+        header.Children.Add(count);
+        header.Children.Add(up);
+        header.Children.Add(down);
+        header.Children.Add(delete);
+        GroupEditorPanel.Children.Add(header);
+
+        GroupEditorPanel.Children.Add(CreateEditorLabel("Groups.Extensions", new Thickness(0, 16, 0, 6)));
+
+        if (group.Extensions.Count > 0)
+        {
+            GroupEditorPanel.Children.Add(CreateExtensionChipRow(group));
+        }
+
+        GroupEditorPanel.Children.Add(CreateExtensionInputRow(group));
+
+        GroupEditorPanel.Children.Add(CreateEditorDivider());
+        GroupEditorPanel.Children.Add(CreateEditorLabel("Groups.FileNames", new Thickness(0, 0, 0, 6)));
+
+        if (group.FileNameFilters.Count > 0)
+        {
+            GroupEditorPanel.Children.Add(CreateFileNameChipRow(group));
+        }
+
+        GroupEditorPanel.Children.Add(CreateFileNameInputRow(group));
+
+        GroupEditorPanel.Children.Add(CreateEditorDivider());
+        GroupEditorPanel.Children.Add(CreateEditorLabel("Group.Folders", new Thickness(0, 0, 0, 6)));
+
+        if (group.IncludeFolders)
+        {
+            var folderChips = new WrapPanel();
+            folderChips.Children.Add(CreateFolderChip(group));
+            GroupEditorPanel.Children.Add(folderChips);
+        }
+        else
+        {
+            var foldersButton = new Button
             {
                 Style = (Style)FindResource("GhostButton"),
-                Content = I18n.T("Groups.TypeAdd"),
-                Height = 24,
+                Content = I18n.T("Groups.TypeFolders"),
+                Height = 26,
                 Padding = new Thickness(10, 0, 10, 0),
-                Margin = new Thickness(0, 0, 6, 0)
+                HorizontalAlignment = HorizontalAlignment.Left
             };
-            addButton.Click += (_, _) => AddExtensionsFromInput(group, extensionBox);
-
-            var browseButton = new Button
-            {
-                Style = (Style)FindResource("PanelIconButton"),
-                Width = 24,
-                Height = 24,
-                ToolTip = I18n.T("Groups.TypeBrowse")
-            };
-            browseButton.Content = new TextBlock
-            {
-                Text = "\uE8E5",
-                FontFamily = (FontFamily)FindResource("IconFont"),
-                FontSize = 10,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            browseButton.Click += (_, _) => BrowseExtensionsForGroup(group);
-
-            Grid.SetColumn(extensionBox, 0);
-            Grid.SetColumn(addButton, 1);
-            Grid.SetColumn(browseButton, 2);
-            inputRow.Children.Add(extensionBox);
-            inputRow.Children.Add(addButton);
-            inputRow.Children.Add(browseButton);
-            rulesPanel.Children.Add(inputRow);
-
-            if (group.IncludeFolders)
-            {
-                var folderLabel = new TextBlock
-                {
-                    Text = I18n.T("Groups.FolderNames"),
-                    Margin = new Thickness(2, 2, 0, 4)
-                };
-                folderLabel.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
-                folderLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
-
-                var folderRow = new Grid();
-                folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                folderRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-                var folderBox = new TextBox
-                {
-                    Style = (Style)FindResource("PickerValueBox"),
-                    Height = 24,
-                    Margin = new Thickness(0, 0, 6, 0),
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    ToolTip = I18n.T("Groups.FolderNamesHint")
-                };
-                folderBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
-                folderBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
-                folderBox.KeyDown += (_, e) =>
-                {
-                    if (e.Key == Key.Enter)
-                    {
-                        e.Handled = true;
-                        AddFolderNamesFromInput(group, folderBox);
-                    }
-                };
-
-                var folderAddButton = new Button
-                {
-                    Style = (Style)FindResource("GhostButton"),
-                    Content = I18n.T("Groups.TypeAdd"),
-                    Height = 24,
-                    Padding = new Thickness(10, 0, 10, 0)
-                };
-                folderAddButton.Click += (_, _) => AddFolderNamesFromInput(group, folderBox);
-
-                Grid.SetColumn(folderBox, 0);
-                Grid.SetColumn(folderAddButton, 1);
-                folderRow.Children.Add(folderBox);
-                folderRow.Children.Add(folderAddButton);
-
-                rulesPanel.Children.Add(folderLabel);
-                rulesPanel.Children.Add(folderRow);
-            }
-            else
-            {
-                var foldersButton = new Button
-                {
-                    Style = (Style)FindResource("GhostButton"),
-                    Content = I18n.T("Groups.TypeFolders"),
-                    Height = 22,
-                    Padding = new Thickness(8, 0, 8, 0),
-                    Margin = new Thickness(0, 4, 0, 0),
-                    HorizontalAlignment = HorizontalAlignment.Left
-                };
-                foldersButton.Click += (_, _) => AddFoldersToCustomGroup(group);
-                rulesPanel.Children.Add(foldersButton);
-            }
-
-            string summary = FormatGroupSummary(group);
-            var summaryText = new TextBlock
-            {
-                Text = summary,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                TextWrapping = TextWrapping.NoWrap,
-                Margin = new Thickness(26, 2, 10, 0),
-                ToolTip = summary
-            };
-            summaryText.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
-            summaryText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
-
-            var entry = new StackPanel();
-            entry.Children.Add(row);
-
-            if (expanded)
-            {
-                entry.Children.Add(rulesPanel);
-            }
-            else
-            {
-                entry.Children.Add(summaryText);
-            }
-
-            var border = new Border
-            {
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(0, 4, 0, 4),
-                Child = entry
-            };
-            border.SetResourceReference(Border.BorderBrushProperty, "DividerBrush");
-            CustomGroupsPanel.Children.Add(border);
+            foldersButton.Click += (_, _) => AddFoldersToCustomGroup(group);
+            GroupEditorPanel.Children.Add(foldersButton);
         }
+    }
+
+    private TextBlock CreateEditorLabel(string key, Thickness margin)
+    {
+        var label = new TextBlock
+        {
+            Text = I18n.T(key),
+            Margin = margin
+        };
+        label.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+        label.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+        return label;
+    }
+
+    private Border CreateEditorDivider()
+    {
+        var divider = new Border
+        {
+            Height = 1,
+            Margin = new Thickness(0, 14, 0, 10)
+        };
+        divider.SetResourceReference(Border.BackgroundProperty, "DividerBrush");
+        return divider;
+    }
+
+    private WrapPanel CreateExtensionChipRow(CustomGroup group)
+    {
+        var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+
+        foreach (string extension in group.Extensions)
+        {
+            chips.Children.Add(CreateExtensionChip(group, extension));
+        }
+
+        return chips;
+    }
+
+    private WrapPanel CreateFileNameChipRow(CustomGroup group)
+    {
+        var chips = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+
+        foreach (string filter in group.FileNameFilters)
+        {
+            chips.Children.Add(CreateFileNameChip(group, filter));
+        }
+
+        return chips;
+    }
+
+    private Grid CreateExtensionInputRow(CustomGroup group)
+    {
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var extensionBox = new TextBox
+        {
+            Style = (Style)FindResource("PickerValueBox"),
+            Height = 26,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            ToolTip = I18n.T("Groups.ExtensionsHint")
+        };
+        extensionBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+        extensionBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
+        extensionBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                AddExtensionsFromInput(group, extensionBox);
+            }
+        };
+
+        var addButton = new Button
+        {
+            Style = (Style)FindResource("GhostButton"),
+            Content = I18n.T("Groups.TypeAdd"),
+            Height = 26,
+            Padding = new Thickness(10, 0, 10, 0),
+            Margin = new Thickness(0, 0, 6, 0)
+        };
+        addButton.Click += (_, _) => AddExtensionsFromInput(group, extensionBox);
+
+        var browseButton = new Button
+        {
+            Style = (Style)FindResource("PanelIconButton"),
+            Width = 26,
+            Height = 26,
+            ToolTip = I18n.T("Groups.TypeBrowse")
+        };
+        browseButton.Content = new TextBlock
+        {
+            Text = "\uE8E5",
+            FontFamily = (FontFamily)FindResource("IconFont"),
+            FontSize = 10,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        browseButton.Click += (_, _) => BrowseExtensionsForGroup(group);
+
+        Grid.SetColumn(extensionBox, 0);
+        Grid.SetColumn(addButton, 1);
+        Grid.SetColumn(browseButton, 2);
+        row.Children.Add(extensionBox);
+        row.Children.Add(addButton);
+        row.Children.Add(browseButton);
+        return row;
+    }
+
+    private Grid CreateFileNameInputRow(CustomGroup group)
+    {
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var nameBox = new TextBox
+        {
+            Style = (Style)FindResource("PickerValueBox"),
+            Height = 26,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            ToolTip = I18n.T("Groups.FileNamesHint")
+        };
+        nameBox.SetResourceReference(Control.FontFamilyProperty, "UiFont");
+        nameBox.SetResourceReference(Control.FontSizeProperty, "FontSize105");
+        nameBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                AddFileNameFiltersFromInput(group, nameBox);
+            }
+        };
+
+        var addButton = new Button
+        {
+            Style = (Style)FindResource("GhostButton"),
+            Content = I18n.T("Groups.TypeAdd"),
+            Height = 26,
+            Padding = new Thickness(10, 0, 10, 0)
+        };
+        addButton.Click += (_, _) => AddFileNameFiltersFromInput(group, nameBox);
+
+        Grid.SetColumn(nameBox, 0);
+        Grid.SetColumn(addButton, 1);
+        row.Children.Add(nameBox);
+        row.Children.Add(addButton);
+        return row;
     }
 
     private Button CreateGroupRowButton(string glyph, string tooltip, bool enabled, Action action)
@@ -389,33 +463,6 @@ public partial class MainWindow
 
         button.Click += (_, _) => action();
         return button;
-    }
-
-    private void ToggleGroupEditor(CustomGroup group)
-    {
-        _expandedGroup = ReferenceEquals(_expandedGroup, group) ? null : group;
-        BuildCustomGroupRows();
-    }
-
-    private string FormatGroupSummary(CustomGroup group)
-    {
-        var parts = new List<string>();
-
-        if (group.Extensions.Count > 0)
-        {
-            parts.Add(string.Join(", ", group.Extensions.Select(extension => extension.TrimStart('.'))));
-        }
-
-        if (group.IncludeFolders)
-        {
-            parts.Add(group.FolderNames.Count == 0
-                ? I18n.T("Groups.AllFolders")
-                : I18n.F("Groups.FolderSummary", string.Join(", ", group.FolderNames)));
-        }
-
-        return parts.Count == 0
-            ? I18n.T("Groups.NoRules")
-            : string.Join(" · ", parts);
     }
 
     private void CommitCustomGroupRename(CustomGroup group, TextBox box)
@@ -476,10 +523,10 @@ public partial class MainWindow
             I18n.T("Group.Folders"),
             () => RemoveFoldersFromCustomGroup(group));
 
-    private Border CreateFolderNameChip(CustomGroup group, string folderName) =>
+    private Border CreateFileNameChip(CustomGroup group, string filter) =>
         CreateGroupChip(
-            folderName,
-            () => RemoveFolderName(group, folderName));
+            filter,
+            () => RemoveFileNameFilter(group, filter));
 
     private Border CreateGroupChip(string text, Action remove)
     {
@@ -602,15 +649,14 @@ public partial class MainWindow
         }
 
         group.IncludeFolders = false;
-        group.FolderNames.Clear();
         ApplyCustomGroupRuleChange();
     }
 
-    private void AddFolderNamesFromInput(CustomGroup group, TextBox box)
+    private void AddFileNameFiltersFromInput(CustomGroup group, TextBox box)
     {
-        List<string> names = CustomGroup.ParseFolderNames(box.Text);
+        List<string> filters = CustomGroup.ParseFileNameFilters(box.Text);
 
-        if (names.Count == 0)
+        if (filters.Count == 0)
         {
             box.Focus();
             return;
@@ -619,11 +665,11 @@ public partial class MainWindow
         box.Text = string.Empty;
         bool changed = false;
 
-        foreach (string name in names)
+        foreach (string filter in filters)
         {
-            if (!group.FolderNames.Contains(name))
+            if (!group.FileNameFilters.Contains(filter))
             {
-                group.FolderNames.Add(name);
+                group.FileNameFilters.Add(filter);
                 changed = true;
             }
         }
@@ -633,15 +679,14 @@ public partial class MainWindow
             return;
         }
 
-        group.IncludeFolders = true;
         group.Excluded.Clear();
         _settings.GroupMode = GroupMode.Custom;
         ApplyCustomGroupRuleChange();
     }
 
-    private void RemoveFolderName(CustomGroup group, string folderName)
+    private void RemoveFileNameFilter(CustomGroup group, string filter)
     {
-        if (!group.FolderNames.Remove(folderName))
+        if (!group.FileNameFilters.Remove(filter))
         {
             return;
         }
@@ -748,7 +793,7 @@ public partial class MainWindow
 
         var group = new CustomGroup { Name = name };
         _settings.CustomGroups.Add(group);
-        _expandedGroup = group;
+        _selectedGroup = group;
         _settings.GroupMode = GroupMode.Custom;
         NewGroupNameBox.Text = string.Empty;
         SaveSettings();
@@ -766,9 +811,9 @@ public partial class MainWindow
             return;
         }
 
-        if (ReferenceEquals(_expandedGroup, group))
+        if (ReferenceEquals(_selectedGroup, group))
         {
-            _expandedGroup = null;
+            _selectedGroup = null;
         }
 
         SaveSettings();

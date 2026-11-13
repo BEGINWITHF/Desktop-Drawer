@@ -1620,7 +1620,7 @@
                     MouseDown="GroupsBackdrop_MouseDown" />
 
             <Border x:Name="GroupsCard"
-                    Width="580"
+                    Width="820"
                     MaxHeight="620"
                     Margin="0,36"
                     HorizontalAlignment="Center"
@@ -1662,40 +1662,66 @@
                         </Button>
                     </Grid>
 
-                    <ScrollViewer Grid.Row="1"
-                                  Margin="0,16,4,0"
-                                  VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="CustomGroupsSection" Margin="0,0,8,4">
-                            <TextBlock Text="{DynamicResource Str.Groups.Description}"
-                                       Style="{StaticResource SettingDescription}" />
+                    <Grid Grid.Row="1" Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
 
-                            <Grid Margin="0,12,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="NewGroupNameBox"
-                                         Style="{StaticResource PickerValueBox}"
-                                         Height="30"
-                                         Margin="0,0,8,0"
-                                         VerticalContentAlignment="Center"
-                                         ToolTip="{DynamicResource Str.Groups.NamePlaceholder}"
-                                         KeyDown="NewGroupNameBox_KeyDown" />
-                                <Button Grid.Column="1"
-                                        Style="{StaticResource GhostButton}"
-                                        Content="{DynamicResource Str.Groups.Add}"
-                                        Height="30"
-                                        Padding="12,0"
-                                        Click="AddCustomGroupButton_Click" />
-                            </Grid>
+                        <TextBlock Text="{DynamicResource Str.Groups.Description}"
+                                   Style="{StaticResource SettingDescription}" />
 
-                            <TextBlock Text="{DynamicResource Str.Groups.Hint}"
-                                       Style="{StaticResource SettingDescription}"
-                                       Margin="0,10,0,0" />
-                            <StackPanel x:Name="CustomGroupsPanel" Margin="0,8,0,0" />
-                        </StackPanel>
-                    </ScrollViewer>
+                        <Grid Grid.Row="1" Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="216" />
+                                <ColumnDefinition Width="1" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <DockPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock DockPanel.Dock="Top"
+                                           Text="{DynamicResource Str.Groups.Directory}"
+                                           Style="{StaticResource SettingTitle}"
+                                           Margin="2,0,0,8" />
+
+                                <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewGroupNameBox"
+                                             Style="{StaticResource PickerValueBox}"
+                                             Height="28"
+                                             Margin="0,0,6,0"
+                                             VerticalContentAlignment="Center"
+                                             ToolTip="{DynamicResource Str.Groups.NamePlaceholder}"
+                                             KeyDown="NewGroupNameBox_KeyDown" />
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource GhostButton}"
+                                            Content="{DynamicResource Str.Groups.Add}"
+                                            Height="28"
+                                            Padding="10,0"
+                                            Click="AddCustomGroupButton_Click" />
+                                </Grid>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel x:Name="CustomGroupsPanel" />
+                                </ScrollViewer>
+                            </DockPanel>
+
+                            <Border Grid.Column="1"
+                                    Width="1"
+                                    Background="{DynamicResource DividerBrush}"
+                                    Margin="0,0,16,0" />
+
+                            <ScrollViewer Grid.Column="2"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="GroupEditorPanel" Margin="0,0,4,4" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

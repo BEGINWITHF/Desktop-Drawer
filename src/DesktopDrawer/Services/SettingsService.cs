@@ -122,7 +122,7 @@ public sealed class SettingsService
                 Extensions = CustomGroup.NormalizeExtensions(group.Extensions),
                 Excluded = excluded,
                 IncludeFolders = group.IncludeFolders,
-                FolderNames = CustomGroup.NormalizeFolderNames(group.FolderNames)
+                FileNameFilters = CustomGroup.NormalizeFileNameFilters(group.FileNameFilters)
             });
         }
 

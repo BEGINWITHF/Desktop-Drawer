@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace DesktopDrawer.Models;
 
 /// <summary>
@@ -16,19 +18,19 @@ public sealed class CustomGroup
     public List<string> Extensions { get; set; } = [];
 
     /// <summary>
+    /// Lower-cased fragments matched against a file name without its extension.
+    /// A file joins when one of them is contained in that stem.
+    /// </summary>
+    public List<string> FileNameFilters { get; set; } = [];
+
+    /// <summary>
     /// When true, folders (which have no suffix) can join this group.
     /// </summary>
     public bool IncludeFolders { get; set; }
 
     /// <summary>
-    /// Lower-cased name fragments. A folder joins only when its name contains
-    /// one of them; an empty list means every folder is included.
-    /// </summary>
-    public List<string> FolderNames { get; set; } = [];
-
-    /// <summary>
-    /// Paths the user explicitly removed from this group even though a suffix
-    /// rule would otherwise match them.
+    /// Paths the user explicitly removed from this group even though a rule
+    /// would otherwise match them.
     /// </summary>
     public List<string> Excluded { get; set; } = [];
 
@@ -36,14 +38,23 @@ public sealed class CustomGroup
         Extensions.Exists(extension =>
             fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
-    public bool MatchesFolderName(string folderName) =>
-        FolderNames.Count == 0 ||
-        FolderNames.Exists(fragment =>
-            folderName.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+    public bool MatchesFileName(string fileName)
+    {
+        if (FileNameFilters.Count == 0)
+        {
+            return false;
+        }
+
+        string stem = Path.GetFileNameWithoutExtension(fileName);
+
+        return FileNameFilters.Exists(fragment =>
+            stem.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+    }
 
     public bool Matches(string name, bool isFolder) =>
-        (IncludeFolders && isFolder && MatchesFolderName(name)) ||
-        MatchesExtension(name);
+        (IncludeFolders && isFolder) ||
+        MatchesExtension(name) ||
+        (!isFolder && MatchesFileName(name));
 
     public static string? NormalizeExtension(string? token)
     {
@@ -120,13 +131,13 @@ public sealed class CustomGroup
             ? string.Empty
             : string.Join(", ", extensions.Select(extension => extension.TrimStart('.')));
 
-    public static List<string> ParseFolderNames(string? text)
+    public static List<string> ParseFileNameFilters(string? text)
     {
-        var names = new List<string>();
+        var filters = new List<string>();
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            return names;
+            return filters;
         }
 
         string[] tokens = text.Split(
@@ -137,32 +148,32 @@ public sealed class CustomGroup
         {
             string value = token.Trim().ToLowerInvariant();
 
-            if (value.Length > 0 && !names.Contains(value))
+            if (value.Length > 0 && !filters.Contains(value))
             {
-                names.Add(value);
+                filters.Add(value);
             }
         }
 
-        return names;
+        return filters;
     }
 
-    public static List<string> NormalizeFolderNames(IEnumerable<string>? names)
+    public static List<string> NormalizeFileNameFilters(IEnumerable<string>? filters)
     {
         var normalized = new List<string>();
 
-        if (names is null)
+        if (filters is null)
         {
             return normalized;
         }
 
-        foreach (string name in names)
+        foreach (string filter in filters)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(filter))
             {
                 continue;
             }
 
-            string value = name.Trim().ToLowerInvariant();
+            string value = filter.Trim().ToLowerInvariant();
 
             if (value.Length > 0 && !normalized.Contains(value))
             {
