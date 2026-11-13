@@ -11,6 +11,8 @@ namespace DesktopDrawer;
 
 public partial class MainWindow
 {
+    private CustomGroup? _expandedGroup;
+
     /// <summary>
     /// Seeds the groups that mirror the built-in type categories the first time
     /// the custom-group feature runs. Names follow the current UI language.
@@ -87,6 +89,7 @@ public partial class MainWindow
             int index = _settings.CustomGroups.IndexOf(group);
 
             var row = new Grid { Margin = new Thickness(0, 0, 10, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -151,17 +154,27 @@ public partial class MainWindow
                 true,
                 () => DeleteCustomGroup(group));
 
-            Grid.SetColumn(count, 1);
-            Grid.SetColumn(up, 2);
-            Grid.SetColumn(down, 3);
-            Grid.SetColumn(delete, 4);
+            bool expanded = ReferenceEquals(_expandedGroup, group);
+            Button expand = CreateGroupRowButton(
+                expanded ? "\uE70D" : "\uE76C",
+                I18n.T(expanded ? "Groups.HideRules" : "Groups.EditRules"),
+                true,
+                () => ToggleGroupEditor(group));
+            expand.Margin = new Thickness(0, 0, 4, 0);
+
+            Grid.SetColumn(nameBox, 1);
+            Grid.SetColumn(count, 2);
+            Grid.SetColumn(up, 3);
+            Grid.SetColumn(down, 4);
+            Grid.SetColumn(delete, 5);
+            row.Children.Add(expand);
             row.Children.Add(nameBox);
             row.Children.Add(count);
             row.Children.Add(up);
             row.Children.Add(down);
             row.Children.Add(delete);
 
-            var rulesPanel = new StackPanel { Margin = new Thickness(0, 6, 10, 0) };
+            var rulesPanel = new StackPanel { Margin = new Thickness(26, 6, 10, 0) };
 
             var rulesLabel = new TextBlock
             {
@@ -318,9 +331,29 @@ public partial class MainWindow
                 rulesPanel.Children.Add(foldersButton);
             }
 
+            string summary = FormatGroupSummary(group);
+            var summaryText = new TextBlock
+            {
+                Text = summary,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                TextWrapping = TextWrapping.NoWrap,
+                Margin = new Thickness(26, 2, 10, 0),
+                ToolTip = summary
+            };
+            summaryText.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+            summaryText.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+
             var entry = new StackPanel();
             entry.Children.Add(row);
-            entry.Children.Add(rulesPanel);
+
+            if (expanded)
+            {
+                entry.Children.Add(rulesPanel);
+            }
+            else
+            {
+                entry.Children.Add(summaryText);
+            }
 
             var border = new Border
             {
@@ -356,6 +389,33 @@ public partial class MainWindow
 
         button.Click += (_, _) => action();
         return button;
+    }
+
+    private void ToggleGroupEditor(CustomGroup group)
+    {
+        _expandedGroup = ReferenceEquals(_expandedGroup, group) ? null : group;
+        BuildCustomGroupRows();
+    }
+
+    private string FormatGroupSummary(CustomGroup group)
+    {
+        var parts = new List<string>();
+
+        if (group.Extensions.Count > 0)
+        {
+            parts.Add(string.Join(", ", group.Extensions.Select(extension => extension.TrimStart('.'))));
+        }
+
+        if (group.IncludeFolders)
+        {
+            parts.Add(group.FolderNames.Count == 0
+                ? I18n.T("Groups.AllFolders")
+                : I18n.F("Groups.FolderSummary", string.Join(", ", group.FolderNames)));
+        }
+
+        return parts.Count == 0
+            ? I18n.T("Groups.NoRules")
+            : string.Join(" · ", parts);
     }
 
     private void CommitCustomGroupRename(CustomGroup group, TextBox box)
@@ -425,9 +485,9 @@ public partial class MainWindow
     {
         var chip = new Border
         {
-            CornerRadius = new CornerRadius(9),
+            CornerRadius = new CornerRadius(0),
             BorderThickness = new Thickness(1),
-            Padding = new Thickness(8, 2, 3, 2),
+            Padding = new Thickness(7, 2, 2, 2),
             Margin = new Thickness(0, 0, 4, 4)
         };
         chip.SetResourceReference(Border.BackgroundProperty, "BadgePanelBrush");
@@ -686,7 +746,9 @@ public partial class MainWindow
             return;
         }
 
-        _settings.CustomGroups.Add(new CustomGroup { Name = name });
+        var group = new CustomGroup { Name = name };
+        _settings.CustomGroups.Add(group);
+        _expandedGroup = group;
         _settings.GroupMode = GroupMode.Custom;
         NewGroupNameBox.Text = string.Empty;
         SaveSettings();
@@ -702,6 +764,11 @@ public partial class MainWindow
         if (!_settings.CustomGroups.Remove(group))
         {
             return;
+        }
+
+        if (ReferenceEquals(_expandedGroup, group))
+        {
+            _expandedGroup = null;
         }
 
         SaveSettings();

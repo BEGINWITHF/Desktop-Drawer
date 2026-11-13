@@ -1628,7 +1628,7 @@
                     Background="{DynamicResource SettingsPanelBrush}"
                     BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="18">
+                    CornerRadius="0">
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="GroupsTranslate" Y="18" />
                 </Border.RenderTransform>
