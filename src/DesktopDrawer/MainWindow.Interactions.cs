@@ -50,6 +50,10 @@ public partial class MainWindow
             {
                 CancelColorPicker();
             }
+            else if (FolderFilterOverlay.Visibility == Visibility.Visible)
+            {
+                CloseFolderFilterDialog();
+            }
             else if (_groupsOpen)
             {
                 CloseGroupsPanel();

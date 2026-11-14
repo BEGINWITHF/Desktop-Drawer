@@ -24,9 +24,16 @@ public sealed class CustomGroup
     public List<string> FileNameFilters { get; set; } = [];
 
     /// <summary>
-    /// When true, folders (which have no suffix) can join this group.
+    /// When true, folders (which have no suffix) can join this group. The name
+    /// fragments in <see cref="FolderNames"/> narrow that down; an empty list
+    /// includes every folder.
     /// </summary>
     public bool IncludeFolders { get; set; }
+
+    /// <summary>
+    /// Lower-cased fragments matched against folder names.
+    /// </summary>
+    public List<string> FolderNames { get; set; } = [];
 
     /// <summary>
     /// Paths the user explicitly removed from this group even though a rule
@@ -51,10 +58,20 @@ public sealed class CustomGroup
             stem.Contains(fragment, StringComparison.OrdinalIgnoreCase));
     }
 
-    public bool Matches(string name, bool isFolder) =>
-        (IncludeFolders && isFolder) ||
-        MatchesExtension(name) ||
-        (!isFolder && MatchesFileName(name));
+    public bool MatchesFolderName(string folderName) =>
+        FolderNames.Count == 0 ||
+        FolderNames.Exists(fragment =>
+            folderName.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+
+    public bool Matches(string name, bool isFolder)
+    {
+        if (isFolder)
+        {
+            return IncludeFolders && MatchesFolderName(name);
+        }
+
+        return MatchesExtension(name) || MatchesFileName(name);
+    }
 
     public static string? NormalizeExtension(string? token)
     {
@@ -174,6 +191,59 @@ public sealed class CustomGroup
             }
 
             string value = filter.Trim().ToLowerInvariant();
+
+            if (value.Length > 0 && !normalized.Contains(value))
+            {
+                normalized.Add(value);
+            }
+        }
+
+        return normalized;
+    }
+
+    public static List<string> ParseFolderNames(string? text)
+    {
+        var names = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return names;
+        }
+
+        string[] tokens = text.Split(
+            [',', ';', '|', '\t', '\r', '\n'],
+            StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string token in tokens)
+        {
+            string value = token.Trim().ToLowerInvariant();
+
+            if (value.Length > 0 && !names.Contains(value))
+            {
+                names.Add(value);
+            }
+        }
+
+        return names;
+    }
+
+    public static List<string> NormalizeFolderNames(IEnumerable<string>? names)
+    {
+        var normalized = new List<string>();
+
+        if (names is null)
+        {
+            return normalized;
+        }
+
+        foreach (string name in names)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            string value = name.Trim().ToLowerInvariant();
 
             if (value.Length > 0 && !normalized.Contains(value))
             {

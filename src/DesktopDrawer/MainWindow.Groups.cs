@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DesktopDrawer.Models;
 using DesktopDrawer.Services;
@@ -271,9 +272,21 @@ public partial class MainWindow
 
         if (group.IncludeFolders)
         {
-            var folderChips = new WrapPanel();
-            folderChips.Children.Add(CreateFolderChip(group));
-            GroupEditorPanel.Children.Add(folderChips);
+            var folderRow = new StackPanel { Orientation = Orientation.Horizontal };
+            folderRow.Children.Add(CreateFolderChip(group));
+
+            var editFolderButton = new Button
+            {
+                Style = (Style)FindResource("GhostButton"),
+                Content = I18n.T("Groups.EditFolderFilter"),
+                Height = 26,
+                Padding = new Thickness(10, 0, 10, 0),
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+            editFolderButton.Click += (_, _) => OpenFolderFilterDialog(group);
+            folderRow.Children.Add(editFolderButton);
+
+            GroupEditorPanel.Children.Add(folderRow);
         }
         else
         {
@@ -285,7 +298,7 @@ public partial class MainWindow
                 Padding = new Thickness(10, 0, 10, 0),
                 HorizontalAlignment = HorizontalAlignment.Left
             };
-            foldersButton.Click += (_, _) => AddFoldersToCustomGroup(group);
+            foldersButton.Click += (_, _) => OpenFolderFilterDialog(group);
             GroupEditorPanel.Children.Add(foldersButton);
         }
     }
@@ -520,7 +533,9 @@ public partial class MainWindow
 
     private Border CreateFolderChip(CustomGroup group) =>
         CreateGroupChip(
-            I18n.T("Group.Folders"),
+            group.FolderNames.Count == 0
+                ? I18n.T("Groups.FolderChipAll")
+                : I18n.F("Groups.FolderChip", string.Join(", ", group.FolderNames)),
             () => RemoveFoldersFromCustomGroup(group));
 
     private Border CreateFileNameChip(CustomGroup group, string filter) =>
@@ -628,17 +643,133 @@ public partial class MainWindow
         ApplyCustomGroupRuleChange();
     }
 
-    private void AddFoldersToCustomGroup(CustomGroup group)
+    private CustomGroup? _folderFilterGroup;
+    private readonly List<string> _folderFilterDraft = [];
+
+    private void OpenFolderFilterDialog(CustomGroup group)
     {
-        if (group.IncludeFolders)
+        _folderFilterGroup = group;
+        _folderFilterDraft.Clear();
+        _folderFilterDraft.AddRange(group.FolderNames);
+
+        FolderFilterTitle.Text = I18n.T(group.IncludeFolders
+            ? "Groups.FolderDialogEditTitle"
+            : "Groups.FolderDialogTitle");
+        FolderFilterInput.Text = string.Empty;
+        BuildFolderFilterChips();
+
+        FolderFilterOverlay.Visibility = Visibility.Visible;
+        FolderFilterCard.BeginAnimation(OpacityProperty, null);
+        FolderFilterCard.Opacity = 0;
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(130));
+        FolderFilterCard.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        Dispatcher.BeginInvoke(new Action(() => FolderFilterInput.Focus()));
+    }
+
+    private void BuildFolderFilterChips()
+    {
+        FolderFilterChips.Children.Clear();
+
+        if (_folderFilterDraft.Count == 0)
         {
+            var all = new TextBlock
+            {
+                Text = I18n.T("Groups.FolderChipAll"),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            all.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
+            all.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            FolderFilterChips.Children.Add(all);
             return;
         }
 
-        group.IncludeFolders = true;
-        group.Excluded.Clear();
+        foreach (string filter in _folderFilterDraft)
+        {
+            FolderFilterChips.Children.Add(CreateGroupChip(
+                filter,
+                () =>
+                {
+                    _folderFilterDraft.Remove(filter);
+                    BuildFolderFilterChips();
+                }));
+        }
+    }
+
+    private void FolderFilterAdd_Click(object sender, RoutedEventArgs e) =>
+        AddFolderFilterTokens();
+
+    private void FolderFilterInput_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            AddFolderFilterTokens();
+        }
+    }
+
+    private void AddFolderFilterTokens()
+    {
+        List<string> tokens = CustomGroup.ParseFolderNames(FolderFilterInput.Text);
+
+        if (tokens.Count == 0)
+        {
+            FolderFilterInput.Focus();
+            return;
+        }
+
+        FolderFilterInput.Text = string.Empty;
+
+        foreach (string token in tokens)
+        {
+            TryAddFilter(_folderFilterDraft, token);
+        }
+
+        BuildFolderFilterChips();
+    }
+
+    private void FolderFilterApply_Click(object sender, RoutedEventArgs e) =>
+        ApplyFolderFilter(useFilter: true);
+
+    private void FolderFilterSkip_Click(object sender, RoutedEventArgs e) =>
+        ApplyFolderFilter(useFilter: false);
+
+    private void FolderFilterCancel_Click(object sender, RoutedEventArgs e) =>
+        CloseFolderFilterDialog();
+
+    private void FolderFilterBackdrop_MouseDown(object sender, MouseButtonEventArgs e) =>
+        CloseFolderFilterDialog();
+
+    private void ApplyFolderFilter(bool useFilter)
+    {
+        if (_folderFilterGroup is null)
+        {
+            CloseFolderFilterDialog();
+            return;
+        }
+
+        _folderFilterGroup.IncludeFolders = true;
+
+        if (useFilter)
+        {
+            _folderFilterGroup.FolderNames = [.. _folderFilterDraft];
+        }
+        else
+        {
+            _folderFilterGroup.FolderNames.Clear();
+        }
+
+        _folderFilterGroup.Excluded.Clear();
         _settings.GroupMode = GroupMode.Custom;
+
+        CloseFolderFilterDialog();
         ApplyCustomGroupRuleChange();
+    }
+
+    private void CloseFolderFilterDialog()
+    {
+        _folderFilterGroup = null;
+        _folderFilterDraft.Clear();
+        FolderFilterOverlay.Visibility = Visibility.Collapsed;
     }
 
     private void RemoveFoldersFromCustomGroup(CustomGroup group)
@@ -649,6 +780,7 @@ public partial class MainWindow
         }
 
         group.IncludeFolders = false;
+        group.FolderNames.Clear();
         ApplyCustomGroupRuleChange();
     }
 
@@ -667,9 +799,8 @@ public partial class MainWindow
 
         foreach (string filter in filters)
         {
-            if (!group.FileNameFilters.Contains(filter))
+            if (TryAddFilter(group.FileNameFilters, filter))
             {
-                group.FileNameFilters.Add(filter);
                 changed = true;
             }
         }
@@ -682,6 +813,31 @@ public partial class MainWindow
         group.Excluded.Clear();
         _settings.GroupMode = GroupMode.Custom;
         ApplyCustomGroupRuleChange();
+    }
+
+    private bool TryAddFilter(List<string> filters, string token)
+    {
+        string value = token.Trim().ToLowerInvariant();
+
+        if (value.Length == 0)
+        {
+            return false;
+        }
+
+        string? similar = filters.FirstOrDefault(existing =>
+            existing.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            value.Contains(existing, StringComparison.OrdinalIgnoreCase));
+
+        if (similar is not null)
+        {
+            ShowToast(string.Equals(similar, value, StringComparison.OrdinalIgnoreCase)
+                ? I18n.F("Toast.DuplicateFilter", value)
+                : I18n.F("Toast.SimilarFilter", value, similar));
+            return false;
+        }
+
+        filters.Add(value);
+        return true;
     }
 
     private void RemoveFileNameFilter(CustomGroup group, string filter)
