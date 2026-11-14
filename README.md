@@ -70,7 +70,7 @@ All settings save instantly.
 
 ## Layout and grouping
 
-**Layout**: Settings → LAYOUT → **Adjust layout**. Drag the header, pager, group badge, summary, and hint to move them; drag the edge and corner grips to resize. **Reset** restores the defaults and **Done** exits.
+**Layout**: Settings → LAYOUT → **Adjust layout**. Drag the header, pager, group badge, summary, hint, and notification banner to move them; drag the edge and corner grips to resize. A notification preview appears while editing so you can place it where it is easy to see. **Reset** restores the defaults and **Done** exits.
 
 **Manual adjustment**: Drag a single icon onto another to pin its position. The remaining icons keep sorting automatically; choose **Reset manual positions** in the sort menu to clear all pins.
 

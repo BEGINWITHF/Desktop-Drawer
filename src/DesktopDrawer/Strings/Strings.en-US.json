@@ -114,7 +114,7 @@
 
   "Section.Layout": "LAYOUT",
   "Layout.Title": "Desktop controls",
-  "Layout.Description": "Move the header, pager, summary, hint and group badge, and drag a corner grip to resize them.",
+  "Layout.Description": "Move the header, pager, summary, hint, group badge and notifications, and drag a corner grip to resize them.",
   "Layout.Adjust": "Adjust layout",
   "Layout.Done": "Done adjusting",
   "Layout.Reset": "Reset layout",
@@ -297,6 +297,7 @@
   "Toast.CouldNotOpenExplorer": "Could not open File Explorer.",
   "Toast.CouldNotOpenProperties": "Could not open item properties.",
   "Toast.MoveMouse": "Move the mouse to show controls. Scroll or press PageDown to flip pages.",
+  "Toast.LayoutPreview": "Notification preview — drag to place it anywhere.",
   "Toast.StaysOnDesktop": "Desktop Drawer stays on the desktop. Exit it from the tray icon.",
 
   "Error.OpenProperties": "Windows could not open the properties for this item.",

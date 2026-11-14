@@ -114,7 +114,7 @@
 
   "Section.Layout": "版面",
   "Layout.Title": "桌面控制項",
-  "Layout.Description": "可移動頂欄、頁碼列、項目統計、操作提示和分組標籤，拖曳邊角控點更可調整大小。",
+  "Layout.Description": "可移動頂欄、頁碼列、項目統計、操作提示、分組標籤和通知，拖曳邊角控點更可調整大小。",
   "Layout.Adjust": "調整版面",
   "Layout.Done": "完成調整",
   "Layout.Reset": "重設版面",
@@ -297,6 +297,7 @@
   "Toast.CouldNotOpenExplorer": "無法開啟檔案總管。",
   "Toast.CouldNotOpenProperties": "無法開啟項目內容。",
   "Toast.MoveMouse": "移動滑鼠可顯示控制項；捲動滾輪或按 PageDown 可翻頁。",
+  "Toast.LayoutPreview": "通知預覽，可拖曳到任意位置。",
   "Toast.StaysOnDesktop": "Desktop Drawer 會留在桌面上，請從系統匣圖示結束。",
 
   "Error.OpenProperties": "Windows 無法開啟該項目的內容。",

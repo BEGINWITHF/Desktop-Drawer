@@ -114,7 +114,7 @@
 
   "Section.Layout": "レイアウト",
   "Layout.Title": "デスクトップ コントロール",
-  "Layout.Description": "ヘッダー、ページ送り、件数表示、ヒント、グループ バッジを移動できます。角のグリップをドラッグするとサイズを変更できます。",
+  "Layout.Description": "ヘッダー、ページ送り、件数表示、ヒント、グループ バッジ、通知を移動できます。角のグリップをドラッグするとサイズを変更できます。",
   "Layout.Adjust": "レイアウトを調整",
   "Layout.Done": "調整を終了",
   "Layout.Reset": "レイアウトをリセット",
@@ -297,6 +297,7 @@
   "Toast.CouldNotOpenExplorer": "エクスプローラーを開けませんでした。",
   "Toast.CouldNotOpenProperties": "項目のプロパティを開けませんでした。",
   "Toast.MoveMouse": "マウスを動かすとコントロールが表示されます。スクロールまたは PageDown でページを切り替えられます。",
+  "Toast.LayoutPreview": "通知プレビュー — ドラッグして任意の位置に配置できます。",
   "Toast.StaysOnDesktop": "Desktop Drawer はデスクトップ上に残ります。終了するにはトレイ アイコンから操作してください。",
 
   "Error.OpenProperties": "この項目のプロパティを開けませんでした。",

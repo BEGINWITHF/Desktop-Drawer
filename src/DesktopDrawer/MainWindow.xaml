@@ -597,31 +597,6 @@
                                    HorizontalAlignment="Center"
                                    Margin="0,6,0,0" />
                     </StackPanel>
-
-                    <Border x:Name="ToastHost"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            Margin="0,0,0,16"
-                            Padding="14,9"
-                            Background="{DynamicResource ToastSurfaceBrush}"
-                            BorderBrush="{DynamicResource ToastBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="0"
-                            Visibility="Collapsed"
-                            IsHitTestVisible="False">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Glyph}"
-                                       Text="&#xE946;"
-                                       FontSize="{DynamicResource FontSize13}"
-                                       Foreground="{DynamicResource AccentLightBrush}"
-                                       Margin="0,0,8,0" />
-                            <TextBlock x:Name="ToastText"
-                                       Text=""
-                                       FontSize="{DynamicResource FontSize12}"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
                 </Grid>
 
             <Border x:Name="PagerBar"
@@ -832,6 +807,46 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- Global notification banner: above the panels, below the layout editor. -->
+        <Border x:Name="ToastHost"
+                Width="420"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="{DynamicResource ToastSurfaceBrush}"
+                BorderBrush="{DynamicResource ToastBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="0"
+                Visibility="Collapsed"
+                IsHitTestVisible="False"
+                Panel.ZIndex="35">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="ToastTranslate" Y="-10" />
+            </Border.RenderTransform>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Background="{DynamicResource AccentBrush}" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Margin="14,10,14,10">
+                    <TextBlock Style="{StaticResource Glyph}"
+                               Text="&#xE946;"
+                               FontSize="{DynamicResource FontSize13}"
+                               Foreground="{DynamicResource AccentLightBrush}"
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="ToastText"
+                               Text=""
+                               FontSize="{DynamicResource FontSize12}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <Grid x:Name="SettingsOverlay"
               Visibility="Collapsed"

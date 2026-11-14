@@ -114,7 +114,7 @@
 
   "Section.Layout": "布局",
   "Layout.Title": "桌面控件",
-  "Layout.Description": "可移动顶栏、页码条、项目统计、操作提示和分组标签，拖动边角手柄还能调整大小。",
+  "Layout.Description": "可移动顶栏、页码条、项目统计、操作提示、分组标签和通知，拖动边角手柄还能调整大小。",
   "Layout.Adjust": "调整布局",
   "Layout.Done": "完成调整",
   "Layout.Reset": "重置布局",
@@ -297,6 +297,7 @@
   "Toast.CouldNotOpenExplorer": "无法打开文件资源管理器。",
   "Toast.CouldNotOpenProperties": "无法打开项目属性。",
   "Toast.MoveMouse": "移动鼠标可显示控件；滚动滚轮或按 PageDown 可翻页。",
+  "Toast.LayoutPreview": "通知预览，可拖动到任意位置。",
   "Toast.StaysOnDesktop": "Desktop Drawer 始终留在桌面上，请从系统托盘图标退出。",
 
   "Error.OpenProperties": "Windows 无法打开该项目的属性。",

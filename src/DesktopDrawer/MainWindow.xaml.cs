@@ -166,7 +166,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _initialIconsHidden = _desktopIconsService.AreHidden();
         IconWatchdog.Start();
 
-        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.8) };
+        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.6) };
         _toastTimer.Tick += ToastTimer_Tick;
         _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
         _resizeTimer.Tick += ResizeTimer_Tick;
@@ -1425,14 +1425,34 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ToastHost.Visibility = Visibility.Visible;
         ToastHost.BeginAnimation(OpacityProperty, null);
         ToastHost.Opacity = 0;
+
+        ToastTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        ToastTranslate.Y = -10;
+
         var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140));
+        var slide = new DoubleAnimation(-10, 0, TimeSpan.FromMilliseconds(180))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
         ToastHost.BeginAnimation(OpacityProperty, fadeIn, HandoffBehavior.SnapshotAndReplace);
+        ToastTranslate.BeginAnimation(TranslateTransform.YProperty, slide, HandoffBehavior.SnapshotAndReplace);
+
         _toastTimer.Stop();
-        _toastTimer.Start();
+
+        if (!_layoutEditing)
+        {
+            _toastTimer.Start();
+        }
     }
 
     private void ToastTimer_Tick(object? sender, EventArgs e)
     {
+        if (_layoutEditing)
+        {
+            return;
+        }
+
         _toastTimer.Stop();
         var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(220));
         fadeOut.Completed += (_, _) => ToastHost.Visibility = Visibility.Collapsed;
@@ -1569,6 +1589,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeElements[SummaryText] = "summary";
         _chromeElements[HintText] = "hint";
         _chromeElements[GroupBadge] = "groups";
+        _chromeElements[ToastHost] = "toast";
 
         foreach (FrameworkElement element in _chromeElements.Keys)
         {
@@ -1649,6 +1670,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     "summary" => (16, height - elementHeight - 12),
                     "hint" => (width - elementWidth - 16, height - elementHeight - 12),
                     "groups" => (16, 62),
+                    "toast" => ((width - elementWidth) / 2, 64),
                     _ => (0d, 0d)
                 };
             }
@@ -1983,6 +2005,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             BuildLayoutEditor();
             ShowLayoutToolbar();
 
+            ToastHost.IsHitTestVisible = true;
+            ShowToast(I18n.T("Toast.LayoutPreview"));
+            _toastTimer.Stop();
+            UpdateLayoutEditorOverlays();
+
             foreach (FrameworkElement element in _chromeElements.Keys)
             {
                 element.Cursor = Cursors.SizeAll;
@@ -2002,6 +2029,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _layoutOutlines.Clear();
             _layoutGrips.Clear();
             HideLayoutToolbar();
+
+            ToastHost.IsHitTestVisible = false;
+            _toastTimer.Stop();
+            ToastHost.Visibility = Visibility.Collapsed;
 
             foreach (FrameworkElement element in _chromeElements.Keys)
             {
