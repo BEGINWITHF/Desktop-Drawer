@@ -69,6 +69,13 @@ public partial class MainWindow
 
     private void BuildCustomGroupRows()
     {
+        CustomGroupsPanel.AllowDrop = true;
+        CustomGroupsPanel.Background = Brushes.Transparent;
+        CustomGroupsPanel.DragOver -= GroupsPanel_DragOver;
+        CustomGroupsPanel.DragOver += GroupsPanel_DragOver;
+        CustomGroupsPanel.Drop -= GroupsPanel_Drop;
+        CustomGroupsPanel.Drop += GroupsPanel_Drop;
+
         CustomGroupsPanel.Children.Clear();
         GroupEditorPanel.Children.Clear();
 
@@ -110,6 +117,74 @@ public partial class MainWindow
         {
             BuildGroupEditor(_selectedGroup);
         }
+    }
+
+    private void GroupsPanel_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(CustomGroup))
+            ? DragDropEffects.Move
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void GroupsPanel_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(CustomGroup)) is not CustomGroup source)
+        {
+            return;
+        }
+
+        int from = _settings.CustomGroups.IndexOf(source);
+        if (from < 0)
+        {
+            return;
+        }
+
+        int insertIndex = GetGroupInsertIndex(e.GetPosition(CustomGroupsPanel));
+
+        if (from < insertIndex)
+        {
+            insertIndex--;
+        }
+
+        insertIndex = Math.Clamp(insertIndex, 0, _settings.CustomGroups.Count - 1);
+
+        if (insertIndex == from)
+        {
+            return;
+        }
+
+        _settings.CustomGroups.RemoveAt(from);
+        _settings.CustomGroups.Insert(insertIndex, source);
+        SaveSettings();
+        BuildCustomGroupRows();
+
+        if (_settings.GroupMode == GroupMode.Custom)
+        {
+            RebuildFilteredItems();
+            UpdatePage();
+        }
+
+        e.Handled = true;
+    }
+
+    private int GetGroupInsertIndex(Point position)
+    {
+        for (int i = 0; i < CustomGroupsPanel.Children.Count; i++)
+        {
+            if (CustomGroupsPanel.Children[i] is FrameworkElement element &&
+                element.Tag is CustomGroup)
+            {
+                Point origin = element.TranslatePoint(new Point(0, 0), CustomGroupsPanel);
+
+                if (position.Y < origin.Y + element.ActualHeight / 2)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return _settings.CustomGroups.Count;
     }
 
     private Button CreateGroupDirectoryItem(CustomGroup group)
@@ -155,6 +230,7 @@ public partial class MainWindow
             Padding = new Thickness(8, 0, 8, 0),
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = content,
+            Tag = group,
             Background = selected
                 ? (Brush)FindResource("PanelHoverBrush")
                 : Brushes.Transparent,
@@ -162,8 +238,46 @@ public partial class MainWindow
                 ? (Brush)FindResource("StrokeStrongBrush")
                 : Brushes.Transparent
         };
+
+        Point dragStart = default;
+        bool dragging = false;
+        bool dragged = false;
+
+        button.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            dragStart = e.GetPosition(button);
+            dragged = false;
+        };
+
+        button.PreviewMouseMove += (_, e) =>
+        {
+            if (dragging || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            Point position = e.GetPosition(button);
+
+            if (Math.Abs(position.X - dragStart.X) < 6 &&
+                Math.Abs(position.Y - dragStart.Y) < 6)
+            {
+                return;
+            }
+
+            dragging = true;
+            dragged = true;
+            DragDrop.DoDragDrop(button, group, DragDropEffects.Move);
+            dragging = false;
+        };
+
         button.Click += (_, _) =>
         {
+            if (dragged)
+            {
+                dragged = false;
+                return;
+            }
+
             _selectedGroup = group;
             BuildCustomGroupRows();
         };
@@ -174,8 +288,6 @@ public partial class MainWindow
     {
         var header = new Grid { Margin = new Thickness(0, 0, 4, 0) };
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -217,20 +329,6 @@ public partial class MainWindow
         count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
         count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
 
-        int index = _settings.CustomGroups.IndexOf(group);
-
-        Button up = CreateGroupRowButton(
-            "\uE70E",
-            I18n.T("Groups.MoveUp"),
-            index > 0,
-            () => MoveCustomGroup(group, -1));
-
-        Button down = CreateGroupRowButton(
-            "\uE70D",
-            I18n.T("Groups.MoveDown"),
-            index < _settings.CustomGroups.Count - 1,
-            () => MoveCustomGroup(group, 1));
-
         Button delete = CreateGroupRowButton(
             "\uE74D",
             I18n.T("Groups.Delete"),
@@ -238,13 +336,9 @@ public partial class MainWindow
             () => DeleteCustomGroup(group));
 
         Grid.SetColumn(count, 1);
-        Grid.SetColumn(up, 2);
-        Grid.SetColumn(down, 3);
-        Grid.SetColumn(delete, 4);
+        Grid.SetColumn(delete, 2);
         header.Children.Add(nameBox);
         header.Children.Add(count);
-        header.Children.Add(up);
-        header.Children.Add(down);
         header.Children.Add(delete);
         GroupEditorPanel.Children.Add(header);
 
@@ -891,18 +985,45 @@ public partial class MainWindow
         AddCustomGroupExtensions(group, extensions);
     }
 
-    private void MoveCustomGroup(CustomGroup group, int delta)
+    private void SortGroupsButton_Click(object sender, RoutedEventArgs e)
     {
-        int index = _settings.CustomGroups.IndexOf(group);
-        int target = index + delta;
+        var menu = new ContextMenu();
 
-        if (index < 0 || target < 0 || target >= _settings.CustomGroups.Count)
+        var byName = new MenuItem { Header = I18n.T("Groups.SortByName") };
+        byName.Click += (_, _) => SortCustomGroups(byCount: false);
+        menu.Items.Add(byName);
+
+        var byCount = new MenuItem { Header = I18n.T("Groups.SortByCount") };
+        byCount.Click += (_, _) => SortCustomGroups(byCount: true);
+        menu.Items.Add(byCount);
+
+        menu.PlacementTarget = SortGroupsButton;
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private void SortCustomGroups(bool byCount)
+    {
+        if (_settings.CustomGroups.Count < 2)
         {
             return;
         }
 
-        (_settings.CustomGroups[index], _settings.CustomGroups[target]) =
-            (_settings.CustomGroups[target], _settings.CustomGroups[index]);
+        if (byCount)
+        {
+            _settings.CustomGroups.Sort((a, b) =>
+            {
+                int compare = CountItemsInCustomGroup(b).CompareTo(CountItemsInCustomGroup(a));
+                return compare != 0
+                    ? compare
+                    : string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase);
+            });
+        }
+        else
+        {
+            _settings.CustomGroups.Sort((a, b) =>
+                string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
+        }
 
         SaveSettings();
         BuildCustomGroupRows();
@@ -912,6 +1033,8 @@ public partial class MainWindow
             RebuildFilteredItems();
             UpdatePage();
         }
+
+        ShowToast(I18n.T("Toast.GroupsSorted"));
     }
 
     private void AddCustomGroupButton_Click(object sender, RoutedEventArgs e) => AddCustomGroupFromInput();

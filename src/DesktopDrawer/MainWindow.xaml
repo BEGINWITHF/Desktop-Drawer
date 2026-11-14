@@ -1703,6 +1703,7 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox x:Name="NewGroupNameBox"
                                              Style="{StaticResource PickerValueBox}"
@@ -1717,6 +1718,18 @@
                                             Height="28"
                                             Padding="10,0"
                                             Click="AddCustomGroupButton_Click" />
+                                    <Button x:Name="SortGroupsButton"
+                                            Grid.Column="2"
+                                            Style="{StaticResource PanelIconButton}"
+                                            Width="28"
+                                            Height="28"
+                                            Margin="6,0,0,0"
+                                            Click="SortGroupsButton_Click"
+                                            ToolTip="{DynamicResource Str.Groups.SortGroups}">
+                                        <TextBlock Style="{StaticResource Glyph}"
+                                                   Text="&#xE8CB;"
+                                                   FontSize="{DynamicResource FontSize11}" />
+                                    </Button>
                                 </Grid>
 
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
