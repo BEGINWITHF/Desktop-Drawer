@@ -41,6 +41,8 @@ public sealed class SettingsService
             settings.Colors ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.ManualOrder = NormalizeManualOrder(settings.ManualOrder);
             settings.CustomGroups = NormalizeCustomGroups(settings.CustomGroups);
+            settings.ColumnSpacing = Math.Clamp(settings.ColumnSpacing, 0, 48);
+            settings.RowSpacing = Math.Clamp(settings.RowSpacing, 0, 48);
 
             if (settings.SettingsVersion < CurrentSettingsVersion)
             {
