@@ -54,6 +54,10 @@ public partial class MainWindow
             {
                 CloseFolderFilterDialog();
             }
+            else if (StyleOverlay.Visibility == Visibility.Visible)
+            {
+                CloseStylePanel();
+            }
             else if (_groupsOpen && _groupReorderMode)
             {
                 _groupReorderMode = false;
