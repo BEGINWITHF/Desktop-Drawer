@@ -1694,10 +1694,27 @@
                             </Grid.ColumnDefinitions>
 
                             <DockPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock DockPanel.Dock="Top"
-                                           Text="{DynamicResource Str.Groups.Directory}"
-                                           Style="{StaticResource SettingTitle}"
-                                           Margin="2,0,0,8" />
+                                <Grid DockPanel.Dock="Top" Margin="2,0,0,8">
+                                    <TextBlock Text="{DynamicResource Str.Groups.Directory}"
+                                               Style="{StaticResource SettingTitle}"
+                                               VerticalAlignment="Center" />
+                                    <Button x:Name="GroupReorderButton"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Style="{StaticResource GhostButton}"
+                                            Height="24"
+                                            Padding="8,0"
+                                            FontSize="{DynamicResource FontSize105}"
+                                            Click="ToggleGroupReorder_Click"
+                                            Content="{DynamicResource Str.Groups.Reorder}" />
+                                </Grid>
+
+                                <TextBlock x:Name="GroupReorderHint"
+                                           DockPanel.Dock="Top"
+                                           Text="{DynamicResource Str.Groups.ReorderHint}"
+                                           Style="{StaticResource SettingDescription}"
+                                           Margin="2,0,0,8"
+                                           Visibility="Collapsed" />
 
                                 <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>

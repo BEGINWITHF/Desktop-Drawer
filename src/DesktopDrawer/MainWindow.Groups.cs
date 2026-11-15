@@ -13,6 +13,9 @@ namespace DesktopDrawer;
 public partial class MainWindow
 {
     private CustomGroup? _selectedGroup;
+    private bool _groupReorderMode;
+    private CustomGroup? _draggingGroup;
+    private Border? _groupDropMarker;
 
     /// <summary>
     /// Seeds the groups that mirror the built-in type categories the first time
@@ -73,6 +76,8 @@ public partial class MainWindow
         CustomGroupsPanel.Background = Brushes.Transparent;
         CustomGroupsPanel.DragOver -= GroupsPanel_DragOver;
         CustomGroupsPanel.DragOver += GroupsPanel_DragOver;
+        CustomGroupsPanel.DragLeave -= GroupsPanel_DragLeave;
+        CustomGroupsPanel.DragLeave += GroupsPanel_DragLeave;
         CustomGroupsPanel.Drop -= GroupsPanel_Drop;
         CustomGroupsPanel.Drop += GroupsPanel_Drop;
 
@@ -83,6 +88,24 @@ public partial class MainWindow
         {
             _selectedGroup = _settings.CustomGroups.FirstOrDefault();
         }
+
+        if (_settings.CustomGroups.Count <= 1)
+        {
+            _groupReorderMode = false;
+        }
+
+        GroupReorderButton.Visibility = _settings.CustomGroups.Count > 1
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        GroupReorderButton.Content = I18n.T(
+            _groupReorderMode ? "Groups.ReorderDone" : "Groups.Reorder");
+        GroupReorderButton.Background = _groupReorderMode
+            ? (Brush)FindResource("AccentBrush")
+            : Brushes.Transparent;
+        GroupReorderButton.Foreground = _groupReorderMode
+            ? (Brush)FindResource("OnAccentBrush")
+            : (Brush)FindResource("TextSecondaryBrush");
+        UpdateGroupReorderHint();
 
         if (_settings.CustomGroups.Count == 0)
         {
@@ -121,15 +144,33 @@ public partial class MainWindow
 
     private void GroupsPanel_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(typeof(CustomGroup))
-            ? DragDropEffects.Move
-            : DragDropEffects.None;
+        if (!_groupReorderMode || !e.Data.GetDataPresent(typeof(CustomGroup)))
+        {
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
+        e.Effects = DragDropEffects.Move;
+        Point position = e.GetPosition(CustomGroupsPanel);
+        ShowGroupDropMarker(GetGroupInsertIndex(position));
+        UpdateGroupRowHover(position);
         e.Handled = true;
+    }
+
+    private void GroupsPanel_DragLeave(object sender, DragEventArgs e)
+    {
+        HideGroupDropMarker();
+        ResetGroupRowOpacity();
     }
 
     private void GroupsPanel_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(typeof(CustomGroup)) is not CustomGroup source)
+        HideGroupDropMarker();
+        ResetGroupRowOpacity();
+
+        if (!_groupReorderMode ||
+            e.Data.GetData(typeof(CustomGroup)) is not CustomGroup source)
         {
             return;
         }
@@ -149,14 +190,14 @@ public partial class MainWindow
 
         insertIndex = Math.Clamp(insertIndex, 0, _settings.CustomGroups.Count - 1);
 
-        if (insertIndex == from)
+        if (insertIndex != from)
         {
-            return;
+            _settings.CustomGroups.RemoveAt(from);
+            _settings.CustomGroups.Insert(insertIndex, source);
+            SaveSettings();
         }
 
-        _settings.CustomGroups.RemoveAt(from);
-        _settings.CustomGroups.Insert(insertIndex, source);
-        SaveSettings();
+        _draggingGroup = null;
         BuildCustomGroupRows();
 
         if (_settings.GroupMode == GroupMode.Custom)
@@ -166,6 +207,113 @@ public partial class MainWindow
         }
 
         e.Handled = true;
+    }
+
+    private void ShowGroupDropMarker(int insertIndex)
+    {
+        if (_groupDropMarker is null)
+        {
+            _groupDropMarker = new Border
+            {
+                Height = 2,
+                Margin = new Thickness(0, 3, 0, 3),
+                IsHitTestVisible = false
+            };
+            _groupDropMarker.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+        }
+
+        if (_groupDropMarker.Parent is Panel oldParent)
+        {
+            oldParent.Children.Remove(_groupDropMarker);
+        }
+
+        int childIndex = CustomGroupsPanel.Children.Count;
+        int groupIndex = 0;
+
+        for (int i = 0; i < CustomGroupsPanel.Children.Count; i++)
+        {
+            if (CustomGroupsPanel.Children[i] is FrameworkElement element &&
+                element.Tag is CustomGroup)
+            {
+                if (groupIndex == insertIndex)
+                {
+                    childIndex = i;
+                    break;
+                }
+
+                groupIndex++;
+            }
+        }
+
+        CustomGroupsPanel.Children.Insert(
+            Math.Clamp(childIndex, 0, CustomGroupsPanel.Children.Count),
+            _groupDropMarker);
+    }
+
+    private void HideGroupDropMarker()
+    {
+        if (_groupDropMarker?.Parent is Panel parent)
+        {
+            parent.Children.Remove(_groupDropMarker);
+        }
+    }
+
+    private void UpdateGroupRowHover(Point position)
+    {
+        foreach (UIElement child in CustomGroupsPanel.Children)
+        {
+            if (child is not Button button || button.Tag is not CustomGroup group)
+            {
+                continue;
+            }
+
+            Point origin = button.TranslatePoint(new Point(0, 0), CustomGroupsPanel);
+            bool inside = position.Y >= origin.Y &&
+                          position.Y <= origin.Y + button.ActualHeight;
+
+            button.Opacity = ReferenceEquals(group, _draggingGroup)
+                ? 0.4
+                : inside ? 0.72 : 1;
+        }
+    }
+
+    private void ResetGroupRowOpacity()
+    {
+        foreach (UIElement child in CustomGroupsPanel.Children)
+        {
+            if (child is Button button && button.Tag is CustomGroup group)
+            {
+                button.Opacity = ReferenceEquals(group, _draggingGroup) ? 0.4 : 1;
+            }
+        }
+    }
+
+    private void UpdateGroupReorderHint()
+    {
+        if (!_groupReorderMode)
+        {
+            GroupReorderHint.Visibility = Visibility.Collapsed;
+            GroupReorderHint.Text = string.Empty;
+            return;
+        }
+
+        GroupReorderHint.Visibility = Visibility.Visible;
+        GroupReorderHint.Text = _draggingGroup is null
+            ? I18n.T("Groups.ReorderHint")
+            : I18n.F("Groups.ReorderMoving", _draggingGroup.Name);
+    }
+
+    private void ToggleGroupReorder_Click(object sender, RoutedEventArgs e)
+    {
+        if (_settings.CustomGroups.Count <= 1)
+        {
+            return;
+        }
+
+        _groupReorderMode = !_groupReorderMode;
+        _draggingGroup = null;
+        HideGroupDropMarker();
+        BuildCustomGroupRows();
     }
 
     private int GetGroupInsertIndex(Point position)
@@ -193,6 +341,7 @@ public partial class MainWindow
         int memberCount = CountItemsInCustomGroup(group);
 
         var content = new Grid();
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -207,6 +356,20 @@ public partial class MainWindow
             TextBlock.ForegroundProperty,
             selected ? "TextPrimaryBrush" : "TextSecondaryBrush");
 
+        if (_groupReorderMode)
+        {
+            var handle = new TextBlock
+            {
+                Text = "\uE76F",
+                FontFamily = (FontFamily)FindResource("IconFont"),
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 6, 0)
+            };
+            handle.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
+            content.Children.Add(handle);
+        }
+
         var count = new TextBlock
         {
             Text = memberCount == 1
@@ -218,7 +381,8 @@ public partial class MainWindow
         count.SetResourceReference(TextBlock.FontSizeProperty, "FontSize95");
         count.SetResourceReference(TextBlock.ForegroundProperty, "TextMutedBrush");
 
-        Grid.SetColumn(count, 1);
+        Grid.SetColumn(name, 1);
+        Grid.SetColumn(count, 2);
         content.Children.Add(name);
         content.Children.Add(count);
 
@@ -231,6 +395,7 @@ public partial class MainWindow
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = content,
             Tag = group,
+            Cursor = _groupReorderMode ? Cursors.SizeAll : Cursors.Hand,
             Background = selected
                 ? (Brush)FindResource("PanelHoverBrush")
                 : Brushes.Transparent,
@@ -251,7 +416,9 @@ public partial class MainWindow
 
         button.PreviewMouseMove += (_, e) =>
         {
-            if (dragging || e.LeftButton != MouseButtonState.Pressed)
+            if (!_groupReorderMode ||
+                dragging ||
+                e.LeftButton != MouseButtonState.Pressed)
             {
                 return;
             }
@@ -266,8 +433,18 @@ public partial class MainWindow
 
             dragging = true;
             dragged = true;
+            _draggingGroup = group;
+            button.Opacity = 0.4;
+            UpdateGroupReorderHint();
+
             DragDrop.DoDragDrop(button, group, DragDropEffects.Move);
+
             dragging = false;
+            _draggingGroup = null;
+            button.Opacity = 1;
+            HideGroupDropMarker();
+            ResetGroupRowOpacity();
+            UpdateGroupReorderHint();
         };
 
         button.Click += (_, _) =>

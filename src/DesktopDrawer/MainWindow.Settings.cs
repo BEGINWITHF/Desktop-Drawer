@@ -550,6 +550,10 @@ public partial class MainWindow
         }
 
         _groupsOpen = false;
+        _groupReorderMode = false;
+        _draggingGroup = null;
+        HideGroupDropMarker();
+
         var slide = new DoubleAnimation(0, 18, TimeSpan.FromMilliseconds(160))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }

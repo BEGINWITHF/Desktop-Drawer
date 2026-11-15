@@ -54,6 +54,13 @@ public partial class MainWindow
             {
                 CloseFolderFilterDialog();
             }
+            else if (_groupsOpen && _groupReorderMode)
+            {
+                _groupReorderMode = false;
+                _draggingGroup = null;
+                HideGroupDropMarker();
+                BuildCustomGroupRows();
+            }
             else if (_groupsOpen)
             {
                 CloseGroupsPanel();
