@@ -1751,7 +1751,11 @@
 
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                                               HorizontalScrollBarVisibility="Disabled">
-                                    <StackPanel x:Name="CustomGroupsPanel" />
+                                    <Grid>
+                                        <StackPanel x:Name="CustomGroupsPanel" />
+                                        <Canvas x:Name="GroupDropCanvas"
+                                                IsHitTestVisible="False" />
+                                    </Grid>
                                 </ScrollViewer>
                             </DockPanel>
 

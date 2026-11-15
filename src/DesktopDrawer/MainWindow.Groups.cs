@@ -15,7 +15,7 @@ public partial class MainWindow
     private CustomGroup? _selectedGroup;
     private bool _groupReorderMode;
     private CustomGroup? _draggingGroup;
-    private Border? _groupDropMarker;
+    private Border? _groupDropLine;
 
     /// <summary>
     /// Seeds the groups that mirror the built-in type categories the first time
@@ -83,6 +83,8 @@ public partial class MainWindow
 
         CustomGroupsPanel.Children.Clear();
         GroupEditorPanel.Children.Clear();
+        GroupDropCanvas.Children.Clear();
+        _groupDropLine = null;
 
         if (_selectedGroup is null || !_settings.CustomGroups.Contains(_selectedGroup))
         {
@@ -152,10 +154,32 @@ public partial class MainWindow
         }
 
         e.Effects = DragDropEffects.Move;
+        CollapseDraggedRow();
         Point position = e.GetPosition(CustomGroupsPanel);
         ShowGroupDropMarker(GetGroupInsertIndex(position));
         UpdateGroupRowHover(position);
         e.Handled = true;
+    }
+
+    private void CollapseDraggedRow()
+    {
+        if (_draggingGroup is null)
+        {
+            return;
+        }
+
+        foreach (UIElement child in CustomGroupsPanel.Children)
+        {
+            if (child is Button button &&
+                button.Tag is CustomGroup group &&
+                ReferenceEquals(group, _draggingGroup) &&
+                button.Visibility == Visibility.Visible)
+            {
+                button.Visibility = Visibility.Collapsed;
+                CustomGroupsPanel.UpdateLayout();
+                return;
+            }
+        }
     }
 
     private void GroupsPanel_DragLeave(object sender, DragEventArgs e)
@@ -170,32 +194,18 @@ public partial class MainWindow
         ResetGroupRowOpacity();
 
         if (!_groupReorderMode ||
-            e.Data.GetData(typeof(CustomGroup)) is not CustomGroup source)
-        {
-            return;
-        }
-
-        int from = _settings.CustomGroups.IndexOf(source);
-        if (from < 0)
+            e.Data.GetData(typeof(CustomGroup)) is not CustomGroup source ||
+            !_settings.CustomGroups.Contains(source))
         {
             return;
         }
 
         int insertIndex = GetGroupInsertIndex(e.GetPosition(CustomGroupsPanel));
 
-        if (from < insertIndex)
-        {
-            insertIndex--;
-        }
-
-        insertIndex = Math.Clamp(insertIndex, 0, _settings.CustomGroups.Count - 1);
-
-        if (insertIndex != from)
-        {
-            _settings.CustomGroups.RemoveAt(from);
-            _settings.CustomGroups.Insert(insertIndex, source);
-            SaveSettings();
-        }
+        _settings.CustomGroups.Remove(source);
+        insertIndex = Math.Clamp(insertIndex, 0, _settings.CustomGroups.Count);
+        _settings.CustomGroups.Insert(insertIndex, source);
+        SaveSettings();
 
         _draggingGroup = null;
         BuildCustomGroupRows();
@@ -211,50 +221,53 @@ public partial class MainWindow
 
     private void ShowGroupDropMarker(int insertIndex)
     {
-        if (_groupDropMarker is null)
+        if (_groupDropLine is null)
         {
-            _groupDropMarker = new Border
+            _groupDropLine = new Border
             {
                 Height = 2,
-                Margin = new Thickness(0, 3, 0, 3),
                 IsHitTestVisible = false
             };
-            _groupDropMarker.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+            _groupDropLine.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
+            GroupDropCanvas.Children.Add(_groupDropLine);
         }
 
-        if (_groupDropMarker.Parent is Panel oldParent)
-        {
-            oldParent.Children.Remove(_groupDropMarker);
-        }
+        double y = 0;
+        int seen = 0;
 
-        int childIndex = CustomGroupsPanel.Children.Count;
-        int groupIndex = 0;
-
-        for (int i = 0; i < CustomGroupsPanel.Children.Count; i++)
+        foreach (UIElement child in CustomGroupsPanel.Children)
         {
-            if (CustomGroupsPanel.Children[i] is FrameworkElement element &&
-                element.Tag is CustomGroup)
+            if (child is not Button button ||
+                button.Tag is not CustomGroup ||
+                button.Visibility != Visibility.Visible ||
+                button.ActualHeight <= 0)
             {
-                if (groupIndex == insertIndex)
-                {
-                    childIndex = i;
-                    break;
-                }
-
-                groupIndex++;
+                continue;
             }
+
+            Point origin = button.TranslatePoint(new Point(0, 0), CustomGroupsPanel);
+
+            if (seen == insertIndex)
+            {
+                y = origin.Y;
+                break;
+            }
+
+            seen++;
+            y = origin.Y + button.ActualHeight;
         }
 
-        CustomGroupsPanel.Children.Insert(
-            Math.Clamp(childIndex, 0, CustomGroupsPanel.Children.Count),
-            _groupDropMarker);
+        _groupDropLine.Width = Math.Max(1, CustomGroupsPanel.ActualWidth);
+        Canvas.SetLeft(_groupDropLine, 0);
+        Canvas.SetTop(_groupDropLine, Math.Max(0, y - 1));
+        _groupDropLine.Visibility = Visibility.Visible;
     }
 
     private void HideGroupDropMarker()
     {
-        if (_groupDropMarker?.Parent is Panel parent)
+        if (_groupDropLine is not null)
         {
-            parent.Children.Remove(_groupDropMarker);
+            _groupDropLine.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -262,7 +275,9 @@ public partial class MainWindow
     {
         foreach (UIElement child in CustomGroupsPanel.Children)
         {
-            if (child is not Button button || button.Tag is not CustomGroup group)
+            if (child is not Button button ||
+                button.Tag is not CustomGroup group ||
+                button.Visibility != Visibility.Visible)
             {
                 continue;
             }
@@ -281,9 +296,9 @@ public partial class MainWindow
     {
         foreach (UIElement child in CustomGroupsPanel.Children)
         {
-            if (child is Button button && button.Tag is CustomGroup group)
+            if (child is Button button && button.Tag is CustomGroup)
             {
-                button.Opacity = ReferenceEquals(group, _draggingGroup) ? 0.4 : 1;
+                button.Opacity = 1;
             }
         }
     }
@@ -318,21 +333,29 @@ public partial class MainWindow
 
     private int GetGroupInsertIndex(Point position)
     {
-        for (int i = 0; i < CustomGroupsPanel.Children.Count; i++)
-        {
-            if (CustomGroupsPanel.Children[i] is FrameworkElement element &&
-                element.Tag is CustomGroup)
-            {
-                Point origin = element.TranslatePoint(new Point(0, 0), CustomGroupsPanel);
+        int index = 0;
 
-                if (position.Y < origin.Y + element.ActualHeight / 2)
-                {
-                    return i;
-                }
+        foreach (UIElement child in CustomGroupsPanel.Children)
+        {
+            if (child is not Button button ||
+                button.Tag is not CustomGroup ||
+                button.Visibility != Visibility.Visible ||
+                button.ActualHeight <= 0)
+            {
+                continue;
             }
+
+            Point origin = button.TranslatePoint(new Point(0, 0), CustomGroupsPanel);
+
+            if (position.Y < origin.Y + button.ActualHeight / 2)
+            {
+                return index;
+            }
+
+            index++;
         }
 
-        return _settings.CustomGroups.Count;
+        return index;
     }
 
     private Button CreateGroupDirectoryItem(CustomGroup group)
@@ -441,6 +464,7 @@ public partial class MainWindow
 
             dragging = false;
             _draggingGroup = null;
+            button.Visibility = Visibility.Visible;
             button.Opacity = 1;
             HideGroupDropMarker();
             ResetGroupRowOpacity();
