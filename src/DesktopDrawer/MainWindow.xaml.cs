@@ -519,7 +519,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
-        if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen)
+        if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen ||
+            StyleOverlay.Visibility == Visibility.Visible)
         {
             return;
         }
@@ -2524,7 +2525,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             DesktopHost.RaiseAboveDesktop(new WindowInteropHelper(this).Handle);
         }
 
-        if (!IsKeyboardFocusWithin && !_settingsOpen && !_groupsOpen && !_cleanedUp)
+        if (!IsKeyboardFocusWithin && !_settingsOpen && !_groupsOpen &&
+            StyleOverlay.Visibility != Visibility.Visible && !_cleanedUp)
         {
             PageList.Focus();
         }
