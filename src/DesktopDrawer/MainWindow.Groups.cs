@@ -99,6 +99,9 @@ public partial class MainWindow
         GroupReorderButton.Visibility = _settings.CustomGroups.Count > 1
             ? Visibility.Visible
             : Visibility.Collapsed;
+        SortGroupsButton.Visibility = _groupReorderMode && _settings.CustomGroups.Count > 1
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         GroupReorderButton.Content = I18n.T(
             _groupReorderMode ? "Groups.ReorderDone" : "Groups.Reorder");
         GroupReorderButton.Background = _groupReorderMode

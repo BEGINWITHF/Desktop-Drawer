@@ -1698,15 +1698,29 @@
                                     <TextBlock Text="{DynamicResource Str.Groups.Directory}"
                                                Style="{StaticResource SettingTitle}"
                                                VerticalAlignment="Center" />
-                                    <Button x:Name="GroupReorderButton"
-                                            HorizontalAlignment="Right"
-                                            VerticalAlignment="Center"
-                                            Style="{StaticResource GhostButton}"
-                                            Height="24"
-                                            Padding="8,0"
-                                            FontSize="{DynamicResource FontSize105}"
-                                            Click="ToggleGroupReorder_Click"
-                                            Content="{DynamicResource Str.Groups.Reorder}" />
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center">
+                                        <Button x:Name="SortGroupsButton"
+                                                Style="{StaticResource PanelIconButton}"
+                                                Width="24"
+                                                Height="24"
+                                                Margin="0,0,6,0"
+                                                Visibility="Collapsed"
+                                                Click="SortGroupsButton_Click"
+                                                ToolTip="{DynamicResource Str.Groups.SortGroups}">
+                                            <TextBlock Style="{StaticResource Glyph}"
+                                                       Text="&#xE8CB;"
+                                                       FontSize="{DynamicResource FontSize10}" />
+                                        </Button>
+                                        <Button x:Name="GroupReorderButton"
+                                                Style="{StaticResource GhostButton}"
+                                                Height="24"
+                                                Padding="8,0"
+                                                FontSize="{DynamicResource FontSize105}"
+                                                Click="ToggleGroupReorder_Click"
+                                                Content="{DynamicResource Str.Groups.Reorder}" />
+                                    </StackPanel>
                                 </Grid>
 
                                 <TextBlock x:Name="GroupReorderHint"
@@ -1719,7 +1733,6 @@
                                 <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox x:Name="NewGroupNameBox"
@@ -1735,18 +1748,6 @@
                                             Height="28"
                                             Padding="10,0"
                                             Click="AddCustomGroupButton_Click" />
-                                    <Button x:Name="SortGroupsButton"
-                                            Grid.Column="2"
-                                            Style="{StaticResource PanelIconButton}"
-                                            Width="28"
-                                            Height="28"
-                                            Margin="6,0,0,0"
-                                            Click="SortGroupsButton_Click"
-                                            ToolTip="{DynamicResource Str.Groups.SortGroups}">
-                                        <TextBlock Style="{StaticResource Glyph}"
-                                                   Text="&#xE8CB;"
-                                                   FontSize="{DynamicResource FontSize11}" />
-                                    </Button>
                                 </Grid>
 
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
