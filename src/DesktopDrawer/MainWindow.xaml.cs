@@ -811,17 +811,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 _pageIndex = 0;
             }
-            else if (!string.IsNullOrEmpty(selectPath))
-            {
-                int index = _filteredItems.FindIndex(
-                    item => string.Equals(item.FullPath, selectPath, StringComparison.OrdinalIgnoreCase));
-
-                if (index >= 0)
-                {
-                    int capacity = Math.Max(1, Columns * Rows);
-                    _pageIndex = index / capacity;
-                }
-            }
 
             UpdatePage(restoreSelection: selectedPaths, selectPath: selectPath);
             UpdateTrayText();
@@ -917,6 +906,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         int capacity = Math.Max(1, Columns * Rows);
         _pages = BuildPages(capacity);
+
+        if (!string.IsNullOrEmpty(selectPath))
+        {
+            int selectPage = _pages.FindIndex(page => page.Items.Exists(item =>
+                string.Equals(item.FullPath, selectPath, StringComparison.OrdinalIgnoreCase)));
+
+            if (selectPage >= 0)
+            {
+                _pageIndex = selectPage;
+            }
+        }
 
         int pageCount = Math.Max(1, _pages.Count);
         _pageCount = pageCount;
