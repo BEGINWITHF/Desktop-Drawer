@@ -61,7 +61,7 @@ The gear at the top right opens settings. If the header is hidden, move the mous
 - **Text size**: 80%–140% global scale for headings, buttons, menus, the search box, and desktop icon names.
 - **Colors**: Edit the accent, text levels, surfaces, panels, borders, danger color, and shade with the RGB picker.
 - **Wallpaper dim**: Dim the wallpaper behind the overlay from 0% to 60%.
-- **Grid**: Fit to the window automatically, or choose 2–16 columns and 1–16 rows.
+- **Grid**: Fit to the window automatically, or choose 2–16 columns and 1–16 rows. Separate column-gap and row-gap sliders (0–48 px) tune the spacing; **Reset spacing** restores the 4 px default.
 - **Sorting**: Folders first and show hidden files.
 - **Behavior**: Always show controls, close to tray, and start with Windows.
 - **Desktop icons**: Hide or restore native icons immediately, or hide them on launch.

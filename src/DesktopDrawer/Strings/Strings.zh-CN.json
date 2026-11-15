@@ -147,6 +147,11 @@
   "Grid.Columns": "列数",
   "Grid.Rows": "行数",
   "Grid.AutoTip": "适应窗口",
+  "Grid.Spacing": "间距",
+  "Grid.SpacingDesc": "调整图标之间的横向和纵向空隙。数值越大，每页能放的图标越少。",
+  "Grid.ColumnSpacing": "列间距",
+  "Grid.RowSpacing": "行间距",
+  "Grid.ResetSpacing": "恢复默认间距",
 
   "Section.Sorting": "排序",
   "Sorting.FoldersFirst": "文件夹优先",
