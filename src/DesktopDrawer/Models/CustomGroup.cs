@@ -61,7 +61,7 @@ public sealed class CustomGroup
     public bool MatchesFolderName(string folderName) =>
         FolderNames.Count == 0 ||
         FolderNames.Exists(fragment =>
-            folderName.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+            folderName.Contains(fragment, StringComparison.Ordinal));
 
     public bool Matches(string name, bool isFolder)
     {
@@ -216,7 +216,7 @@ public sealed class CustomGroup
 
         foreach (string token in tokens)
         {
-            string value = token.Trim().ToLowerInvariant();
+            string value = token.Trim();
 
             if (value.Length > 0 && !names.Contains(value))
             {
@@ -243,7 +243,7 @@ public sealed class CustomGroup
                 continue;
             }
 
-            string value = name.Trim().ToLowerInvariant();
+            string value = name.Trim();
 
             if (value.Length > 0 && !normalized.Contains(value))
             {

@@ -1019,7 +1019,7 @@ public partial class MainWindow
 
         foreach (string token in tokens)
         {
-            TryAddFilter(_folderFilterDraft, token);
+            TryAddFilter(_folderFilterDraft, token, ignoreCase: false);
         }
 
         BuildFolderFilterChips();
@@ -1097,7 +1097,7 @@ public partial class MainWindow
 
         foreach (string filter in filters)
         {
-            if (TryAddFilter(group.FileNameFilters, filter))
+            if (TryAddFilter(group.FileNameFilters, filter, ignoreCase: true))
             {
                 changed = true;
             }
@@ -1113,22 +1113,26 @@ public partial class MainWindow
         ApplyCustomGroupRuleChange();
     }
 
-    private bool TryAddFilter(List<string> filters, string token)
+    private bool TryAddFilter(List<string> filters, string token, bool ignoreCase)
     {
-        string value = token.Trim().ToLowerInvariant();
+        string value = ignoreCase ? token.Trim().ToLowerInvariant() : token.Trim();
 
         if (value.Length == 0)
         {
             return false;
         }
 
+        StringComparison comparison = ignoreCase
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
         string? similar = filters.FirstOrDefault(existing =>
-            existing.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-            value.Contains(existing, StringComparison.OrdinalIgnoreCase));
+            existing.Contains(value, comparison) ||
+            value.Contains(existing, comparison));
 
         if (similar is not null)
         {
-            ShowToast(string.Equals(similar, value, StringComparison.OrdinalIgnoreCase)
+            ShowToast(string.Equals(similar, value, comparison)
                 ? I18n.F("Toast.DuplicateFilter", value)
                 : I18n.F("Toast.SimilarFilter", value, similar));
             return false;
