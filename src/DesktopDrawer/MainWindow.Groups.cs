@@ -815,7 +815,7 @@ public partial class MainWindow
         if (_settings.GroupMode == GroupMode.Custom)
         {
             RebuildFilteredItems();
-            UpdatePage();
+            NavigateToSelectedGroupPage();
         }
 
         ShowToast(I18n.F("Toast.GroupRenamed", name));
@@ -1153,7 +1153,29 @@ public partial class MainWindow
         SaveSettings();
         BuildCustomGroupRows();
         RebuildFilteredItems();
-        _pageIndex = 0;
+        NavigateToSelectedGroupPage();
+    }
+
+    /// <summary>
+    /// Rebuilds the page list and keeps the page of the group currently being
+    /// edited. If that group has no page yet, the current page is preserved and
+    /// clamped by <see cref="UpdatePage"/>.
+    /// </summary>
+    private void NavigateToSelectedGroupPage()
+    {
+        if (_settings.GroupMode == GroupMode.Custom && _selectedGroup is not null)
+        {
+            int capacity = Math.Max(1, Columns * Rows);
+            List<PageSlice> pages = BuildPages(capacity);
+            int index = pages.FindIndex(page =>
+                string.Equals(page.Group, _selectedGroup.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (index >= 0)
+            {
+                _pageIndex = index;
+            }
+        }
+
         UpdatePage();
     }
 
@@ -1235,7 +1257,7 @@ public partial class MainWindow
         if (_settings.GroupMode == GroupMode.Custom)
         {
             RebuildFilteredItems();
-            UpdatePage();
+            NavigateToSelectedGroupPage();
         }
 
         ShowToast(I18n.T("Toast.GroupsSorted"));
@@ -1282,8 +1304,7 @@ public partial class MainWindow
         SaveSettings();
         BuildCustomGroupRows();
         RebuildFilteredItems();
-        _pageIndex = 0;
-        UpdatePage();
+        NavigateToSelectedGroupPage();
         ShowToast(I18n.F("Toast.GroupCreated", name));
     }
 
@@ -1306,7 +1327,6 @@ public partial class MainWindow
         if (_settings.GroupMode == GroupMode.Custom)
         {
             RebuildFilteredItems();
-            _pageIndex = 0;
             UpdatePage();
         }
     }
