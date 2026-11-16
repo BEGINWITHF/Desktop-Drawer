@@ -566,7 +566,6 @@ public partial class MainWindow
         GroupEditorPanel.Children.Add(CreateFileNameInputRow(group));
 
         GroupEditorPanel.Children.Add(CreateEditorDivider());
-        GroupEditorPanel.Children.Add(CreateEditorLabel("Group.Folders", new Thickness(0, 0, 0, 6)));
 
         if (group.IncludeFolders)
         {
