@@ -179,7 +179,7 @@
   "Groups.Extensions": "檔案類型",
   "Groups.ExtensionsHint": "輸入副檔名（例如 pdf）後按「新增」，或選擇檔案直接讀取它的格式。多個分組符合時以排在前面的為準。",
   "Groups.FileNames": "檔案名稱包含",
-  "Groups.FileNamesHint": "忽略副檔名，只比對檔案名稱中包含這些詞的檔案。",
+  "Groups.FileNamesHint": "比對檔案名稱或資料夾名稱中包含這些詞的檔案和資料夾（檔案名稱忽略副檔名）。",
   "Groups.FolderDialogTitle": "加入資料夾",
   "Groups.FolderDialogEditTitle": "編輯資料夾篩選",
   "Groups.FolderDialogHint": "只有名稱包含這些詞的資料夾才會加入（區分大小寫）；按「略過」則包含所有資料夾。",

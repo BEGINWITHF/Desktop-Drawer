@@ -179,7 +179,7 @@
   "Groups.Extensions": "File types",
   "Groups.ExtensionsHint": "Type a suffix such as pdf and press Add, or choose a file to copy its type. The first matching group wins.",
   "Groups.FileNames": "File names contain",
-  "Groups.FileNamesHint": "Matches files whose name, without the extension, contains one of these words.",
+  "Groups.FileNamesHint": "Matches files and folders whose name contains one of these words. File extensions are ignored.",
   "Groups.FolderDialogTitle": "Add folders",
   "Groups.FolderDialogEditTitle": "Edit folders",
   "Groups.FolderDialogHint": "Only folders whose name contains one of these words join. Matching is case-sensitive. Skip to include every folder.",

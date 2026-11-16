@@ -19,8 +19,8 @@ public sealed class CustomGroup
 
     /// <summary>
     /// Fragments matched case-insensitively against a file name without its
-    /// extension. The user's typed casing is kept for display. A file joins
-    /// when one of them is contained in that stem.
+    /// extension and against folder names. The user's typed casing is kept for
+    /// display. An item joins when one of them is contained in that name.
     /// </summary>
     public List<string> FileNameFilters { get; set; } = [];
 
@@ -46,14 +46,14 @@ public sealed class CustomGroup
         Extensions.Exists(extension =>
             fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
-    public bool MatchesFileName(string fileName)
+    public bool MatchesFileName(string fileName, bool isFolder = false)
     {
         if (FileNameFilters.Count == 0)
         {
             return false;
         }
 
-        string stem = Path.GetFileNameWithoutExtension(fileName);
+        string stem = isFolder ? fileName : Path.GetFileNameWithoutExtension(fileName);
 
         return FileNameFilters.Exists(fragment =>
             stem.Contains(fragment, StringComparison.OrdinalIgnoreCase));
@@ -68,7 +68,8 @@ public sealed class CustomGroup
     {
         if (isFolder)
         {
-            return IncludeFolders && MatchesFolderName(name);
+            return MatchesFileName(name, isFolder: true) ||
+                   (IncludeFolders && MatchesFolderName(name));
         }
 
         return MatchesExtension(name) || MatchesFileName(name);
