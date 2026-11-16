@@ -59,7 +59,7 @@ The gear at the top right opens settings. If the header is hidden, move the mous
 - **Language**: English / 简体中文 / 繁體中文 / 日本語. Changes apply immediately.
 - **Icon size**: Compact / Cozy / Large presets, or a custom 24–160 px size.
 - **Text size**: 80%–140% global scale for headings, buttons, menus, the search box, and desktop icon names.
-- **Colors**: Edit the accent, text levels, surfaces, panels, borders, danger color, and shade with the RGB picker.
+- **Style**: Open the style panel to pick a theme (Monochrome, Graphite, Ocean, Forest, Sunset, Nord, Paper) or fine-tune the accent, text levels, surfaces, panels, borders, danger color, and shade with the RGB picker.
 - **Wallpaper dim**: Dim the wallpaper behind the overlay from 0% to 60%.
 - **Grid**: Fit to the window automatically, or choose 2–16 columns and 1–16 rows.
 - **Sorting**: Folders first and show hidden files.

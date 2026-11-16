@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -343,6 +344,7 @@ public partial class MainWindow
         ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
         UpdateColorRows();
+        BuildStyleThemes();
         CloseColorPicker();
     }
 
@@ -394,8 +396,172 @@ public partial class MainWindow
         ThemeService.Apply(_settings.Colors);
         ApplyWallpaperDim();
         UpdateColorRows();
+        BuildStyleThemes();
         CloseColorPicker();
         ShowToast(I18n.T("Appearance.ResetColorsToast"));
+    }
+
+    private void ManageStylesButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseSettings();
+        OpenStylePanel();
+    }
+
+    private void StyleCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseStylePanel();
+    }
+
+    private void StyleBackdrop_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        CloseStylePanel();
+    }
+
+    private void OpenStylePanel()
+    {
+        BuildColorRows();
+        BuildStyleThemes();
+
+        StyleOverlay.Visibility = Visibility.Visible;
+        StyleOverlay.BeginAnimation(OpacityProperty, null);
+        StyleOverlay.Opacity = 0;
+        StyleTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        StyleTranslate.Y = 18;
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140));
+        var slide = new DoubleAnimation(18, 0, TimeSpan.FromMilliseconds(190))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        StyleOverlay.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        StyleTranslate.BeginAnimation(TranslateTransform.YProperty, slide, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void CloseStylePanel()
+    {
+        if (StyleOverlay.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(130));
+        fade.Completed += (_, _) =>
+        {
+            StyleOverlay.Visibility = Visibility.Collapsed;
+            StyleTranslate.Y = 18;
+        };
+
+        var slide = new DoubleAnimation(0, 18, TimeSpan.FromMilliseconds(150))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+
+        StyleOverlay.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        StyleTranslate.BeginAnimation(TranslateTransform.YProperty, slide, HandoffBehavior.SnapshotAndReplace);
+        PageList.Focus();
+        ShowChrome();
+    }
+
+    private void BuildStyleThemes()
+    {
+        StyleThemePanel.Children.Clear();
+
+        foreach (ThemePreset preset in ThemePresets.All)
+        {
+            bool selected = MatchesTheme(preset);
+
+            var button = new Button
+            {
+                Style = (Style)FindResource("GhostButton"),
+                Height = 48,
+                Margin = new Thickness(0, 0, 0, 6),
+                Padding = new Thickness(8, 0, 8, 0),
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                Background = selected
+                    ? (Brush)FindResource("PanelHoverBrush")
+                    : Brushes.Transparent,
+                BorderBrush = selected
+                    ? (Brush)FindResource("StrokeStrongBrush")
+                    : Brushes.Transparent
+            };
+
+            var content = new Grid();
+            content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var swatches = new UniformGrid
+            {
+                Columns = 4,
+                Width = 60,
+                Height = 14,
+                Margin = new Thickness(0, 0, 10, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            foreach (string key in new[]
+                     {
+                         ThemeColorTokens.Accent,
+                         ThemeColorTokens.Panel,
+                         ThemeColorTokens.TextPrimary,
+                         ThemeColorTokens.Danger
+                     })
+            {
+                ThemeService.TryParse(preset.Colors[key], out Color color);
+                swatches.Children.Add(new Border
+                {
+                    Background = new SolidColorBrush(color),
+                    Margin = new Thickness(0, 0, 2, 0)
+                });
+            }
+
+            var name = new TextBlock
+            {
+                Text = I18n.T(preset.LabelKey),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            name.SetResourceReference(TextBlock.FontSizeProperty, "FontSize115");
+            name.SetResourceReference(
+                TextBlock.ForegroundProperty,
+                selected ? "TextPrimaryBrush" : "TextSecondaryBrush");
+
+            Grid.SetColumn(name, 1);
+            content.Children.Add(swatches);
+            content.Children.Add(name);
+            button.Content = content;
+
+            ThemePreset presetCopy = preset;
+            button.Click += (_, _) => ApplyStyleTheme(presetCopy);
+            StyleThemePanel.Children.Add(button);
+        }
+    }
+
+    private bool MatchesTheme(ThemePreset preset)
+    {
+        foreach (ThemeColorToken token in ThemeColorTokens.All)
+        {
+            if (!preset.Colors.TryGetValue(token.Key, out string? value) ||
+                !ThemeService.TryParse(value, out Color expected) ||
+                ThemeService.Read(_settings.Colors, token.Key) != expected)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void ApplyStyleTheme(ThemePreset preset)
+    {
+        _settings.Colors = new Dictionary<string, string>(
+            preset.Colors,
+            StringComparer.OrdinalIgnoreCase);
+        SaveSettings();
+        ThemeService.Apply(_settings.Colors);
+        ApplyWallpaperDim();
+        UpdateColorRows();
+        BuildStyleThemes();
     }
 
     private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
