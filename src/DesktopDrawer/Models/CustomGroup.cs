@@ -18,8 +18,9 @@ public sealed class CustomGroup
     public List<string> Extensions { get; set; } = [];
 
     /// <summary>
-    /// Lower-cased fragments matched against a file name without its extension.
-    /// A file joins when one of them is contained in that stem.
+    /// Fragments matched case-insensitively against a file name without its
+    /// extension. The user's typed casing is kept for display. A file joins
+    /// when one of them is contained in that stem.
     /// </summary>
     public List<string> FileNameFilters { get; set; } = [];
 
@@ -31,7 +32,7 @@ public sealed class CustomGroup
     public bool IncludeFolders { get; set; }
 
     /// <summary>
-    /// Lower-cased fragments matched against folder names.
+    /// Case-sensitive fragments matched against folder names.
     /// </summary>
     public List<string> FolderNames { get; set; } = [];
 
@@ -163,9 +164,9 @@ public sealed class CustomGroup
 
         foreach (string token in tokens)
         {
-            string value = token.Trim().ToLowerInvariant();
+            string value = token.Trim();
 
-            if (value.Length > 0 && !filters.Contains(value))
+            if (value.Length > 0 && !filters.Contains(value, StringComparer.OrdinalIgnoreCase))
             {
                 filters.Add(value);
             }
@@ -190,9 +191,9 @@ public sealed class CustomGroup
                 continue;
             }
 
-            string value = filter.Trim().ToLowerInvariant();
+            string value = filter.Trim();
 
-            if (value.Length > 0 && !normalized.Contains(value))
+            if (value.Length > 0 && !normalized.Contains(value, StringComparer.OrdinalIgnoreCase))
             {
                 normalized.Add(value);
             }

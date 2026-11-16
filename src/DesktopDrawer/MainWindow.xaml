@@ -2021,5 +2021,55 @@
             </Border>
         </Grid>
 
+        <Grid x:Name="ConfirmOverlay"
+              Visibility="Collapsed"
+              Panel.ZIndex="30">
+            <Border Background="{DynamicResource ScrimBrush}"
+                    MouseDown="ConfirmBackdrop_MouseDown" />
+
+            <Border Width="420"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SettingsPanelBrush}"
+                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="0"
+                    Padding="22,18,22,16">
+                <StackPanel>
+                    <TextBlock x:Name="ConfirmTitle"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="{DynamicResource FontSize15}"
+                               FontWeight="Bold" />
+                    <TextBlock x:Name="ConfirmMessage"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="FontSize" Value="{DynamicResource FontSize105}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,18,0,0">
+                        <Button Content="{DynamicResource Str.ColorPicker.Cancel}"
+                                Style="{StaticResource GhostButton}"
+                                Height="28"
+                                Padding="12,0"
+                                FontSize="{DynamicResource FontSize11}"
+                                Click="ConfirmCancel_Click" />
+                        <Button Content="{DynamicResource Str.Groups.FolderAllReplace}"
+                                Style="{StaticResource AccentButton}"
+                                Height="28"
+                                Padding="14,0"
+                                Margin="8,0,0,0"
+                                FontSize="{DynamicResource FontSize11}"
+                                Click="ConfirmAccept_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
     </Grid>
 </Window>

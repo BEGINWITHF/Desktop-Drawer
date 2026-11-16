@@ -593,6 +593,7 @@ public partial class MainWindow
         _groupReorderMode = false;
         _draggingGroup = null;
         HideGroupDropMarker();
+        CloseConfirmDialog();
 
         var slide = new DoubleAnimation(0, 18, TimeSpan.FromMilliseconds(160))
         {
