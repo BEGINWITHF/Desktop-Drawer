@@ -558,22 +558,17 @@ public partial class MainWindow
         GroupEditorPanel.Children.Add(CreateEditorDivider());
         GroupEditorPanel.Children.Add(CreateEditorLabel("Groups.FileNames", new Thickness(0, 0, 0, 6)));
 
-        if (group.FileNameFilters.Count > 0)
+        bool hasFolderTags = group.IncludeFolders && group.FolderNames.Count > 0;
+        bool hasAllTag = group.IncludeFolders &&
+                         group.FolderNames.Count == 0 &&
+                         group.FileNameFilters.Count == 0;
+
+        if (group.FileNameFilters.Count > 0 || hasFolderTags || hasAllTag)
         {
             GroupEditorPanel.Children.Add(CreateFileNameChipRow(group));
         }
 
         GroupEditorPanel.Children.Add(CreateFileNameInputRow(group));
-
-        if (group.IncludeFolders)
-        {
-            GroupEditorPanel.Children.Add(CreateEditorDivider());
-            GroupEditorPanel.Children.Add(CreateEditorLabel("Group.Folders", new Thickness(0, 0, 0, 6)));
-
-            var folderRow = new StackPanel { Orientation = Orientation.Horizontal };
-            folderRow.Children.Add(CreateFolderChip(group));
-            GroupEditorPanel.Children.Add(folderRow);
-        }
     }
 
     private TextBlock CreateEditorLabel(string key, Thickness margin)
@@ -618,6 +613,12 @@ public partial class MainWindow
         foreach (string filter in group.FileNameFilters)
         {
             chips.Children.Add(CreateFileNameChip(group, filter));
+        }
+
+        if (group.IncludeFolders &&
+            (group.FolderNames.Count > 0 || group.FileNameFilters.Count == 0))
+        {
+            chips.Children.Add(CreateFolderChip(group));
         }
 
         return chips;
@@ -1078,7 +1079,7 @@ public partial class MainWindow
     /// </summary>
     private void IncludeAllFolders(CustomGroup group)
     {
-        if (group.FolderNames.Count > 0)
+        if (group.FolderNames.Count > 0 || group.FileNameFilters.Count > 0)
         {
             _pendingAllFoldersGroup = group;
             ConfirmTitle.Text = I18n.T("Groups.FolderAllConfirmTitle");
@@ -1098,6 +1099,7 @@ public partial class MainWindow
     {
         group.IncludeFolders = true;
         group.FolderNames.Clear();
+        group.FileNameFilters.Clear();
         group.Excluded.Clear();
         _settings.GroupMode = GroupMode.Custom;
         ApplyCustomGroupRuleChange();
