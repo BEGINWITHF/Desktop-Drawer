@@ -50,6 +50,8 @@ public sealed class AppSettings
     public int IconSize { get; set; }          // 0 = use the density preset
     public int GridColumns { get; set; }       // 0 = fit to the window
     public int GridRows { get; set; }          // 0 = fit to the window
+    public int ColumnSpacing { get; set; } = 4; // pixels between grid columns
+    public int RowSpacing { get; set; } = 4;    // pixels between grid rows
     public SortMode SortMode { get; set; } = SortMode.Name;
     public GroupMode GroupMode { get; set; } = GroupMode.None;
     public List<CustomGroup> CustomGroups { get; set; } = [];

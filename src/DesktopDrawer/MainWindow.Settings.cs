@@ -87,6 +87,11 @@ public partial class MainWindow
         ColumnsValueText.Text = ((int)Math.Round(ColumnsSlider.Value)).ToString();
         RowsValueText.Text = ((int)Math.Round(RowsSlider.Value)).ToString();
 
+        ColumnSpacingSlider.Value = Math.Clamp(_settings.ColumnSpacing, 0, 48);
+        RowSpacingSlider.Value = Math.Clamp(_settings.RowSpacing, 0, 48);
+        ColumnSpacingValueText.Text = $"{(int)Math.Round(ColumnSpacingSlider.Value)} px";
+        RowSpacingValueText.Text = $"{(int)Math.Round(RowSpacingSlider.Value)} px";
+
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
         CloseToTrayToggle.IsChecked = _settings.CloseToTray;
@@ -311,6 +316,41 @@ public partial class MainWindow
         _settings.GridColumns = (int)Math.Round(ColumnsSlider.Value);
         _settings.GridRows = (int)Math.Round(RowsSlider.Value);
         SaveSettings();
+        RecalculateGrid(force: true);
+    }
+
+    private void SpacingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings ||
+            ColumnSpacingSlider is null ||
+            RowSpacingSlider is null ||
+            ColumnSpacingValueText is null ||
+            RowSpacingValueText is null)
+        {
+            return;
+        }
+
+        _settings.ColumnSpacing = (int)Math.Round(ColumnSpacingSlider.Value);
+        _settings.RowSpacing = (int)Math.Round(RowSpacingSlider.Value);
+        ColumnSpacingValueText.Text = $"{_settings.ColumnSpacing} px";
+        RowSpacingValueText.Text = $"{_settings.RowSpacing} px";
+        SaveSettings();
+        RecalculateGrid(force: true);
+    }
+
+    private void ResetSpacingButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.ColumnSpacing = 4;
+        _settings.RowSpacing = 4;
+        SaveSettings();
+
+        _initializingSettings = true;
+        ColumnSpacingSlider.Value = 4;
+        RowSpacingSlider.Value = 4;
+        _initializingSettings = false;
+
+        ColumnSpacingValueText.Text = "4 px";
+        RowSpacingValueText.Text = "4 px";
         RecalculateGrid(force: true);
     }
 

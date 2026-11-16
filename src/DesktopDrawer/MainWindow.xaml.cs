@@ -240,6 +240,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         private set => SetField(ref _tileNameHeight, value);
     }
 
+    private Thickness _tileMargin = new(2);
+    public Thickness TileMargin
+    {
+        get => _tileMargin;
+        private set => SetField(ref _tileMargin, value);
+    }
+
     private double FontScaleFactor => Math.Clamp(_settings.FontScale, 80, 140) / 100.0;
 
     public string SearchText
@@ -1315,24 +1322,34 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        int columnSpacing = Math.Clamp(_settings.ColumnSpacing, 0, 48);
+        int rowSpacing = Math.Clamp(_settings.RowSpacing, 0, 48);
+
         int columns = _settings.GridColumns > 0
             ? Math.Clamp(_settings.GridColumns, 2, 24)
-            : Math.Max(2, (int)Math.Floor((availableWidth - 8) / (_tileWidth + 4)));
+            : Math.Max(2, (int)Math.Floor((availableWidth - 8) / (_tileWidth + columnSpacing)));
 
         int rows = _settings.GridRows > 0
             ? Math.Clamp(_settings.GridRows, 1, 16)
-            : Math.Max(1, (int)Math.Floor((availableHeight - 8) / (_tileHeight + 4)));
+            : Math.Max(1, (int)Math.Floor((availableHeight - 8) / (_tileHeight + rowSpacing)));
 
         // Icons never grow past the cell they live in, so a denser grid shrinks them.
         double cellWidth = availableWidth / columns;
         double cellHeight = availableHeight / rows;
-        double maxIcon = Math.Min(cellWidth * 0.55, cellHeight * 0.55);
+        double maxIcon = Math.Min(
+            Math.Max(0, cellWidth - columnSpacing) * 0.55,
+            Math.Max(0, cellHeight - rowSpacing) * 0.55);
         double iconSize = Math.Clamp(Math.Min(_requestedIconSize, maxIcon), 20, _requestedIconSize);
 
         IconSize = iconSize;
         double fontScale = FontScaleFactor;
         TileFontSize = Math.Clamp(iconSize * 0.18, 10, 16) * fontScale;
         TileNameHeight = Math.Clamp(iconSize * 0.5, 24, 60) * fontScale;
+        TileMargin = new Thickness(
+            2 + columnSpacing / 2.0,
+            2 + rowSpacing / 2.0,
+            2 + columnSpacing / 2.0,
+            2 + rowSpacing / 2.0);
 
         if (!force && columns == _columns && rows == _rows)
         {

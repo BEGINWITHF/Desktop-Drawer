@@ -125,7 +125,7 @@
                 </Grid.ToolTip>
 
                 <Grid x:Name="Tile"
-                      Margin="2"
+                      Margin="{Binding DataContext.TileMargin, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                       Background="Transparent"
                       VerticalAlignment="Center">
                     <Grid.RowDefinitions>
@@ -1187,6 +1187,75 @@
                                         ToolTip="{DynamicResource Str.Grid.AutoTip}"
                                         Click="AutoGridButton_Click" />
                             </Grid>
+
+                            <TextBlock Text="{DynamicResource Str.Grid.Spacing}"
+                                       Style="{StaticResource SettingTitle}"
+                                       Margin="0,16,0,0" />
+                            <TextBlock Text="{DynamicResource Str.Grid.SpacingDesc}"
+                                       Style="{StaticResource SettingDescription}"
+                                       Margin="0,4,10,0" />
+
+                            <Grid Margin="0,6,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.ColumnSpacing}"
+                                           FontSize="{DynamicResource FontSize115}"
+                                           VerticalAlignment="Center" />
+                                <Slider x:Name="ColumnSpacingSlider"
+                                        Grid.Column="1"
+                                        Minimum="0"
+                                        Maximum="48"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="SpacingSlider_ValueChanged" />
+                                <TextBlock x:Name="ColumnSpacingValueText"
+                                           Grid.Column="2"
+                                           FontFamily="{StaticResource MonoFont}"
+                                           Text="4 px"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Grid>
+
+                            <Grid Margin="0,8,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.RowSpacing}"
+                                           FontSize="{DynamicResource FontSize115}"
+                                           VerticalAlignment="Center" />
+                                <Slider x:Name="RowSpacingSlider"
+                                        Grid.Column="1"
+                                        Minimum="0"
+                                        Maximum="48"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="SpacingSlider_ValueChanged" />
+                                <TextBlock x:Name="RowSpacingValueText"
+                                           Grid.Column="2"
+                                           FontFamily="{StaticResource MonoFont}"
+                                           Text="4 px"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Grid>
+
+                            <Button Content="{DynamicResource Str.Grid.ResetSpacing}"
+                                    Style="{StaticResource GhostButton}"
+                                    HorizontalAlignment="Left"
+                                    Height="26"
+                                    Padding="10,0"
+                                    Margin="0,8,0,4"
+                                    Click="ResetSpacingButton_Click" />
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
