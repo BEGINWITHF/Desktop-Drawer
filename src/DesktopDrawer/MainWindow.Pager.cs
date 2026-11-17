@@ -36,6 +36,9 @@ public partial class MainWindow
     /// <summary>Breathing room kept between the selected dot and the viewport edge.</summary>
     private const double PagerDotsInset = 4;
 
+    /// <summary>Length of the soft gradient at the dot viewport edges.</summary>
+    private const double PagerDotsFadeWidth = 30;
+
     /// <summary>
     /// Eased opacity ramp for the dissolve, following a cosine curve so the
     /// gradient starts and ends without the hard shoulders of a linear fade.
@@ -79,6 +82,7 @@ public partial class MainWindow
             DotsHost.Width = double.NaN;
             DotsTrack.Width = double.NaN;
             DotsTrack.Margin = new Thickness(0);
+            ClearPagerDotsFade();
             SetPagerOverflow(false);
             return;
         }
@@ -90,6 +94,7 @@ public partial class MainWindow
 
         SetPagerOverflow(IsPagerContentOverflowing());
         UpdatePagerDotsScroll();
+        DotsHost.UpdateLayout();
 
         double targetX = GetPageIndicatorX(_pageIndex);
         if (double.IsNaN(targetX))
@@ -101,6 +106,7 @@ public partial class MainWindow
 
         targetX = SnapToPixel(targetX);
         UpdatePagerFade(targetX);
+        UpdatePagerDotsFade();
 
         if (!_indicatorReady)
         {
@@ -184,6 +190,98 @@ public partial class MainWindow
 
         target = Math.Clamp(target, Math.Min(0, viewport - content), 0);
         DotsTrack.Margin = new Thickness(target, 0, 0, 0);
+    }
+
+    /// <summary>
+    /// Restores the soft edge gradient on the page dots. The gradient only
+    /// appears on a side that still has dots beyond the viewport, so the
+    /// selected dot at either end stays fully opaque.
+    /// </summary>
+    private void UpdatePagerDotsFade()
+    {
+        if (PageDots.Count == 0 || double.IsNaN(DotsHost.Width) || DotsHost.Width <= 0)
+        {
+            ClearPagerDotsFade();
+            return;
+        }
+
+        double viewport = DotsHost.Width;
+        double content = PageDots.Count * PageDotCell;
+        if (content <= viewport + 0.5)
+        {
+            ClearPagerDotsFade();
+            return;
+        }
+
+        double offset = DotsTrack.Margin.Left;
+        bool leftFade = offset < -0.5;
+        bool rightFade = offset > viewport - content + 0.5;
+        Color color = GetThemeColor("TextMutedBrush", Colors.Gray);
+
+        for (int i = 0; i < PageDots.Count; i++)
+        {
+            Button? button = GetPageButton(i);
+            if (button is null)
+            {
+                continue;
+            }
+
+            double left;
+            try
+            {
+                left = button.TransformToAncestor(DotsHost).Transform(new Point(0, 0)).X;
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            double right = left + button.ActualWidth;
+            double leftAlpha = EdgeAlpha(left, leftFade, rightFade, viewport);
+            double rightAlpha = EdgeAlpha(right, leftFade, rightFade, viewport);
+
+            if (leftAlpha >= 0.999 && rightAlpha >= 0.999)
+            {
+                button.ClearValue(Control.ForegroundProperty);
+                continue;
+            }
+
+            button.Foreground = new LinearGradientBrush(
+                FadeColor(color, leftAlpha),
+                FadeColor(color, rightAlpha),
+                0);
+        }
+    }
+
+    private void ClearPagerDotsFade()
+    {
+        for (int i = 0; i < PageDots.Count; i++)
+        {
+            GetPageButton(i)?.ClearValue(Control.ForegroundProperty);
+        }
+    }
+
+    private static double EdgeAlpha(double x, bool leftFade, bool rightFade, double viewport)
+    {
+        double alpha = 1;
+
+        if (leftFade)
+        {
+            alpha = Math.Min(alpha, Math.Clamp(x / PagerDotsFadeWidth, 0, 1));
+        }
+
+        if (rightFade)
+        {
+            alpha = Math.Min(alpha, Math.Clamp((viewport - x) / PagerDotsFadeWidth, 0, 1));
+        }
+
+        return alpha;
+    }
+
+    private static Color FadeColor(Color color, double alpha)
+    {
+        byte value = (byte)Math.Round(color.A * Math.Clamp(alpha, 0, 1));
+        return Color.FromArgb(value, color.R, color.G, color.B);
     }
 
     /// <summary>
