@@ -82,7 +82,7 @@ public partial class MainWindow
             DotsHost.Width = double.NaN;
             DotsTrack.Width = double.NaN;
             DotsTrack.Margin = new Thickness(0);
-            ClearPagerDotsFade();
+            ClearPagerDotsMask();
             SetPagerOverflow(false);
             return;
         }
@@ -106,7 +106,7 @@ public partial class MainWindow
 
         targetX = SnapToPixel(targetX);
         UpdatePagerFade(targetX);
-        UpdatePagerDotsFade();
+        UpdatePagerDotsMask();
 
         if (!_indicatorReady)
         {
@@ -193,15 +193,16 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Restores the soft edge gradient on the page dots. The gradient only
-    /// appears on a side that still has dots beyond the viewport, so the
-    /// selected dot at either end stays fully opaque.
+    /// Applies the soft edge gradient to the dot strip itself, fixed to the
+    /// viewport edges. The accent pill and its contrast copy are siblings of
+    /// the masked strip, so they stay fully opaque even while the pill
+    /// overshoots during a page change.
     /// </summary>
-    private void UpdatePagerDotsFade()
+    private void UpdatePagerDotsMask()
     {
         if (PageDots.Count == 0 || double.IsNaN(DotsHost.Width) || DotsHost.Width <= 0)
         {
-            ClearPagerDotsFade();
+            ClearPagerDotsMask();
             return;
         }
 
@@ -209,79 +210,59 @@ public partial class MainWindow
         double content = PageDots.Count * PageDotCell;
         if (content <= viewport + 0.5)
         {
-            ClearPagerDotsFade();
+            ClearPagerDotsMask();
             return;
         }
 
         double offset = DotsTrack.Margin.Left;
         bool leftFade = offset < -0.5;
         bool rightFade = offset > viewport - content + 0.5;
-        Color color = GetThemeColor("TextMutedBrush", Colors.Gray);
+        double leftEdge = Math.Clamp(-offset, 0, content);
+        double rightEdge = Math.Clamp(viewport - offset, 0, content);
 
-        for (int i = 0; i < PageDots.Count; i++)
+        var stops = new List<GradientStop>();
+
+        void AddStop(double x, double alpha)
         {
-            Button? button = GetPageButton(i);
-            if (button is null)
-            {
-                continue;
-            }
-
-            double left;
-            try
-            {
-                left = button.TransformToAncestor(DotsHost).Transform(new Point(0, 0)).X;
-            }
-            catch (InvalidOperationException)
-            {
-                continue;
-            }
-
-            double right = left + button.ActualWidth;
-            double leftAlpha = EdgeAlpha(left, leftFade, rightFade, viewport);
-            double rightAlpha = EdgeAlpha(right, leftFade, rightFade, viewport);
-
-            if (leftAlpha >= 0.999 && rightAlpha >= 0.999)
-            {
-                button.ClearValue(Control.ForegroundProperty);
-                continue;
-            }
-
-            button.Foreground = new LinearGradientBrush(
-                FadeColor(color, leftAlpha),
-                FadeColor(color, rightAlpha),
-                0);
+            double stop = Math.Clamp(x / content, 0, 1);
+            byte value = (byte)Math.Round(255 * Math.Clamp(alpha, 0, 1));
+            stops.Add(new GradientStop(Color.FromArgb(value, 255, 255, 255), stop));
         }
-    }
-
-    private void ClearPagerDotsFade()
-    {
-        for (int i = 0; i < PageDots.Count; i++)
-        {
-            GetPageButton(i)?.ClearValue(Control.ForegroundProperty);
-        }
-    }
-
-    private static double EdgeAlpha(double x, bool leftFade, bool rightFade, double viewport)
-    {
-        double alpha = 1;
 
         if (leftFade)
         {
-            alpha = Math.Min(alpha, Math.Clamp(x / PagerDotsFadeWidth, 0, 1));
+            AddStop(0, 0);
+            AddStop(leftEdge, 0);
+            AddStop(leftEdge + PagerDotsFadeWidth, 1);
+        }
+        else
+        {
+            AddStop(0, 1);
         }
 
         if (rightFade)
         {
-            alpha = Math.Min(alpha, Math.Clamp((viewport - x) / PagerDotsFadeWidth, 0, 1));
+            AddStop(rightEdge - PagerDotsFadeWidth, 1);
+            AddStop(rightEdge, 0);
+            AddStop(content, 0);
+        }
+        else
+        {
+            AddStop(content, 1);
         }
 
-        return alpha;
+        stops.Sort((a, b) => a.Offset.CompareTo(b.Offset));
+        PageItems.OpacityMask = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 0),
+            GradientStops = new GradientStopCollection(stops)
+        };
     }
 
-    private static Color FadeColor(Color color, double alpha)
+    private void ClearPagerDotsMask()
     {
-        byte value = (byte)Math.Round(color.A * Math.Clamp(alpha, 0, 1));
-        return Color.FromArgb(value, color.R, color.G, color.B);
+        PageItems.OpacityMask = null;
     }
 
     /// <summary>
