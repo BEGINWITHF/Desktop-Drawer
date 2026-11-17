@@ -46,7 +46,11 @@ public partial class MainWindow
 
         if (e.Key == Key.Escape)
         {
-            if (ColorPickerOverlay.Visibility == Visibility.Visible)
+            if (ConfirmOverlay.Visibility == Visibility.Visible)
+            {
+                CloseConfirmDialog();
+            }
+            else if (ColorPickerOverlay.Visibility == Visibility.Visible)
             {
                 CancelColorPicker();
             }

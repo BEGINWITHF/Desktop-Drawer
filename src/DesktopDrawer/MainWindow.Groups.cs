@@ -558,46 +558,17 @@ public partial class MainWindow
         GroupEditorPanel.Children.Add(CreateEditorDivider());
         GroupEditorPanel.Children.Add(CreateEditorLabel("Groups.FileNames", new Thickness(0, 0, 0, 6)));
 
-        if (group.FileNameFilters.Count > 0)
+        bool hasFolderTags = group.IncludeFolders && group.FolderNames.Count > 0;
+        bool hasAllTag = group.IncludeFolders &&
+                         group.FolderNames.Count == 0 &&
+                         group.FileNameFilters.Count == 0;
+
+        if (group.FileNameFilters.Count > 0 || hasFolderTags || hasAllTag)
         {
             GroupEditorPanel.Children.Add(CreateFileNameChipRow(group));
         }
 
         GroupEditorPanel.Children.Add(CreateFileNameInputRow(group));
-
-        GroupEditorPanel.Children.Add(CreateEditorDivider());
-
-        if (group.IncludeFolders)
-        {
-            var folderRow = new StackPanel { Orientation = Orientation.Horizontal };
-            folderRow.Children.Add(CreateFolderChip(group));
-
-            var editFolderButton = new Button
-            {
-                Style = (Style)FindResource("GhostButton"),
-                Content = I18n.T("Groups.EditFolderFilter"),
-                Height = 26,
-                Padding = new Thickness(10, 0, 10, 0),
-                Margin = new Thickness(8, 0, 0, 0)
-            };
-            editFolderButton.Click += (_, _) => OpenFolderFilterDialog(group);
-            folderRow.Children.Add(editFolderButton);
-
-            GroupEditorPanel.Children.Add(folderRow);
-        }
-        else
-        {
-            var foldersButton = new Button
-            {
-                Style = (Style)FindResource("GhostButton"),
-                Content = I18n.T("Groups.TypeFolders"),
-                Height = 26,
-                Padding = new Thickness(10, 0, 10, 0),
-                HorizontalAlignment = HorizontalAlignment.Left
-            };
-            foldersButton.Click += (_, _) => OpenFolderFilterDialog(group);
-            GroupEditorPanel.Children.Add(foldersButton);
-        }
     }
 
     private TextBlock CreateEditorLabel(string key, Thickness margin)
@@ -642,6 +613,12 @@ public partial class MainWindow
         foreach (string filter in group.FileNameFilters)
         {
             chips.Children.Add(CreateFileNameChip(group, filter));
+        }
+
+        if (group.IncludeFolders &&
+            (group.FolderNames.Count > 0 || group.FileNameFilters.Count == 0))
+        {
+            chips.Children.Add(CreateFolderChip(group));
         }
 
         return chips;
@@ -714,6 +691,7 @@ public partial class MainWindow
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var nameBox = new TextBox
         {
@@ -743,10 +721,22 @@ public partial class MainWindow
         };
         addButton.Click += (_, _) => AddFileNameFiltersFromInput(group, nameBox);
 
+        var foldersButton = new Button
+        {
+            Style = (Style)FindResource("GhostButton"),
+            Content = I18n.T("Groups.FolderDialogAll"),
+            Height = 26,
+            Padding = new Thickness(10, 0, 10, 0),
+            Margin = new Thickness(6, 0, 0, 0)
+        };
+        foldersButton.Click += (_, _) => IncludeAllFolders(group);
+
         Grid.SetColumn(nameBox, 0);
         Grid.SetColumn(addButton, 1);
+        Grid.SetColumn(foldersButton, 2);
         row.Children.Add(nameBox);
         row.Children.Add(addButton);
+        row.Children.Add(foldersButton);
         return row;
     }
 
@@ -833,14 +823,15 @@ public partial class MainWindow
             group.FolderNames.Count == 0
                 ? I18n.T("Groups.FolderChipAll")
                 : I18n.F("Groups.FolderChip", string.Join(", ", group.FolderNames)),
-            () => RemoveFoldersFromCustomGroup(group));
+            () => RemoveFoldersFromCustomGroup(group),
+            () => OpenFolderFilterDialog(group));
 
     private Border CreateFileNameChip(CustomGroup group, string filter) =>
         CreateGroupChip(
             filter,
             () => RemoveFileNameFilter(group, filter));
 
-    private Border CreateGroupChip(string text, Action remove)
+    private Border CreateGroupChip(string text, Action remove, Action? edit = null)
     {
         var chip = new Border
         {
@@ -861,6 +852,17 @@ public partial class MainWindow
         };
         label.SetResourceReference(TextBlock.FontSizeProperty, "FontSize105");
         label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+
+        if (edit is not null)
+        {
+            label.Cursor = Cursors.Hand;
+            label.ToolTip = I18n.T("Groups.EditFolderFilter");
+            label.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                edit();
+            };
+        }
 
         var removeButton = new Button
         {
@@ -1018,17 +1020,17 @@ public partial class MainWindow
 
         foreach (string token in tokens)
         {
-            TryAddFilter(_folderFilterDraft, token, ignoreCase: false);
+            TryAddFilter(_folderFilterDraft, token, caseSensitive: true);
         }
 
         BuildFolderFilterChips();
     }
 
-    private void FolderFilterApply_Click(object sender, RoutedEventArgs e) =>
-        ApplyFolderFilter(useFilter: true);
-
     private void FolderFilterSkip_Click(object sender, RoutedEventArgs e) =>
         ApplyFolderFilter(useFilter: false);
+
+    private void FolderFilterApply_Click(object sender, RoutedEventArgs e) =>
+        ApplyFolderFilter(useFilter: true);
 
     private void FolderFilterCancel_Click(object sender, RoutedEventArgs e) =>
         CloseFolderFilterDialog();
@@ -1069,6 +1071,64 @@ public partial class MainWindow
         FolderFilterOverlay.Visibility = Visibility.Collapsed;
     }
 
+    private CustomGroup? _pendingAllFoldersGroup;
+
+    /// <summary>
+    /// Adds the "all folders" tag. When specific folder filters exist, ask for
+    /// confirmation first because they would be replaced.
+    /// </summary>
+    private void IncludeAllFolders(CustomGroup group)
+    {
+        if (group.FolderNames.Count > 0 || group.FileNameFilters.Count > 0)
+        {
+            _pendingAllFoldersGroup = group;
+            ConfirmTitle.Text = I18n.T("Groups.FolderAllConfirmTitle");
+            ConfirmMessage.Text = I18n.T("Groups.FolderAllConfirmMessage");
+            ConfirmOverlay.Visibility = Visibility.Visible;
+            ConfirmOverlay.BeginAnimation(OpacityProperty, null);
+            ConfirmOverlay.Opacity = 0;
+            var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(130));
+            ConfirmOverlay.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+            return;
+        }
+
+        ApplyAllFolders(group);
+    }
+
+    private void ApplyAllFolders(CustomGroup group)
+    {
+        group.IncludeFolders = true;
+        group.FolderNames.Clear();
+        group.FileNameFilters.Clear();
+        group.Excluded.Clear();
+        _settings.GroupMode = GroupMode.Custom;
+        ApplyCustomGroupRuleChange();
+    }
+
+    private void ConfirmAccept_Click(object sender, RoutedEventArgs e)
+    {
+        CustomGroup? group = _pendingAllFoldersGroup;
+        CloseConfirmDialog();
+
+        if (group is not null)
+        {
+            ApplyAllFolders(group);
+        }
+    }
+
+    private void ConfirmCancel_Click(object sender, RoutedEventArgs e) =>
+        CloseConfirmDialog();
+
+    private void ConfirmBackdrop_MouseDown(object sender, MouseButtonEventArgs e) =>
+        CloseConfirmDialog();
+
+    private void CloseConfirmDialog()
+    {
+        _pendingAllFoldersGroup = null;
+        ConfirmOverlay.Visibility = Visibility.Collapsed;
+        ConfirmOverlay.BeginAnimation(OpacityProperty, null);
+    }
+
     private void RemoveFoldersFromCustomGroup(CustomGroup group)
     {
         if (!group.IncludeFolders)
@@ -1096,7 +1156,7 @@ public partial class MainWindow
 
         foreach (string filter in filters)
         {
-            if (TryAddFilter(group.FileNameFilters, filter, ignoreCase: true))
+            if (TryAddFilter(group.FileNameFilters, filter, caseSensitive: false))
             {
                 changed = true;
             }
@@ -1112,18 +1172,18 @@ public partial class MainWindow
         ApplyCustomGroupRuleChange();
     }
 
-    private bool TryAddFilter(List<string> filters, string token, bool ignoreCase)
+    private bool TryAddFilter(List<string> filters, string token, bool caseSensitive)
     {
-        string value = ignoreCase ? token.Trim().ToLowerInvariant() : token.Trim();
+        string value = token.Trim();
 
         if (value.Length == 0)
         {
             return false;
         }
 
-        StringComparison comparison = ignoreCase
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
+        StringComparison comparison = caseSensitive
+            ? StringComparison.Ordinal
+            : StringComparison.OrdinalIgnoreCase;
 
         string? similar = filters.FirstOrDefault(existing =>
             existing.Contains(value, comparison) ||

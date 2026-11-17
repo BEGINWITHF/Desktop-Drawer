@@ -17,6 +17,7 @@ public partial class MainWindow
 {
     private bool _indicatorReady;
     private bool _pagerOverflow;
+    private bool _dotsOffsetChanged;
 
     /// <summary>
     /// Extra room added to the trailing end of the pager when the page dots no
@@ -29,6 +30,18 @@ public partial class MainWindow
     /// tail this is the length of the gradient.
     /// </summary>
     private const double PagerFadeLead = 6;
+
+    /// <summary>Width of one page-dot cell, including its horizontal margins.</summary>
+    private const double PageDotCell = 42;
+
+    /// <summary>Length of the soft gradient at the dot viewport edges.</summary>
+    private const double PagerDotsFadeWidth = 70;
+
+    /// <summary>
+    /// Space kept between the selected dot and the viewport edge, wide enough
+    /// that the pill never sits under the edge gradient.
+    /// </summary>
+    private const double PagerDotsInset = PagerDotsFadeWidth + 4;
 
     /// <summary>
     /// Eased opacity ramp for the dissolve, following a cosine curve so the
@@ -70,14 +83,22 @@ public partial class MainWindow
         {
             _indicatorReady = false;
             PageIndicator.Visibility = Visibility.Collapsed;
+            DotsHost.Width = double.NaN;
+            DotsTrack.Width = double.NaN;
+            DotsTrack.Margin = new Thickness(0);
+            ClearPagerDotsMask();
             SetPagerOverflow(false);
             return;
         }
 
+        UpdatePagerDotsViewport();
         PageItems.UpdateLayout();
+        PagerBar.UpdateLayout();
         PageIndicator.Visibility = Visibility.Visible;
 
         SetPagerOverflow(IsPagerContentOverflowing());
+        UpdatePagerDotsScroll();
+        DotsHost.UpdateLayout();
 
         double targetX = GetPageIndicatorX(_pageIndex);
         if (double.IsNaN(targetX))
@@ -89,16 +110,169 @@ public partial class MainWindow
 
         targetX = SnapToPixel(targetX);
         UpdatePagerFade(targetX);
+        UpdatePagerDotsMask();
 
         if (!_indicatorReady)
         {
             SetIndicatorPosition(targetX);
             _indicatorReady = true;
         }
+        else if (_dotsOffsetChanged)
+        {
+            // The row jumped to a new window, so move the pill with it instead
+            // of sliding across the newly shifted digits.
+            SetIndicatorPosition(targetX);
+        }
         else
         {
             AnimateIndicatorTo(targetX);
         }
+    }
+
+    /// <summary>
+    /// Clips the dot row to the space the pager actually has. The configured
+    /// pager width is not changed; the row itself slides inside the frame.
+    /// </summary>
+    private void UpdatePagerDotsViewport()
+    {
+        if (PageDots.Count == 0 || double.IsNaN(PagerBar.Width) || PagerBar.Width <= 0)
+        {
+            DotsHost.Width = double.NaN;
+            DotsTrack.Width = double.NaN;
+            return;
+        }
+
+        double width = PagerBar.Width;
+        if (_pagerOverflow)
+        {
+            width -= PagerFadeTail;
+        }
+
+        double innerWidth = width -
+            PagerBar.Padding.Left -
+            PagerBar.Padding.Right -
+            PagerBar.BorderThickness.Left -
+            PagerBar.BorderThickness.Right;
+
+        double fixedWidth = WidthOf(PrevButton, 28) +
+            WidthOf(PagerPageLabel, 90) +
+            PagerPageLabel.Margin.Left + PagerPageLabel.Margin.Right +
+            WidthOf(NextButton, 28) +
+            NextButton.Margin.Left + NextButton.Margin.Right;
+
+        double available = Math.Max(0, innerWidth - fixedWidth);
+        double content = PageDots.Count * PageDotCell;
+        double viewport = Math.Min(available, content);
+
+        PageItems.Width = content;
+        ActivePageItems.Width = content;
+        DotsTrack.Width = content;
+        DotsHost.Width = viewport;
+    }
+
+    /// <summary>
+    /// Slides the dot row left inside the clipped viewport so the selected
+    /// page, and the dots after it, are fully visible.
+    /// </summary>
+    private void UpdatePagerDotsScroll()
+    {
+        if (PageDots.Count == 0 || double.IsNaN(DotsHost.Width) || DotsHost.Width <= 0)
+        {
+            DotsTrack.Margin = new Thickness(0);
+            return;
+        }
+
+        double viewport = DotsHost.Width;
+        double content = PageDots.Count * PageDotCell;
+        double left = _pageIndex * PageDotCell;
+        double right = left + PageDotCell;
+
+        double target = 0;
+        if (right > viewport - PagerDotsInset)
+        {
+            target -= right - (viewport - PagerDotsInset);
+        }
+
+        if (left + target < PagerDotsInset)
+        {
+            target += PagerDotsInset - (left + target);
+        }
+
+        target = Math.Clamp(target, Math.Min(0, viewport - content), 0);
+        _dotsOffsetChanged = Math.Abs(DotsTrack.Margin.Left - target) > 0.5;
+        DotsTrack.Margin = new Thickness(target, 0, 0, 0);
+    }
+
+    /// <summary>
+    /// Fades the dot strip into the pager surface at the viewport edges. The
+    /// mask covers the whole strip, so the dots dissolve smoothly instead of
+    /// sitting under a hard-edged rectangle.
+    /// </summary>
+    private void UpdatePagerDotsMask()
+    {
+        if (PageDots.Count == 0 || double.IsNaN(DotsHost.Width) || DotsHost.Width <= 0)
+        {
+            ClearPagerDotsMask();
+            return;
+        }
+
+        double viewport = DotsHost.Width;
+        double content = PageDots.Count * PageDotCell;
+        if (content <= viewport + 0.5)
+        {
+            ClearPagerDotsMask();
+            return;
+        }
+
+        double offset = DotsTrack.Margin.Left;
+        bool leftFade = offset < -0.5;
+        bool rightFade = offset > viewport - content + 0.5;
+        double leftEdge = Math.Clamp(-offset, 0, content);
+        double rightEdge = Math.Clamp(viewport - offset, 0, content);
+
+        var stops = new List<GradientStop>();
+
+        void AddStop(double x, double alpha)
+        {
+            double stop = Math.Clamp(x / content, 0, 1);
+            byte value = (byte)Math.Round(255 * Math.Clamp(alpha, 0, 1));
+            stops.Add(new GradientStop(Color.FromArgb(value, 255, 255, 255), stop));
+        }
+
+        if (leftFade)
+        {
+            AddStop(0, 0);
+            AddStop(leftEdge, 0);
+            AddStop(leftEdge + PagerDotsFadeWidth, 1);
+        }
+        else
+        {
+            AddStop(0, 1);
+        }
+
+        if (rightFade)
+        {
+            AddStop(rightEdge - PagerDotsFadeWidth, 1);
+            AddStop(rightEdge, 0);
+            AddStop(content, 0);
+        }
+        else
+        {
+            AddStop(content, 1);
+        }
+
+        stops.Sort((a, b) => a.Offset.CompareTo(b.Offset));
+        DotsTrack.OpacityMask = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 0),
+            GradientStops = new GradientStopCollection(stops)
+        };
+    }
+
+    private void ClearPagerDotsMask()
+    {
+        DotsTrack.OpacityMask = null;
     }
 
     /// <summary>
@@ -137,10 +311,12 @@ public partial class MainWindow
             return 0;
         }
 
-        double dotsWidth = PageItems.DesiredSize.Width;
-        if (dotsWidth <= 0)
+        double dotsWidth = DotsHost.Width;
+        if (double.IsNaN(dotsWidth) || dotsWidth <= 0)
         {
-            dotsWidth = PageDots.Count * 42.0;
+            dotsWidth = PageItems.DesiredSize.Width > 0
+                ? PageItems.DesiredSize.Width
+                : PageDots.Count * PageDotCell;
         }
 
         return WidthOf(PrevButton, 28) +
@@ -520,6 +696,8 @@ public partial class MainWindow
         {
             return;
         }
+
+        UpdatePagerDotsScroll();
 
         double x = GetPageIndicatorX(_pageIndex);
         if (double.IsNaN(x))

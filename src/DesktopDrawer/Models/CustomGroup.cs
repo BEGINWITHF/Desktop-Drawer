@@ -18,8 +18,9 @@ public sealed class CustomGroup
     public List<string> Extensions { get; set; } = [];
 
     /// <summary>
-    /// Lower-cased fragments matched against a file name without its extension.
-    /// A file joins when one of them is contained in that stem.
+    /// Fragments matched case-insensitively against a file name without its
+    /// extension and against folder names. The user's typed casing is kept for
+    /// display. An item joins when one of them is contained in that name.
     /// </summary>
     public List<string> FileNameFilters { get; set; } = [];
 
@@ -31,7 +32,7 @@ public sealed class CustomGroup
     public bool IncludeFolders { get; set; }
 
     /// <summary>
-    /// Lower-cased fragments matched against folder names.
+    /// Case-sensitive fragments matched against folder names.
     /// </summary>
     public List<string> FolderNames { get; set; } = [];
 
@@ -45,14 +46,14 @@ public sealed class CustomGroup
         Extensions.Exists(extension =>
             fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
-    public bool MatchesFileName(string fileName)
+    public bool MatchesFileName(string fileName, bool isFolder = false)
     {
         if (FileNameFilters.Count == 0)
         {
             return false;
         }
 
-        string stem = Path.GetFileNameWithoutExtension(fileName);
+        string stem = isFolder ? fileName : Path.GetFileNameWithoutExtension(fileName);
 
         return FileNameFilters.Exists(fragment =>
             stem.Contains(fragment, StringComparison.OrdinalIgnoreCase));
@@ -67,7 +68,8 @@ public sealed class CustomGroup
     {
         if (isFolder)
         {
-            return IncludeFolders && MatchesFolderName(name);
+            return MatchesFileName(name, isFolder: true) ||
+                   (IncludeFolders && MatchesFolderName(name));
         }
 
         return MatchesExtension(name) || MatchesFileName(name);
@@ -163,9 +165,9 @@ public sealed class CustomGroup
 
         foreach (string token in tokens)
         {
-            string value = token.Trim().ToLowerInvariant();
+            string value = token.Trim();
 
-            if (value.Length > 0 && !filters.Contains(value))
+            if (value.Length > 0 && !filters.Contains(value, StringComparer.OrdinalIgnoreCase))
             {
                 filters.Add(value);
             }
@@ -190,9 +192,9 @@ public sealed class CustomGroup
                 continue;
             }
 
-            string value = filter.Trim().ToLowerInvariant();
+            string value = filter.Trim();
 
-            if (value.Length > 0 && !normalized.Contains(value))
+            if (value.Length > 0 && !normalized.Contains(value, StringComparer.OrdinalIgnoreCase))
             {
                 normalized.Add(value);
             }
