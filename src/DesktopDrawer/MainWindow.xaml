@@ -631,78 +631,83 @@
                                Foreground="{DynamicResource TextMutedBrush}"
                                Margin="9,0"
                                VerticalAlignment="Center" />
-                    <Grid x:Name="DotsHost" VerticalAlignment="Center">
-                        <Canvas x:Name="IndicatorCanvas"
-                                IsHitTestVisible="False"
-                                Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
-                            <Border x:Name="PageIndicator"
-                                    Width="40"
-                                    Height="28"
-                                    CornerRadius="14"
-                                    Background="{DynamicResource AccentBrush}"
-                                    Visibility="Collapsed">
-                                <Border.RenderTransform>
-                                    <TranslateTransform x:Name="IndicatorTransform" />
-                                </Border.RenderTransform>
-                            </Border>
-                        </Canvas>
+                    <Grid x:Name="DotsHost"
+                          VerticalAlignment="Center"
+                          ClipToBounds="True">
+                        <Grid x:Name="DotsTrack" HorizontalAlignment="Left">
+                            <Canvas x:Name="IndicatorCanvas"
+                                    IsHitTestVisible="False"
+                                    Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                                <Border x:Name="PageIndicator"
+                                        Width="40"
+                                        Height="28"
+                                        CornerRadius="14"
+                                        Background="{DynamicResource AccentBrush}"
+                                        Visibility="Collapsed">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="IndicatorTransform" />
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Canvas>
 
-                        <ItemsControl x:Name="PageItems"
-                                      ItemsSource="{Binding PageDots}"
-                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Style="{StaticResource PageDotButton}"
-                                            Content="{Binding Label}"
-                                            ToolTip="{Binding Tooltip}"
-                                            Tag="{Binding Index}"
-                                            Click="PageDot_Click" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            <ItemsControl x:Name="PageItems"
+                                          HorizontalAlignment="Left"
+                                          ItemsSource="{Binding PageDots}"
+                                          Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource PageDotButton}"
+                                                Content="{Binding Label}"
+                                                ToolTip="{Binding Tooltip}"
+                                                Tag="{Binding Index}"
+                                                Click="PageDot_Click" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                        <!-- A second, clipped copy of the tab row: the clip window travels
-                             with the accent pill, so only the digits under the pill are drawn
-                             in the contrast colour (the label changes colour only where the
-                             pill covers it). -->
-                        <ItemsControl x:Name="ActivePageItems"
-                                      Width="{Binding ActualWidth, ElementName=DotsHost}"
-                                      HorizontalAlignment="Left"
-                                      VerticalAlignment="Center"
-                                      ItemsSource="{Binding PageDots}"
-                                      IsHitTestVisible="False"
-                                      Focusable="False"
-                                      Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
-                            <ItemsControl.Clip>
-                                <RectangleGeometry Rect="0,0,40,28">
-                                    <RectangleGeometry.Transform>
-                                        <TranslateTransform x:Name="ActiveClipGeometryTransform" />
-                                    </RectangleGeometry.Transform>
-                                </RectangleGeometry>
-                            </ItemsControl.Clip>
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Width="40" Height="28" Margin="1,0" IsHitTestVisible="False">
-                                        <TextBlock Text="{Binding Label}"
-                                                   FontSize="{DynamicResource FontSize11}"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource OnAccentBrush}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            <!-- A second, clipped copy of the tab row: the clip window travels
+                                 with the accent pill, so only the digits under the pill are drawn
+                                 in the contrast colour (the label changes colour only where the
+                                 pill covers it). -->
+                            <ItemsControl x:Name="ActivePageItems"
+                                          Width="{Binding ActualWidth, ElementName=PageItems}"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          ItemsSource="{Binding PageDots}"
+                                          IsHitTestVisible="False"
+                                          Focusable="False"
+                                          Visibility="{Binding ShowPageDots, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl.Clip>
+                                    <RectangleGeometry Rect="0,0,40,28">
+                                        <RectangleGeometry.Transform>
+                                            <TranslateTransform x:Name="ActiveClipGeometryTransform" />
+                                        </RectangleGeometry.Transform>
+                                    </RectangleGeometry>
+                                </ItemsControl.Clip>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="40" Height="28" Margin="1,0" IsHitTestVisible="False">
+                                            <TextBlock Text="{Binding Label}"
+                                                       FontSize="{DynamicResource FontSize11}"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource OnAccentBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
                     </Grid>
                     <Button x:Name="NextButton"
                             Style="{StaticResource IconButton}"
