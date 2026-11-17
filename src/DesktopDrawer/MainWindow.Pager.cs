@@ -33,11 +33,14 @@ public partial class MainWindow
     /// <summary>Width of one page-dot cell, including its horizontal margins.</summary>
     private const double PageDotCell = 42;
 
-    /// <summary>Breathing room kept between the selected dot and the viewport edge.</summary>
-    private const double PagerDotsInset = 4;
-
     /// <summary>Length of the soft gradient at the dot viewport edges.</summary>
     private const double PagerDotsFadeWidth = 30;
+
+    /// <summary>
+    /// Space kept between the selected dot and the viewport edge, wide enough
+    /// that the pill never sits under the edge gradient.
+    /// </summary>
+    private const double PagerDotsInset = PagerDotsFadeWidth + 4;
 
     /// <summary>
     /// Eased opacity ramp for the dissolve, following a cosine curve so the
@@ -82,7 +85,7 @@ public partial class MainWindow
             DotsHost.Width = double.NaN;
             DotsTrack.Width = double.NaN;
             DotsTrack.Margin = new Thickness(0);
-            ClearPagerDotsMask();
+            ClearPagerDotsOverlay();
             SetPagerOverflow(false);
             return;
         }
@@ -106,7 +109,7 @@ public partial class MainWindow
 
         targetX = SnapToPixel(targetX);
         UpdatePagerFade(targetX);
-        UpdatePagerDotsMask();
+        UpdatePagerDotsOverlay();
 
         if (!_indicatorReady)
         {
@@ -193,16 +196,15 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applies the soft edge gradient to the dot strip itself, fixed to the
-    /// viewport edges. The accent pill and its contrast copy are siblings of
-    /// the masked strip, so they stay fully opaque even while the pill
-    /// overshoots during a page change.
+    /// Shows the dark gradient caps over the dot strip at the viewport edges.
+    /// They are fixed to the viewport and drawn above the dots, so the strip
+    /// dissolves into the bar instead of having its text colour faded.
     /// </summary>
-    private void UpdatePagerDotsMask()
+    private void UpdatePagerDotsOverlay()
     {
         if (PageDots.Count == 0 || double.IsNaN(DotsHost.Width) || DotsHost.Width <= 0)
         {
-            ClearPagerDotsMask();
+            ClearPagerDotsOverlay();
             return;
         }
 
@@ -210,59 +212,24 @@ public partial class MainWindow
         double content = PageDots.Count * PageDotCell;
         if (content <= viewport + 0.5)
         {
-            ClearPagerDotsMask();
+            ClearPagerDotsOverlay();
             return;
         }
 
         double offset = DotsTrack.Margin.Left;
-        bool leftFade = offset < -0.5;
-        bool rightFade = offset > viewport - content + 0.5;
-        double leftEdge = Math.Clamp(-offset, 0, content);
-        double rightEdge = Math.Clamp(viewport - offset, 0, content);
 
-        var stops = new List<GradientStop>();
-
-        void AddStop(double x, double alpha)
-        {
-            double stop = Math.Clamp(x / content, 0, 1);
-            byte value = (byte)Math.Round(255 * Math.Clamp(alpha, 0, 1));
-            stops.Add(new GradientStop(Color.FromArgb(value, 255, 255, 255), stop));
-        }
-
-        if (leftFade)
-        {
-            AddStop(0, 0);
-            AddStop(leftEdge, 0);
-            AddStop(leftEdge + PagerDotsFadeWidth, 1);
-        }
-        else
-        {
-            AddStop(0, 1);
-        }
-
-        if (rightFade)
-        {
-            AddStop(rightEdge - PagerDotsFadeWidth, 1);
-            AddStop(rightEdge, 0);
-            AddStop(content, 0);
-        }
-        else
-        {
-            AddStop(content, 1);
-        }
-
-        stops.Sort((a, b) => a.Offset.CompareTo(b.Offset));
-        PageItems.OpacityMask = new LinearGradientBrush
-        {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(1, 0),
-            GradientStops = new GradientStopCollection(stops)
-        };
+        PagerFadeLeft.Visibility = offset < -0.5
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        PagerFadeRight.Visibility = offset > viewport - content + 0.5
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
-    private void ClearPagerDotsMask()
+    private void ClearPagerDotsOverlay()
     {
-        PageItems.OpacityMask = null;
+        PagerFadeLeft.Visibility = Visibility.Collapsed;
+        PagerFadeRight.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>

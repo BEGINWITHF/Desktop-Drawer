@@ -708,6 +708,36 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </Grid>
+
+                        <Rectangle x:Name="PagerFadeLeft"
+                                   Width="30"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Height="{Binding ActualHeight, ElementName=PagerBar}"
+                                   IsHitTestVisible="False"
+                                   Visibility="Collapsed">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#F2000000" Offset="0" />
+                                    <GradientStop Color="#00000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <Rectangle x:Name="PagerFadeRight"
+                                   Width="30"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Height="{Binding ActualHeight, ElementName=PagerBar}"
+                                   IsHitTestVisible="False"
+                                   Visibility="Collapsed">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#00000000" Offset="0" />
+                                    <GradientStop Color="#F2000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
                     </Grid>
                     <Button x:Name="NextButton"
                             Style="{StaticResource IconButton}"
@@ -2078,3 +2108,4 @@
 
     </Grid>
 </Window>
+
