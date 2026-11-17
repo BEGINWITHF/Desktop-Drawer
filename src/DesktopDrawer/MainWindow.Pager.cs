@@ -17,6 +17,7 @@ public partial class MainWindow
 {
     private bool _indicatorReady;
     private bool _pagerOverflow;
+    private bool _dotsOffsetChanged;
 
     /// <summary>
     /// Extra room added to the trailing end of the pager when the page dots no
@@ -34,7 +35,7 @@ public partial class MainWindow
     private const double PageDotCell = 42;
 
     /// <summary>Length of the soft gradient at the dot viewport edges.</summary>
-    private const double PagerDotsFadeWidth = 30;
+    private const double PagerDotsFadeWidth = 60;
 
     /// <summary>
     /// Space kept between the selected dot and the viewport edge, wide enough
@@ -116,6 +117,12 @@ public partial class MainWindow
             SetIndicatorPosition(targetX);
             _indicatorReady = true;
         }
+        else if (_dotsOffsetChanged)
+        {
+            // The row jumped to a new window, so move the pill with it instead
+            // of sliding across the newly shifted digits.
+            SetIndicatorPosition(targetX);
+        }
         else
         {
             AnimateIndicatorTo(targetX);
@@ -192,6 +199,7 @@ public partial class MainWindow
         }
 
         target = Math.Clamp(target, Math.Min(0, viewport - content), 0);
+        _dotsOffsetChanged = Math.Abs(DotsTrack.Margin.Left - target) > 0.5;
         DotsTrack.Margin = new Thickness(target, 0, 0, 0);
     }
 
