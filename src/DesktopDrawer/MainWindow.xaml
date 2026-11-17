@@ -709,37 +709,6 @@
                             </ItemsControl>
                         </Grid>
 
-                        <Rectangle x:Name="PagerFadeLeft"
-                                   Width="60"
-                                   HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Height="{Binding ActualHeight, ElementName=PagerBar}"
-                                   IsHitTestVisible="False"
-                                   Visibility="Collapsed">
-                            <Rectangle.Fill>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#E6080808" Offset="0" />
-                                    <GradientStop Color="#99080808" Offset="0.45" />
-                                    <GradientStop Color="#00080808" Offset="1" />
-                                </LinearGradientBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
-
-                        <Rectangle x:Name="PagerFadeRight"
-                                   Width="60"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Center"
-                                   Height="{Binding ActualHeight, ElementName=PagerBar}"
-                                   IsHitTestVisible="False"
-                                   Visibility="Collapsed">
-                            <Rectangle.Fill>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                    <GradientStop Color="#00080808" Offset="0" />
-                                    <GradientStop Color="#99080808" Offset="0.55" />
-                                    <GradientStop Color="#E6080808" Offset="1" />
-                                </LinearGradientBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
                     </Grid>
                     <Button x:Name="NextButton"
                             Style="{StaticResource IconButton}"
