@@ -1117,32 +1117,63 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         int direction = target > _pageIndex ? 1 : -1;
 
-        // Snapshot the page that is currently on screen, right before it is
-        // replaced. Doing it here (instead of on a timer) means the bitmap always
-        // matches the outgoing page and can never be stale. Wheel paging skips
-        // the snapshot: rapid flips would otherwise render and freeze a full
-        // page bitmap on the UI thread between every slide.
-        ImageSource? outgoing = null;
-
-        if (!lightweight && !_pageTransitionActive)
-        {
-            TranslateTransform transform = EnsurePageTransform();
-            transform.BeginAnimation(TranslateTransform.XProperty, null);
-            transform.X = 0;
-            outgoing = CapturePageBitmap();
-        }
-
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
+        AnimatePageEnter(direction, lightweight);
+    }
 
-        if (outgoing is not null)
+    /// <summary>
+    /// Fluent-style page entry: the new page fades in with a short directional
+    /// offset. No full-page snapshot or full-width slide is rendered, which keeps
+    /// fast paging cheap.
+    /// </summary>
+    private void AnimatePageEnter(int direction, bool lightweight)
+    {
+        PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotImage.Visibility = Visibility.Collapsed;
+        PageSnapshotImage.Source = null;
+
+        TranslateTransform transform = EnsurePageTransform();
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        double offset = direction * (lightweight ? 8 : 14);
+        transform.X = offset;
+
+        PageList.BeginAnimation(OpacityProperty, null);
+        PageList.Opacity = 0;
+        PageList.IsHitTestVisible = true;
+
+        _pageTransitionActive = true;
+        int token = ++_pageAnimationToken;
+
+        double fadeMs = lightweight ? 110 : 140;
+        double slideMs = lightweight ? 140 : 180;
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(fadeMs))
         {
-            AnimateFullPageSlide(outgoing, direction);
-        }
-        else
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        };
+        var slide = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(slideMs))
         {
-            AnimatePageFlip(direction);
-        }
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        slide.Completed += (_, _) =>
+        {
+            if (token != _pageAnimationToken)
+            {
+                return;
+            }
+
+            PageList.BeginAnimation(OpacityProperty, null);
+            PageList.Opacity = 1;
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
+            _pageTransitionActive = false;
+            ApplyPendingPageChange();
+        };
+
+        PageList.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
     /// <summary>
