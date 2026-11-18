@@ -866,12 +866,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             PageList.UnselectAll();
-            VisibleItems.Clear();
-
-            foreach (DesktopItem item in pageItems)
-            {
-                VisibleItems.Add(item);
-            }
+            ReplaceVisibleItems(pageItems);
 
             if (restoreSelection is not null && restoreSelection.Count > 0)
             {
@@ -1068,6 +1063,33 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             : I18n.F("Summary.Items", _allItems.Count);
         ItemSummary = I18n.F("Summary.Separator", items, pages);
         Title = I18n.F("App.WindowTitle", _allItems.Count);
+    }
+
+    /// <summary>
+    /// Swaps the visible page in place. Replacing at the same index lets the
+    /// ListBox reuse its item containers instead of rebuilding every icon.
+    /// </summary>
+    private void ReplaceVisibleItems(List<DesktopItem> items)
+    {
+        int shared = Math.Min(VisibleItems.Count, items.Count);
+
+        for (int i = 0; i < shared; i++)
+        {
+            if (!ReferenceEquals(VisibleItems[i], items[i]))
+            {
+                VisibleItems[i] = items[i];
+            }
+        }
+
+        for (int i = shared; i < items.Count; i++)
+        {
+            VisibleItems.Add(items[i]);
+        }
+
+        while (VisibleItems.Count > items.Count)
+        {
+            VisibleItems.RemoveAt(VisibleItems.Count - 1);
+        }
     }
 
     private void GoToPage(int targetPage, bool lightweight = false)
