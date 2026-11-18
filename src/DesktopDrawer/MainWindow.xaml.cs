@@ -38,9 +38,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
     private readonly DispatcherTimer _wheelStepTimer;
-    private readonly DispatcherTimer _horizontalStepTimer;
     private readonly PageStepGate _wheelStepGate = new();
-    private readonly PageStepGate _horizontalStepGate = new(notch: 60);
+    private readonly SwipePageGesture _swipeGesture = new();
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -178,11 +177,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Interval = TimeSpan.FromMilliseconds(PageStepGate.StepIntervalMilliseconds)
         };
         _wheelStepTimer.Tick += WheelStepTimer_Tick;
-        _horizontalStepTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(PageStepGate.StepIntervalMilliseconds)
-        };
-        _horizontalStepTimer.Tick += HorizontalStepTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -455,31 +449,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // Precision touchpads send many small deltas for one swipe, so the
-        // horizontal notch is smaller than a mouse wheel notch. The gate keeps
-        // the extra input and releases it at a fixed interval, which makes a
-        // steady swipe produce a steady page cadence instead of one page per
-        // gesture followed by a silent gap.
-        int direction = _horizontalStepGate.Add(delta, Environment.TickCount64);
+        // One swipe, one page: the gesture commits on the first accumulated
+        // threshold and ignores the rest of the stream, including the inertia
+        // tail, until the fingers stop.
+        int direction = _swipeGesture.Observe(delta, Environment.TickCount64);
         if (direction != 0)
         {
             GoToPage(_pageIndex + direction, lightweight: true);
         }
-
-        ScheduleStepTail(_horizontalStepGate, _horizontalStepTimer);
-    }
-
-    private void HorizontalStepTimer_Tick(object? sender, EventArgs e)
-    {
-        _horizontalStepTimer.Stop();
-
-        int direction = _horizontalStepGate.Take(Environment.TickCount64);
-        if (direction != 0)
-        {
-            GoToPage(_pageIndex + direction, lightweight: true);
-        }
-
-        ScheduleStepTail(_horizontalStepGate, _horizontalStepTimer);
     }
 
     private void WheelStepTimer_Tick(object? sender, EventArgs e)
@@ -1113,9 +1090,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         // The page set changed, so queued steps from the old set are meaningless.
         _wheelStepGate.Reset();
-        _horizontalStepGate.Reset();
+        _swipeGesture.Reset();
         _wheelStepTimer.Stop();
-        _horizontalStepTimer.Stop();
     }
 
     private void GoToPage(int targetPage, bool lightweight = false)
@@ -2587,7 +2563,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Stop();
         _desktopZOrderTimer.Stop();
         _wheelStepTimer.Stop();
-        _horizontalStepTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();
