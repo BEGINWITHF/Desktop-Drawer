@@ -37,6 +37,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
+    private readonly DispatcherTimer _wheelPageTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -137,8 +138,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
-    private DateTime _lastWheel;
-    private DateTime _lastPageFlip;
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
@@ -179,6 +178,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
+        _wheelPageTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+        _wheelPageTimer.Tick += WheelPageTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -1194,7 +1195,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             outgoing = CapturePageBitmap();
         }
 
-        _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
 
@@ -2499,7 +2499,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return "#";
         }
 
-        return char.IsLetter(first) ? first.ToString() : "…";
+        return char.IsLetter(first) ? first.ToString() : "â€¦";
     }
 
     private static string GetDateGroup(DesktopItem item)
@@ -2655,3 +2655,4 @@ internal sealed class PageSlice
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
 }
+
