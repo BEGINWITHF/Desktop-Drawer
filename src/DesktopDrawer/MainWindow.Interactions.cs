@@ -417,7 +417,11 @@ public partial class MainWindow
         _lastWheel = now;
         _wheelAccumulator += e.Delta;
 
-        if (Math.Abs(_wheelAccumulator) < 110)
+        // A high-resolution wheel can report several notches in one event. Turn
+        // the whole accumulated distance into a single multi-page jump so the
+        // pages are not rebuilt once per notch.
+        int steps = (int)(Math.Abs(_wheelAccumulator) / 120.0);
+        if (steps == 0)
         {
             e.Handled = true;
             return;
@@ -430,8 +434,8 @@ public partial class MainWindow
         }
 
         int direction = _wheelAccumulator > 0 ? -1 : 1;
-        _wheelAccumulator = 0;
-        GoToPage(_pageIndex + direction, lightweight: true);
+        _wheelAccumulator -= Math.Sign(_wheelAccumulator) * steps * 120.0;
+        GoToPage(_pageIndex + direction * steps, lightweight: true);
         e.Handled = true;
     }
 
