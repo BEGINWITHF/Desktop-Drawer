@@ -116,7 +116,7 @@ public partial class App : Application
             I18n.F("App.CrashMessage", e.Exception.Message, AppLog.LogPath),
             I18n.T("App.Title"),
             MessageBoxButton.OK,
-            MessageBoxImage.Error);
+            MessageBoxImage.None);
         e.Handled = true;
         Shutdown();
     }
