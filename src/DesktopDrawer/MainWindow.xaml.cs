@@ -457,7 +457,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // A pause in horizontal wheel events marks the end of the swipe. The
         // digitizer raw-input monitor is intentionally not used: registering it
         // made the precision touchpad driver emit a feedback beep.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 120)
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 100)
         {
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
@@ -482,7 +482,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // Cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 250)
+        if ((now - _lastHorizontalFlip).TotalMilliseconds < 180)
         {
             _horizontalAccumulator = 0;
             return;
@@ -1135,20 +1135,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
-        double offset = direction * (lightweight ? 8 : 14);
+        double offset = direction * (lightweight ? 7 : 11);
         transform.X = offset;
 
         PageList.BeginAnimation(OpacityProperty, null);
-        PageList.Opacity = 0;
+        double startOpacity = lightweight ? 0.7 : 0.55;
+        PageList.Opacity = startOpacity;
         PageList.IsHitTestVisible = true;
 
         _pageTransitionActive = true;
         int token = ++_pageAnimationToken;
 
-        double fadeMs = lightweight ? 110 : 140;
-        double slideMs = lightweight ? 140 : 180;
+        double fadeMs = lightweight ? 70 : 90;
+        double slideMs = lightweight ? 110 : 140;
 
-        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(fadeMs))
+        var fade = new DoubleAnimation(startOpacity, 1, TimeSpan.FromMilliseconds(fadeMs))
         {
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
         };

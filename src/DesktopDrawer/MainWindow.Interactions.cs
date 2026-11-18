@@ -414,11 +414,13 @@ public partial class MainWindow
 
         _wheelAccumulator += e.Delta;
 
-        // Wait for the wheel gesture to settle before laying out the next page.
-        // A fast scroll accumulates its whole distance and produces one page
-        // change instead of a layout for every event.
-        _wheelPageTimer.Stop();
-        _wheelPageTimer.Start();
+        // Throttle rather than debounce: keep changing pages while the wheel is
+        // still moving, at most once per timer tick.
+        if (!_wheelPageTimer.IsEnabled)
+        {
+            _wheelPageTimer.Start();
+        }
+
         e.Handled = true;
     }
 
@@ -435,6 +437,11 @@ public partial class MainWindow
         int direction = _wheelAccumulator > 0 ? -1 : 1;
         _wheelAccumulator -= Math.Sign(_wheelAccumulator) * steps * 120.0;
         GoToPage(_pageIndex + direction * steps, lightweight: true);
+
+        if (Math.Abs(_wheelAccumulator) >= 120.0)
+        {
+            _wheelPageTimer.Start();
+        }
     }
 
     private void PrevPage_Click(object sender, RoutedEventArgs e)
