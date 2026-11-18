@@ -40,6 +40,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _wheelStepTimer;
     private readonly PageStepGate _wheelStepGate = new();
     private readonly SwipePageGesture _swipeGesture = new();
+    private readonly TouchpadContactTracker _touchpadContacts = new();
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -360,6 +361,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
         _horizontalWheelHook.Install();
 
+        // Windows 11 can report real touchpad contacts through WM_POINTER.
+        // When that works, a swipe is bounded by the actual finger down/up
+        // instead of a pause in the wheel stream; paging still uses the wheel
+        // deltas, so a touchpad without support keeps the old behaviour.
+        _touchpadContacts.Register(handle);
+
         // Re-pin the drawer the moment the shell reorders windows ("show desktop",
         // app switches, WorkerW recreation) instead of waiting for the next tick.
         _zOrderCallback = OnZOrderChanged;
@@ -403,6 +410,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ApplyWorkAreaBounds();
                 DesktopHost.RaiseAboveDesktop(hwnd);
             }));
+        }
+
+        // A touchpad contact starts or ends a swipe. The message is left for the
+        // normal processing so the system still turns the pan into the wheel
+        // stream that drives paging.
+        if (_touchpadContacts.Track(message, wParam))
+        {
+            _swipeGesture.SetContact(_touchpadContacts.FingersDown, Environment.TickCount64);
         }
 
         return IntPtr.Zero;

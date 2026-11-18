@@ -320,6 +320,54 @@ internal static class NativeMethods
         IntPtr data,
         ref uint size,
         uint headerSize);
+
+    public const int WmPointerDown = 0x0246;
+    public const int WmPointerUp = 0x0247;
+    public const int WmPointerLeave = 0x024A;
+    public const int WmPointerCaptureChanged = 0x024C;
+
+    public const int PointerTypeTouchpad = 5;
+
+    /// <summary>
+    /// Basic pointer information. The layout matches POINTER_INFO from
+    /// winuser.h on x64; GetPointerInfo does not take a size, so every field
+    /// and its alignment has to be exact.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PointerInfo
+    {
+        public int PointerType;
+        public uint PointerId;
+        public uint FrameId;
+        public uint PointerFlags;
+        public IntPtr SourceDevice;
+        public IntPtr HwndTarget;
+        public Point PixelLocation;
+        public Point HimetricLocation;
+        public Point PixelLocationRaw;
+        public Point HimetricLocationRaw;
+        public uint Time;
+        public uint HistoryCount;
+        public int InputData;
+        public uint KeyStates;
+        public ulong PerformanceCount;
+        public uint ButtonChangeType;
+    }
+
+    /// <summary>
+    /// Opts a window into the precision touchpad gesture API, so two finger
+    /// pans arrive as WM_POINTER messages with real contact down/up instead of
+    /// only as synthesized wheel messages. Available on Windows 11.
+    /// </summary>
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool RegisterTouchpadCapableWindow(
+        IntPtr hwnd,
+        [MarshalAs(UnmanagedType.Bool)] bool enable);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetPointerInfo(uint pointerId, out PointerInfo pointerInfo);
 }
 
 [ComImport]
