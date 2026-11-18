@@ -143,6 +143,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _horizontalSwipeConsumed;
     private DateTime _lastHorizontalFlip;
     private bool _pageTransitionActive;
+    private int _pageAnimationToken;
     private int? _pendingPageTarget;
     private bool _pendingPageLightweight;
     private WinForms.NotifyIcon? _trayIcon;
@@ -1203,11 +1204,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         PageList.IsHitTestVisible = false;
         _pageTransitionActive = true;
+        int animationToken = ++_pageAnimationToken;
+        PageList.CacheMode = CreatePageBitmapCache();
 
         // Both layers share the same curve and duration, so they always stay exactly
         // adjacent: different curves would make them overlap (or leave a gap) in the
         // middle of the slide.
-        TimeSpan duration = TimeSpan.FromMilliseconds(300);
+        TimeSpan duration = TimeSpan.FromMilliseconds(260);
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
         var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
@@ -1215,6 +1218,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         incomingSlide.Completed += (_, _) =>
         {
+            if (animationToken != _pageAnimationToken)
+            {
+                return;
+            }
+
+            PageList.CacheMode = null;
             PageSnapshotImage.Visibility = Visibility.Collapsed;
             PageSnapshotImage.Source = null;
             pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
@@ -1227,6 +1236,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
         pageTransform.BeginAnimation(TranslateTransform.XProperty, incomingSlide, HandoffBehavior.SnapshotAndReplace);
     }
+
+    private BitmapCache CreatePageBitmapCache() =>
+        new(Math.Max(1, VisualTreeHelper.GetDpi(PageList).DpiScaleX));
 
     private TranslateTransform EnsurePageTransform()
     {
@@ -1251,17 +1263,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageList.IsHitTestVisible = true;
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
-        transform.X = direction * 40;
+        double offset = direction * 32;
+        transform.X = offset;
 
         _pageTransitionActive = true;
+        int animationToken = ++_pageAnimationToken;
+        PageList.CacheMode = CreatePageBitmapCache();
 
-        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(260))
+        var slide = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(200))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
 
         slide.Completed += (_, _) =>
         {
+            if (animationToken != _pageAnimationToken)
+            {
+                return;
+            }
+
+            PageList.CacheMode = null;
             transform.BeginAnimation(TranslateTransform.XProperty, null);
             transform.X = 0;
             _pageTransitionActive = false;
@@ -2413,7 +2434,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return "#";
         }
 
-        return char.IsLetter(first) ? first.ToString() : "ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
+        return char.IsLetter(first) ? first.ToString() : "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
     }
 
     private static string GetDateGroup(DesktopItem item)
@@ -2569,6 +2590,7 @@ internal sealed class PageSlice
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
 }
+
 
 
 
