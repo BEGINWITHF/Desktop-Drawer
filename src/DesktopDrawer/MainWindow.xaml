@@ -559,6 +559,13 @@
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
 
+                    <Image x:Name="PageSnapshotIncomingImage"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Stretch="Fill"
+                           Visibility="Collapsed"
+                           IsHitTestVisible="False" />
+
                     <Canvas x:Name="SelectionCanvas"
                             IsHitTestVisible="False"
                             ClipToBounds="True">

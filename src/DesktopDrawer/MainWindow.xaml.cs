@@ -43,6 +43,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private List<DesktopItem> _filteredItems = [];
     private List<PageSlice> _pages = [];
     private int _pagesCapacity;
+    private const int PageBitmapCacheLimit = 4;
+    private readonly Dictionary<int, BitmapSource> _pageBitmapCache = [];
+    private readonly List<int> _pageBitmapOrder = [];
 
     private int _pageIndex;
     private int _pageCount = 1;
@@ -554,6 +557,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             SaveSettings();
             ShowToast(I18n.T("Toast.MoveMouse"));
         }
+
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Background,
+            new Action(CacheCurrentPageBitmap));
     }
 
     private void DesktopZOrderTimer_Tick(object? sender, EventArgs e)
@@ -825,6 +832,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _pages = BuildPages(capacity);
             _pagesCapacity = capacity;
+            ClearPageBitmapCache();
         }
 
         if (!string.IsNullOrEmpty(selectPath))
@@ -1080,6 +1088,47 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void ClearPageBitmapCache()
+    {
+        _pageBitmapCache.Clear();
+        _pageBitmapOrder.Clear();
+    }
+
+    private BitmapSource? GetPageBitmap(int index) =>
+        _pageBitmapCache.TryGetValue(index, out BitmapSource? bitmap) ? bitmap : null;
+
+    private void CachePageBitmap(int index, BitmapSource bitmap)
+    {
+        _pageBitmapCache[index] = bitmap;
+        _pageBitmapOrder.Remove(index);
+        _pageBitmapOrder.Add(index);
+
+        while (_pageBitmapOrder.Count > PageBitmapCacheLimit)
+        {
+            int oldest = _pageBitmapOrder[0];
+            _pageBitmapOrder.RemoveAt(0);
+
+            if (oldest != index)
+            {
+                _pageBitmapCache.Remove(oldest);
+            }
+        }
+    }
+
+    private void CacheCurrentPageBitmap()
+    {
+        if (_cleanedUp || _pages.Count == 0)
+        {
+            return;
+        }
+
+        BitmapSource? bitmap = CapturePageBitmap();
+        if (bitmap is not null)
+        {
+            CachePageBitmap(_pageIndex, bitmap);
+        }
+    }
+
     private void GoToPage(int targetPage, bool lightweight = false)
     {
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
@@ -1089,10 +1138,111 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         int direction = target > _pageIndex ? 1 : -1;
+        int previous = _pageIndex;
+
+        BitmapSource? outgoing = GetPageBitmap(previous) ?? CapturePageBitmap();
 
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
-        AnimatePageEnter(direction, lightweight);
+        PageList.UpdateLayout();
+
+        BitmapSource? incoming = GetPageBitmap(target) ?? CapturePageBitmap();
+
+        if (outgoing is not null && incoming is not null)
+        {
+            CachePageBitmap(previous, outgoing);
+            CachePageBitmap(target, incoming);
+            AnimateCachedPageSlide(outgoing, incoming, direction, lightweight);
+        }
+        else
+        {
+            AnimatePageEnter(direction, lightweight);
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(CacheCurrentPageBitmap));
+        }
+    }
+
+    private void AnimateCachedPageSlide(
+        BitmapSource outgoing,
+        BitmapSource incoming,
+        int direction,
+        bool lightweight)
+    {
+        double width = PageArea.ActualWidth;
+        if (width < 80)
+        {
+            AnimatePageEnter(direction, lightweight);
+            return;
+        }
+
+        PageList.BeginAnimation(OpacityProperty, null);
+        PageList.Opacity = 1;
+        PageList.IsHitTestVisible = false;
+
+        PageSnapshotImage.Source = outgoing;
+        PageSnapshotIncomingImage.Source = incoming;
+        PageSnapshotImage.Width = PageSnapshotIncomingImage.Width = PageList.ActualWidth;
+        PageSnapshotImage.Height = PageSnapshotIncomingImage.Height = PageList.ActualHeight;
+        PageSnapshotImage.Visibility = Visibility.Visible;
+        PageSnapshotIncomingImage.Visibility = Visibility.Visible;
+
+        TranslateTransform outgoingTransform = EnsureImageTransform(PageSnapshotImage);
+        TranslateTransform incomingTransform = EnsureImageTransform(PageSnapshotIncomingImage);
+        outgoingTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        incomingTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        outgoingTransform.X = 0;
+        incomingTransform.X = direction * width;
+
+        int token = ++_pageAnimationToken;
+        TimeSpan duration = TimeSpan.FromMilliseconds(lightweight ? 180 : 230);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+
+        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration)
+        {
+            EasingFunction = ease
+        };
+        var incomingSlide = new DoubleAnimation(direction * width, 0, duration)
+        {
+            EasingFunction = ease
+        };
+
+        incomingSlide.Completed += (_, _) =>
+        {
+            if (token != _pageAnimationToken)
+            {
+                return;
+            }
+
+            PageSnapshotImage.Visibility = Visibility.Collapsed;
+            PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+            PageSnapshotImage.Source = null;
+            PageSnapshotIncomingImage.Source = null;
+            outgoingTransform.X = 0;
+            incomingTransform.X = 0;
+            PageList.IsHitTestVisible = true;
+        };
+
+        outgoingTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            outgoingSlide,
+            HandoffBehavior.SnapshotAndReplace);
+        incomingTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            incomingSlide,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private static TranslateTransform EnsureImageTransform(Image image)
+    {
+        if (image.RenderTransform is TranslateTransform transform)
+        {
+            return transform;
+        }
+
+        transform = new TranslateTransform();
+        image.RenderTransform = transform;
+        return transform;
     }
 
     /// <summary>
@@ -1105,6 +1255,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
         PageSnapshotImage.Visibility = Visibility.Collapsed;
         PageSnapshotImage.Source = null;
+        PageSnapshotIncomingImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+        PageSnapshotIncomingImage.Source = null;
 
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
@@ -1147,7 +1300,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
-    private ImageSource? CapturePageBitmap()
+    private BitmapSource? CapturePageBitmap()
     {
         if (_cleanedUp || PageList.ActualWidth < 40 || PageList.ActualHeight < 40)
         {
@@ -1156,15 +1309,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         try
         {
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth * dpi.DpiScaleX));
-            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight * dpi.DpiScaleY));
+            // Cached page textures are only shown while a page slides. Render at
+            // 1x DIP so a 200% display does not pay 4x the pixels and memory.
+            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth));
+            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight));
 
             var bitmap = new RenderTargetBitmap(
                 pixelWidth,
                 pixelHeight,
-                96 * dpi.DpiScaleX,
-                96 * dpi.DpiScaleY,
+                96,
+                96,
                 PixelFormats.Pbgra32);
             bitmap.Render(PageList);
             bitmap.Freeze();
