@@ -591,7 +591,7 @@ public partial class MainWindow
         // ongoing animation does not jump back to the previous target.
         SetIndicatorPosition(currentX);
 
-        TimeSpan duration = TimeSpan.FromMilliseconds(380);
+        TimeSpan duration = TimeSpan.FromMilliseconds(320);
 
         var indicatorAnimation = new DoubleAnimation(currentX, targetX, duration)
         {
@@ -622,7 +622,7 @@ public partial class MainWindow
     {
         Stiffness = 240,
         Damping = 24,
-        Seconds = 0.38,
+        Seconds = 0.32,
         EasingMode = EasingMode.EaseIn
     };
 

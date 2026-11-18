@@ -178,7 +178,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
-        _wheelPageTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+        _wheelPageTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
         _wheelPageTimer.Tick += WheelPageTimer_Tick;
 
         InitializeComponent();
@@ -457,7 +457,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // A pause in horizontal wheel events marks the end of the swipe. The
         // digitizer raw-input monitor is intentionally not used: registering it
         // made the precision touchpad driver emit a feedback beep.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 120)
         {
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
@@ -482,7 +482,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // Cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 500)
+        if ((now - _lastHorizontalFlip).TotalMilliseconds < 250)
         {
             _horizontalAccumulator = 0;
             return;
@@ -1232,7 +1232,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // Both layers share the same curve and duration, so they always stay exactly
         // adjacent: different curves would make them overlap (or leave a gap) in the
         // middle of the slide.
-        TimeSpan duration = TimeSpan.FromMilliseconds(260);
+        TimeSpan duration = TimeSpan.FromMilliseconds(220);
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
         var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
@@ -1285,14 +1285,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageList.IsHitTestVisible = true;
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
-        double offset = direction * 32;
+        double offset = direction * 24;
         transform.X = offset;
 
         _pageTransitionActive = true;
         int animationToken = ++_pageAnimationToken;
         PageList.CacheMode = CreatePageBitmapCache();
 
-        var slide = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(200))
+        var slide = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(140))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
