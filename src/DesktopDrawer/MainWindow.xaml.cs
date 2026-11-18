@@ -141,11 +141,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
-    private DateTime _lastHorizontalFlip;
-    private bool _pageTransitionActive;
     private int _pageAnimationToken;
-    private int? _pendingPageTarget;
-    private bool _pendingPageLightweight;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -457,7 +453,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // A pause in horizontal wheel events marks the end of the swipe. The
         // digitizer raw-input monitor is intentionally not used: registering it
         // made the precision touchpad driver emit a feedback beep.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 100)
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 60)
         {
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
@@ -481,18 +477,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // Cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 180)
-        {
-            _horizontalAccumulator = 0;
-            return;
-        }
-
         // Swiping left (negative delta) turns back, swiping right turns forward.
         int direction = _horizontalAccumulator > 0 ? 1 : -1;
         _horizontalAccumulator = 0;
         _horizontalSwipeConsumed = true;
-        _lastHorizontalFlip = now;
 
         GoToPage(_pageIndex + direction);
     }
@@ -1097,22 +1085,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
         {
-            _pendingPageTarget = null;
             return;
-        }
-
-        // While a wheel transition is running, remember only the newest page.
-        // Intermediate pages from a fast scroll never need to be laid out.
-        if (lightweight && _pageTransitionActive)
-        {
-            _pendingPageTarget = target;
-            _pendingPageLightweight = true;
-            return;
-        }
-
-        if (!lightweight)
-        {
-            _pendingPageTarget = null;
         }
 
         int direction = target > _pageIndex ? 1 : -1;
@@ -1143,7 +1116,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageList.Opacity = startOpacity;
         PageList.IsHitTestVisible = true;
 
-        _pageTransitionActive = true;
         int token = ++_pageAnimationToken;
 
         double fadeMs = lightweight ? 70 : 90;
@@ -1169,29 +1141,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageList.Opacity = 1;
             transform.BeginAnimation(TranslateTransform.XProperty, null);
             transform.X = 0;
-            _pageTransitionActive = false;
-            ApplyPendingPageChange();
         };
 
         PageList.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
-    }
-
-    /// <summary>
-    /// Applies the newest page requested while the previous transition was
-    /// still running, skipping any pages scrolled past in the meantime.
-    /// </summary>
-    private void ApplyPendingPageChange()
-    {
-        if (_pendingPageTarget is not int target)
-        {
-            return;
-        }
-
-        bool lightweight = _pendingPageLightweight;
-        _pendingPageTarget = null;
-        _pendingPageLightweight = false;
-        GoToPage(target, lightweight);
     }
 
     private ImageSource? CapturePageBitmap()
@@ -1257,7 +1210,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         pageTransform.X = direction * width;
 
         PageList.IsHitTestVisible = false;
-        _pageTransitionActive = true;
         int animationToken = ++_pageAnimationToken;
         PageList.CacheMode = CreatePageBitmapCache();
 
@@ -1283,8 +1235,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
             pageTransform.X = 0;
             PageList.IsHitTestVisible = true;
-            _pageTransitionActive = false;
-            ApplyPendingPageChange();
         };
 
         snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
@@ -1320,7 +1270,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         double offset = direction * 24;
         transform.X = offset;
 
-        _pageTransitionActive = true;
         int animationToken = ++_pageAnimationToken;
         PageList.CacheMode = CreatePageBitmapCache();
 
@@ -1339,8 +1288,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageList.CacheMode = null;
             transform.BeginAnimation(TranslateTransform.XProperty, null);
             transform.X = 0;
-            _pageTransitionActive = false;
-            ApplyPendingPageChange();
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
