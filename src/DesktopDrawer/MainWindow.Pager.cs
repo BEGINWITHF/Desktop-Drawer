@@ -79,6 +79,11 @@ public partial class MainWindow
 
     private void UpdatePagerVisuals()
     {
+        if (_cleanedUp)
+        {
+            return;
+        }
+
         if (!ShowPageDots || PageDots.Count == 0)
         {
             _indicatorReady = false;
@@ -643,11 +648,20 @@ public partial class MainWindow
         }
 
         // The canvas is a sibling of the items control, so measure against their
-        // shared parent and then remove the canvas offset.
-        Point origin = IndicatorCanvas.TransformToAncestor(DotsHost).Transform(new Point(0, 0));
-        Point target = button.TransformToAncestor(DotsHost).Transform(new Point(0, 0));
+        // shared parent and then remove the canvas offset. A scheduled update can
+        // run while the pager is being rebuilt or torn down, in which case the
+        // button is detached; report NaN and let the next update retry.
+        try
+        {
+            Point origin = IndicatorCanvas.TransformToAncestor(DotsHost).Transform(new Point(0, 0));
+            Point target = button.TransformToAncestor(DotsHost).Transform(new Point(0, 0));
 
-        return target.X - origin.X;
+            return target.X - origin.X;
+        }
+        catch (InvalidOperationException)
+        {
+            return double.NaN;
+        }
     }
 
     private Button? GetPageButton(int index)
