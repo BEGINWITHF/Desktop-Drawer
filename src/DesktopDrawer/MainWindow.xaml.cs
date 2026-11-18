@@ -141,7 +141,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
-    private int _lastHorizontalLift = -1;
     private DateTime _lastHorizontalFlip;
     private bool _pageTransitionActive;
     private int? _pendingPageTarget;
@@ -330,7 +329,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
-        RegisterTouchpadInput(handle);
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.
@@ -358,6 +356,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
         _shortcutHook.Install();
 
+        // Horizontal touchpad paging is enabled on request. The precision
+        // touchpad driver on this machine can still emit a rare feedback beep;
+        // the page change is deferred and one swipe is capped to one page.
         _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
         _horizontalWheelHook.Install();
 
@@ -376,17 +377,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        const int WmMouseHWheel = 0x020E;
         const int WmSysCommand = 0x0112;
         const int ScMinimize = 0xF020;
         const int WmSize = 0x0005;
         const int SizeMinimized = 1;
-
-        if (message == NativeMethods.WmInput)
-        {
-            HandleRawInput(lParam);
-            return IntPtr.Zero;
-        }
 
         if (message == WmSysCommand && (wParam.ToInt32() & 0xFFF0) == ScMinimize)
         {
@@ -413,79 +407,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }));
         }
 
-        if (message == WmMouseHWheel && !_settingsOpen)
-        {
-            // Two-finger horizontal swipes are handled by HorizontalWheelHook,
-            // which also receives them when the drawer is not focused.
-        }
-
         return IntPtr.Zero;
-    }
-
-    private void RegisterTouchpadInput(IntPtr handle)
-    {
-        try
-        {
-            var touchpad = new NativeMethods.RawInputDevice
-            {
-                UsagePage = 0x0D,          // digitizer
-                Usage = 0x05,              // touchpad
-                Flags = NativeMethods.RidevInputSink,
-                Target = handle
-            };
-
-            bool touchOk = NativeMethods.RegisterRawInputDevices(
-                new[] { touchpad },
-                1,
-                (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
-
-            AppLog.Write(touchOk
-                ? "Touchpad contact tracking registered"
-                : $"Touchpad contact tracking unavailable ({Marshal.GetLastWin32Error()})");
-        }
-        catch (Exception ex)
-        {
-            AppLog.Write(ex, "Could not register touchpad input");
-        }
-    }
-
-    /// <summary>
-    /// Handles raw input: digitizer reports tell us whether fingers are on the
-    /// touchpad, which is how the pager knows a swipe has ended.
-    /// </summary>
-    private static void HandleRawInput(IntPtr rawInput)
-    {
-        uint size = 0;
-        uint headerSize = (uint)Marshal.SizeOf<NativeMethods.RawInputHeader>();
-
-        if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, IntPtr.Zero, ref size, headerSize) != 0 ||
-            size == 0)
-        {
-            return;
-        }
-
-        IntPtr buffer = Marshal.AllocHGlobal((int)size);
-
-        try
-        {
-            if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, buffer, ref size, headerSize) != size)
-            {
-                return;
-            }
-
-            var header = Marshal.PtrToStructure<NativeMethods.RawInputHeader>(buffer);
-
-            // Digitizer reports arrive continuously while the pad is touched, even
-            // without movement, so a pause in them means the fingers were lifted.
-            if (header.Type == 2)
-            {
-                TouchpadMonitor.NoteReport(header.Device, header.Size);
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
     }
 
     private void OnZOrderChanged(
@@ -531,19 +453,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         DateTime now = DateTime.UtcNow;
 
-        // A new swipe starts when the fingers come back onto the pad. While the
-        // touchpad reports contact, a pause without movement does not count.
-        if (TouchpadMonitor.Supported)
+        // A pause in horizontal wheel events marks the end of the swipe. The
+        // digitizer raw-input monitor is intentionally not used: registering it
+        // made the precision touchpad driver emit a feedback beep.
+        if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
         {
-            if (TouchpadMonitor.LiftCount != _lastHorizontalLift)
-            {
-                _horizontalAccumulator = 0;
-                _horizontalSwipeConsumed = false;
-            }
-        }
-        else if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
-        {
-            // Fallback for touchpads without digitizer reports.
             _horizontalAccumulator = 0;
             _horizontalSwipeConsumed = false;
         }
@@ -577,8 +491,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int direction = _horizontalAccumulator > 0 ? 1 : -1;
         _horizontalAccumulator = 0;
         _horizontalSwipeConsumed = true;
-        _lastHorizontalLift = TouchpadMonitor.LiftCount;
         _lastHorizontalFlip = now;
+
         GoToPage(_pageIndex + direction);
     }
 
@@ -2499,7 +2413,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return "#";
         }
 
-        return char.IsLetter(first) ? first.ToString() : "â€¦";
+        return char.IsLetter(first) ? first.ToString() : "ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦";
     }
 
     private static string GetDateGroup(DesktopItem item)
@@ -2655,4 +2569,6 @@ internal sealed class PageSlice
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
 }
+
+
 

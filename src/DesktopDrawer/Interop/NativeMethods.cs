@@ -221,6 +221,12 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern IntPtr WindowFromPoint(Point point);
 
+    [DllImport("user32.dll")]
+    public static extern bool GetCursorPos(out Point point);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, StringBuilder className, int maxCount);
 
@@ -286,6 +292,19 @@ internal static class NativeMethods
         public uint Size;
         public IntPtr Device;
         public IntPtr WParam;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawMouse
+    {
+        public ushort Flags;
+        public uint Buttons;
+        public ushort ButtonFlags;
+        public ushort ButtonData;
+        public uint RawButtons;
+        public int LastX;
+        public int LastY;
+        public uint ExtraInformation;
     }
 
     [DllImport("user32.dll", SetLastError = true)]
