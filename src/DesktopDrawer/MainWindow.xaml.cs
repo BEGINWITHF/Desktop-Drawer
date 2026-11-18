@@ -1146,7 +1146,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Title = I18n.F("App.WindowTitle", _allItems.Count);
     }
 
-    private void GoToPage(int targetPage)
+    private void GoToPage(int targetPage, bool lightweight = false)
     {
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
@@ -1158,10 +1158,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         // Snapshot the page that is currently on screen, right before it is
         // replaced. Doing it here (instead of on a timer) means the bitmap always
-        // matches the outgoing page and can never be stale.
+        // matches the outgoing page and can never be stale. Wheel paging skips
+        // the snapshot: rapid flips would otherwise render and freeze a full
+        // page bitmap on the UI thread between every slide.
         ImageSource? outgoing = null;
 
-        if (!_pageTransitionActive)
+        if (!lightweight && !_pageTransitionActive)
         {
             TranslateTransform transform = EnsurePageTransform();
             transform.BeginAnimation(TranslateTransform.XProperty, null);

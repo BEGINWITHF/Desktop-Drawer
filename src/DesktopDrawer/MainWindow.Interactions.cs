@@ -431,7 +431,7 @@ public partial class MainWindow
 
         int direction = _wheelAccumulator > 0 ? -1 : 1;
         _wheelAccumulator = 0;
-        GoToPage(_pageIndex + direction);
+        GoToPage(_pageIndex + direction, lightweight: true);
         e.Handled = true;
     }
 
