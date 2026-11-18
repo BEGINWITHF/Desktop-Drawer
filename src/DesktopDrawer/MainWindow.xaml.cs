@@ -145,6 +145,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int _lastHorizontalLift = -1;
     private DateTime _lastHorizontalFlip;
     private bool _pageTransitionActive;
+    private int? _pendingPageTarget;
+    private bool _pendingPageLightweight;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -1157,7 +1159,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
         {
+            _pendingPageTarget = null;
             return;
+        }
+
+        // While a wheel transition is running, remember only the newest page.
+        // Intermediate pages from a fast scroll never need to be laid out.
+        if (lightweight && _pageTransitionActive)
+        {
+            _pendingPageTarget = target;
+            _pendingPageLightweight = true;
+            return;
+        }
+
+        if (!lightweight)
+        {
+            _pendingPageTarget = null;
         }
 
         int direction = target > _pageIndex ? 1 : -1;
@@ -1189,6 +1206,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             AnimatePageFlip(direction);
         }
+    }
+
+    /// <summary>
+    /// Applies the newest page requested while the previous transition was
+    /// still running, skipping any pages scrolled past in the meantime.
+    /// </summary>
+    private void ApplyPendingPageChange()
+    {
+        if (_pendingPageTarget is not int target)
+        {
+            return;
+        }
+
+        bool lightweight = _pendingPageLightweight;
+        _pendingPageTarget = null;
+        _pendingPageLightweight = false;
+        GoToPage(target, lightweight);
     }
 
     private ImageSource? CapturePageBitmap()
@@ -1273,6 +1307,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             pageTransform.X = 0;
             PageList.IsHitTestVisible = true;
             _pageTransitionActive = false;
+            ApplyPendingPageChange();
         };
 
         snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
@@ -1316,6 +1351,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             transform.BeginAnimation(TranslateTransform.XProperty, null);
             transform.X = 0;
             _pageTransitionActive = false;
+            ApplyPendingPageChange();
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
