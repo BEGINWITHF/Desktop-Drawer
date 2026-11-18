@@ -412,36 +412,17 @@ public partial class MainWindow
             return;
         }
 
-        _wheelAccumulator += e.Delta;
-
-        // Throttle rather than debounce: keep changing pages while the wheel is
-        // still moving, at most once per timer tick.
-        if (!_wheelPageTimer.IsEnabled)
+        // One page for every accumulated wheel notch, paced by the same fixed
+        // interval as the touchpad gate. Input that arrives during the interval
+        // is kept, so a steady spin turns pages at a steady rate.
+        int direction = _wheelStepGate.Add(e.Delta, Environment.TickCount64);
+        if (direction != 0)
         {
-            _wheelPageTimer.Start();
+            GoToPage(_pageIndex - direction, lightweight: true);
         }
 
+        ScheduleStepTail(_wheelStepGate, _wheelStepTimer);
         e.Handled = true;
-    }
-
-    private void WheelPageTimer_Tick(object? sender, EventArgs e)
-    {
-        _wheelPageTimer.Stop();
-
-        int steps = (int)(Math.Abs(_wheelAccumulator) / 120.0);
-        if (steps == 0)
-        {
-            return;
-        }
-
-        int direction = _wheelAccumulator > 0 ? -1 : 1;
-        _wheelAccumulator -= Math.Sign(_wheelAccumulator) * steps * 120.0;
-        GoToPage(_pageIndex + direction * steps, lightweight: true);
-
-        if (Math.Abs(_wheelAccumulator) >= 120.0)
-        {
-            _wheelPageTimer.Start();
-        }
     }
 
     private void PrevPage_Click(object sender, RoutedEventArgs e)
