@@ -212,6 +212,57 @@ internal static class NativeMethods
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
 
+    public const int WmPointerDown = 0x0246;
+    public const int WmPointerUp = 0x0247;
+    public const int WmPointerLeave = 0x024A;
+    public const int WmPointerCaptureChanged = 0x024C;
+
+    public const int PointerTypeTouchpad = 5;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PointerInfo
+    {
+        public int PointerType;
+        public uint PointerId;
+        public uint FrameId;
+        public uint PointerFlags;
+        public IntPtr SourceDevice;
+        public IntPtr HwndTarget;
+        public Point PixelLocation;
+        public Point HimetricLocation;
+        public Point PixelLocationRaw;
+        public Point HimetricLocationRaw;
+        public uint Time;
+        public uint HistoryCount;
+        public int InputData;
+        public uint KeyStates;
+        public ulong PerformanceCount;
+        public uint ButtonChangeType;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool RegisterTouchpadCapableWindow(
+        IntPtr hwnd,
+        [MarshalAs(UnmanagedType.Bool)] bool enable);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetPointerInfo(uint pointerId, out PointerInfo pointerInfo);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct InputMessageSource
+    {
+        public int DeviceType;
+        public int OriginId;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetCurrentInputMessageSource(out InputMessageSource source);
+
+    public const int ImdtTouchpad = 5;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct Margins
     {

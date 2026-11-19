@@ -139,10 +139,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _wheelAccumulator;
     private DateTime _lastWheel;
     private DateTime _lastPageFlip;
-    private DateTime _lastHorizontalWheel;
-    private double _horizontalAccumulator;
-    private bool _horizontalSwipeConsumed;
-    private DateTime _lastHorizontalFlip;
+    private readonly SwipePageGesture _swipeGesture = new();
+    private readonly TouchpadContactTracker _touchpadContacts = new();
+    private long _lastHorizontalInputAt;
     private bool _pageTransitionActive;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
@@ -379,6 +378,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
         _horizontalWheelHook.Install();
 
+        // Windows 11 reports real touchpad contacts through WM_POINTER once the
+        // window is touchpad capable. Paging still uses the wheel deltas, but the
+        // contact down/up bounds each swipe, so its inertia tail cannot page again.
+        _touchpadContacts.Register(handle);
+
         // Re-pin the drawer the moment the shell reorders windows ("show desktop",
         // app switches, WorkerW recreation) instead of waiting for the next tick.
         _zOrderCallback = OnZOrderChanged;
@@ -424,6 +428,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }));
         }
 
+        // A touchpad contact starts or ends a swipe. The message is left for the
+        // normal processing so the system still turns the pan into the wheel
+        // stream that drives paging.
+        if (_touchpadContacts.Track(message, wParam))
+        {
+            _swipeGesture.SetContact(_touchpadContacts.FingersDown, Environment.TickCount64);
+        }
+
         return IntPtr.Zero;
     }
 
@@ -462,57 +474,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
+        _lastHorizontalInputAt = Environment.TickCount64;
+
         if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen ||
             StyleOverlay.Visibility == Visibility.Visible)
         {
             return;
         }
 
-        DateTime now = DateTime.UtcNow;
+        // One swipe, one page: the gesture commits on the first accumulated
+        // threshold and ignores the rest of the stream, including the inertia
+        // tail, until the fingers touch down again.
+        int direction = _swipeGesture.Observe(delta, Environment.TickCount64);
 
-        // A pause in horizontal wheel events marks the end of the swipe. The
-        // digitizer raw-input monitor is intentionally not used: registering it
-        // made the precision touchpad driver emit a feedback beep.
-        if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
+        if (direction != 0)
         {
-            _horizontalAccumulator = 0;
-            _horizontalSwipeConsumed = false;
+            GoToPage(_pageIndex + direction);
         }
-
-        _lastHorizontalWheel = now;
-
-        // One page per swipe: the rest of the gesture (including the inertia tail)
-        // is ignored until the fingers are lifted.
-        if (_horizontalSwipeConsumed)
-        {
-            return;
-        }
-
-        _horizontalAccumulator += delta;
-
-        // A precision touchpad sends many small deltas (often 5-30 each), so the
-        // horizontal threshold is much lower than the 120 of a mouse wheel notch.
-        if (Math.Abs(_horizontalAccumulator) < 40)
-        {
-            return;
-        }
-
-        // Cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 500)
-        {
-            _horizontalAccumulator = 0;
-            return;
-        }
-
-        // Swiping left (negative delta) turns back, swiping right turns forward.
-        int direction = _horizontalAccumulator > 0 ? 1 : -1;
-        _horizontalAccumulator = 0;
-        _horizontalSwipeConsumed = true;
-        _lastHorizontalFlip = now;
-
-        GoToPage(_pageIndex + direction);
     }
-
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         ApplyWorkAreaBounds();
