@@ -559,22 +559,6 @@
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
 
-
-                    <Canvas x:Name="SelectionCanvas"
-                            IsHitTestVisible="False"
-                            ClipToBounds="True">
-                        <Border x:Name="SelectionRect"
-                                BorderBrush="{DynamicResource SelectionBorderBrush}"
-                                BorderThickness="1"
-                                Background="{DynamicResource SelectionFillBrush}"
-                                Visibility="Collapsed" />
-                        <Border x:Name="ReorderMarker"
-                                BorderBrush="{DynamicResource AccentBrush}"
-                                BorderThickness="2"
-                                Background="Transparent"
-                                Visibility="Collapsed" />
-                    </Canvas>
-
                     <StackPanel x:Name="EmptyState"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
@@ -599,6 +583,23 @@
                                    Margin="0,6,0,0" />
                     </StackPanel>
                 </Grid>
+
+            <!-- The marquee lives outside the inset page area so it can cover the
+                 whole window. It is not hit testable so it never blocks clicks. -->
+            <Canvas x:Name="SelectionCanvas"
+                    IsHitTestVisible="False"
+                    ClipToBounds="True">
+                <Border x:Name="SelectionRect"
+                        BorderBrush="{DynamicResource SelectionBorderBrush}"
+                        BorderThickness="1"
+                        Background="{DynamicResource SelectionFillBrush}"
+                        Visibility="Collapsed" />
+                <Border x:Name="ReorderMarker"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        BorderThickness="2"
+                        Background="Transparent"
+                        Visibility="Collapsed" />
+            </Canvas>
 
             <Border x:Name="PagerBar"
                     HorizontalAlignment="Left"
