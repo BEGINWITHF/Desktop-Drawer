@@ -31,6 +31,11 @@ internal static class Lang
         return "en";
     }
 
+    public static void Override(string code)
+    {
+        Current = Options.Contains(code) ? code : Detect();
+    }
+
     public static void Set(string code)
     {
         Current = Options.Contains(code) ? code : "en";

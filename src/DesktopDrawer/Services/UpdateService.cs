@@ -37,7 +37,7 @@ internal static class UpdateService
     private const string UserAgent = "DesktopDrawer-Updater/1.0";
 
     private static readonly Uri ReleasesUri =
-        new($"https://api.github.com/repos/{Owner}/{Repository}/releases/latest");
+        new($"https://api.github.com/repos/{Owner}/{Repository}/releases?per_page=30");
 
     public static Version CurrentVersion { get; } = ReadCurrentVersion();
 
@@ -59,7 +59,15 @@ internal static class UpdateService
         using JsonDocument document = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync(cancellationToken));
 
-        JsonElement root = document.RootElement;
+        JsonElement root = document.RootElement.EnumerateArray().FirstOrDefault(release =>
+            (release.TryGetProperty("tag_name", out JsonElement name) ? name.GetString() : null) is string tag &&
+            tag.StartsWith("app-v", StringComparison.OrdinalIgnoreCase) &&
+            !(release.TryGetProperty("prerelease", out JsonElement pre) && pre.ValueKind == JsonValueKind.True));
+
+        if (root.ValueKind == JsonValueKind.Undefined)
+        {
+            return new UpdateCheckResult(UpdateCheckStatus.UpToDate, null);
+        }
         if (!root.TryGetProperty("tag_name", out JsonElement tagElement) ||
             !TryParseVersion(tagElement.GetString(), out Version latest))
         {
@@ -291,7 +299,14 @@ internal static class UpdateService
             return false;
         }
 
-        string value = text.Trim().TrimStart('v', 'V');
+        string value = text.Trim();
+
+        if (value.StartsWith("app-", StringComparison.OrdinalIgnoreCase))
+        {
+            value = value[4..];
+        }
+
+        value = value.TrimStart('v', 'V');
         int suffix = value.IndexOfAny(new[] { '-', '+' });
         if (suffix >= 0)
         {

@@ -568,7 +568,6 @@
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
 
-<<<<<<< HEAD
                     <Image x:Name="PageSnapshotIncomingImage"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Top"
@@ -576,8 +575,6 @@
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
 
-=======
->>>>>>> feat/online-installer
                     <StackPanel x:Name="EmptyState"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"

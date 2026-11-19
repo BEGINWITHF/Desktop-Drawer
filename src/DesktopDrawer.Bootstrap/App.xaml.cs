@@ -30,7 +30,7 @@ public partial class App : Application
         string? lang = e.Args.FirstOrDefault(a => a.StartsWith("--lang=", StringComparison.OrdinalIgnoreCase))?[7..];
         if (!string.IsNullOrEmpty(lang))
         {
-            Lang.Set(lang);
+            Lang.Override(lang);
         }
 
         new MainWindow().Show();
