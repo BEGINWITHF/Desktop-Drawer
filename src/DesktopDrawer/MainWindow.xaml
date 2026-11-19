@@ -28,6 +28,7 @@
         Closed="Window_Closed"
         SizeChanged="Window_SizeChanged"
         Activated="Window_Activated"
+        Deactivated="Window_Deactivated"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewTextInput="Window_PreviewTextInput">
 

@@ -311,6 +311,21 @@ public partial class MainWindow
 
         ShowChrome();
 
+        // Win+Space switches the Windows input language / IME. It belongs to the
+        // focused window's input context, so it is injected in place: replaying it
+        // against the desktop would move focus away mid-typing and could leave the
+        // language change on the wrong window.
+        if (chord.Key == 0x20)
+        {
+            DesktopKeyForwarder.SendSystemChord(
+                chord.Key,
+                chord.Control,
+                chord.Shift,
+                chord.Alt,
+                win: true);
+            return;
+        }
+
         string? path = PageList.SelectedItems.Count == 1 &&
                        PageList.SelectedItems[0] is DesktopItem single
             ? single.FullPath
