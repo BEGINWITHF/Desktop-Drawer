@@ -23,12 +23,6 @@ internal sealed class SwipePageGesture
     /// <summary>Quiet time that separates two swipes when contacts are unknown.</summary>
     public const double IdleMilliseconds = 110.0;
 
-    /// <summary>
-    /// Safety net for a lost contact-up message: after this much input without a
-    /// lift the next delta is allowed to start a new gesture again.
-    /// </summary>
-    public const double ContactTimeoutMilliseconds = 400.0;
-
     private long _lastInputAt;
     private bool _active;
     private double _accumulator;
@@ -36,8 +30,6 @@ internal sealed class SwipePageGesture
 
     private bool _contactTracking;
     private bool _fingersDown;
-    private bool _waitingForContact;
-    private long _contactEndedAt;
 
     /// <summary>True once the tracker has reported contact state at least once.</summary>
     public bool ContactTracking => _contactTracking;
@@ -56,21 +48,13 @@ internal sealed class SwipePageGesture
             {
                 _accumulator = 0;
                 _committed = false;
-                _waitingForContact = false;
             }
 
             _fingersDown = true;
             return;
         }
 
-        if (!_fingersDown)
-        {
-            return;
-        }
-
         _fingersDown = false;
-        _waitingForContact = true;
-        _contactEndedAt = nowMilliseconds;
     }
 
     /// <summary>
@@ -86,19 +70,13 @@ internal sealed class SwipePageGesture
 
         if (_contactTracking)
         {
-            if (_waitingForContact)
+            // A page step requires fingers on the pad. Windows keeps sending
+            // inertia deltas for up to a second after the lift; without this
+            // check that tail could start a fresh gesture and turn a second
+            // page from the same swipe.
+            if (!_fingersDown)
             {
-                // Fingers are off the pad: the inertia tail must not page, and a
-                // lift that never reached the threshold simply does nothing.
-                if (nowMilliseconds - _contactEndedAt < ContactTimeoutMilliseconds)
-                {
-                    return 0;
-                }
-
-                // The up message was lost, so treat this as a fresh gesture.
-                _waitingForContact = false;
-                _accumulator = 0;
-                _committed = false;
+                return 0;
             }
         }
         else if (!_active || nowMilliseconds - _lastInputAt >= IdleMilliseconds)
@@ -139,6 +117,5 @@ internal sealed class SwipePageGesture
         _active = false;
         _accumulator = 0;
         _committed = false;
-        _waitingForContact = false;
     }
 }
