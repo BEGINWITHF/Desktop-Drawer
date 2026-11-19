@@ -65,6 +65,27 @@ internal static class DesktopKeyForwarder
         Send(new[] { KeyInput(VkLWin, up: false), KeyInput(VkLWin, up: true) });
     }
 
+    /// <summary>
+    /// Injects a chord into the currently focused window without touching the
+    /// desktop selection or moving focus. Used for input-context chords such as
+    /// Win+Space, where the target is the focused window's IME, not the desktop.
+    /// </summary>
+    public static bool SendSystemChord(
+        byte virtualKey,
+        bool control,
+        bool shift,
+        bool alt,
+        bool win)
+    {
+        if (IsForwarding)
+        {
+            return true;
+        }
+
+        SuspendCapture(500);
+        return SendChord(virtualKey, control, shift, alt, win);
+    }
+
     public static bool TryForward(
         IntPtr owner,
         string? path,
