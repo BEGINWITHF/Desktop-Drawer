@@ -328,6 +328,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
+
+        // Transparency without a layered window: the DWM glass frame keeps the
+        // window on the hardware rendering path. A layered window (the old
+        // AllowsTransparency path) copies every frame through system memory with
+        // GDI, which capped full-page animations at roughly 25 fps.
+        if (HwndSource.FromHwnd(handle) is { } source)
+        {
+            source.CompositionTarget.BackgroundColor = Colors.Transparent;
+        }
+
+        var glass = new NativeMethods.Margins
+        {
+            Left = -1,
+            Right = -1,
+            Top = -1,
+            Bottom = -1
+        };
+
+        NativeMethods.DwmExtendFrameIntoClientArea(handle, ref glass);
         RegisterTouchpadInput(handle);
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
