@@ -4,6 +4,7 @@
   "App.WindowTitle": "Desktop Drawer - {0} items",
   "App.TrayTooltip": "Desktop Drawer - {0} items across {1} pages",
   "App.CrashMessage": "Desktop Drawer hit an unexpected error and needs to close.\n\n{0}\n\nDetails were written to:\n{1}",
+  "App.CrashMessageNoLog": "Desktop Drawer hit an unexpected error and needs to close.\n\n{0}",
 
   "Search.Placeholder": "Search desktop",
   "Search.Clear": "Clear search",
@@ -219,6 +220,8 @@
   "Behavior.CloseToTrayDesc": "Keep Desktop Drawer running when the window is closed.",
   "Behavior.StartWithWindows": "Start with Windows",
   "Behavior.StartWithWindowsDesc": "Open Desktop Drawer automatically after sign-in.",
+  "Behavior.Logging": "Write diagnostic log",
+  "Behavior.LoggingDesc": "Save a log file in %AppData%\\DesktopDrawer for troubleshooting. Off by default.",
 
   "Section.Windows": "WINDOWS DESKTOP",
   "Windows.HideNow": "Hide desktop icons now",

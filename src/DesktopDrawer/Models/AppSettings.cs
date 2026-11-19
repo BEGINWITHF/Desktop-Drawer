@@ -62,6 +62,7 @@ public sealed class AppSettings
     public bool CloseToTray { get; set; } = true;
     public bool StartWithWindows { get; set; } = true;
     public bool HideIconsOnLaunch { get; set; } = true;
+    public bool EnableLogging { get; set; }        // opt-in, off by default
     public string AccentColor { get; set; } = string.Empty;   // legacy, migrated into Colors
     public Dictionary<string, string> Colors { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string Language { get; set; } = string.Empty;        // empty = system language
