@@ -229,6 +229,13 @@ internal static class DesktopKeyForwarder
             ok &= Send(new[] { downs[^1] });
             Thread.Sleep(12);
             ok &= Send(releases.ToArray());
+
+            // The shell can ignore the synthetic Windows release while the
+            // physical key is still held, leaving its Windows key state active
+            // until the user presses Windows again. Release it once more after
+            // the physical key is up; it is a no-op when the first release was
+            // processed.
+            ReleaseWindowsKeySoon();
         }
         else
         {
@@ -238,6 +245,16 @@ internal static class DesktopKeyForwarder
         }
 
         return ok;
+    }
+
+    private static void ReleaseWindowsKeySoon()
+    {
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            Thread.Sleep(250);
+            SuspendCapture(100);
+            Send(new[] { KeyInput(VkLWin, up: true) });
+        });
     }
 
     private static bool Send(Input[] inputs)
