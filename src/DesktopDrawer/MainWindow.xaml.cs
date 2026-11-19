@@ -1136,17 +1136,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         int direction = target > _pageIndex ? 1 : -1;
 
-        // Snapshot the page that is still on screen, then slide that snapshot
-        // out while the live list slides in. Only transforms run during the
-        // change, so the cadence gate can start the next step on schedule.
+        // Snapshot the outgoing page, then the incoming one, and slide the two
+        // bitmaps across each other. The live list stays at rest underneath, so
+        // no item container is rendered or measured during the animation.
         BitmapSource? outgoing = CapturePageBitmap();
 
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
 
+        BitmapSource? incoming = null;
+
         if (outgoing is not null)
         {
-            AnimatePageSlide(outgoing, direction);
+            PageList.UpdateLayout();
+            incoming = CapturePageBitmap();
+        }
+
+        if (outgoing is not null && incoming is not null)
+        {
+            AnimatePageSlide(outgoing, incoming, direction);
         }
         else
         {
@@ -1155,11 +1163,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Slides the outgoing page snapshot out while the live page slides in from
-    /// the other side, the way a paged app switcher moves. The slide is shorter
-    /// than one page-step interval so every step finishes before the next one.
+    /// Slides two page snapshots past each other: the outgoing page moves out
+    /// and the incoming page moves in. The live list is already at rest
+    /// underneath, so the animation only moves bitmaps and never renders item
+    /// containers. The slide is shorter than one page-step interval so every
+    /// step finishes before the next one.
     /// </summary>
-    private void AnimatePageSlide(BitmapSource outgoing, int direction)
+    private void AnimatePageSlide(
+        BitmapSource outgoing,
+        BitmapSource incoming,
+        int direction)
     {
         double width = PageList.ActualWidth;
         double height = PageList.ActualHeight;
@@ -1172,22 +1185,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageList.BeginAnimation(OpacityProperty, null);
         PageList.Opacity = 1;
         PageList.IsHitTestVisible = false;
+        PageList.CacheMode = null;
 
         PageSnapshotImage.Source = outgoing;
         PageSnapshotImage.Width = width;
         PageSnapshotImage.Height = height;
         PageSnapshotImage.Visibility = Visibility.Visible;
 
+        PageSnapshotIncomingImage.Source = incoming;
+        PageSnapshotIncomingImage.Width = width;
+        PageSnapshotIncomingImage.Height = height;
+        PageSnapshotIncomingImage.Visibility = Visibility.Visible;
+
         TranslateTransform outgoingTransform = EnsureImageTransform(PageSnapshotImage);
-        TranslateTransform incomingTransform = EnsurePageTransform();
+        TranslateTransform incomingTransform = EnsureImageTransform(PageSnapshotIncomingImage);
         outgoingTransform.BeginAnimation(TranslateTransform.XProperty, null);
         incomingTransform.BeginAnimation(TranslateTransform.XProperty, null);
         outgoingTransform.X = 0;
         incomingTransform.X = direction * width;
-
-        // Rasterize the live page once and move that layer, so the slide does
-        // not re-render the whole item list on every frame.
-        PageList.CacheMode = CreatePageBitmapCache();
 
         StartSlideFrameProbe();
         int token = ++_pageAnimationToken;
@@ -1218,9 +1233,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             StopSlideFrameProbe(duration);
-            PageList.CacheMode = null;
             PageSnapshotImage.Visibility = Visibility.Collapsed;
             PageSnapshotImage.Source = null;
+            PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+            PageSnapshotIncomingImage.Source = null;
             outgoingTransform.X = 0;
             incomingTransform.X = 0;
             PageList.IsHitTestVisible = true;
@@ -1308,6 +1324,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
         PageSnapshotImage.Visibility = Visibility.Collapsed;
         PageSnapshotImage.Source = null;
+        PageSnapshotIncomingImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+        PageSnapshotIncomingImage.Source = null;
 
         TranslateTransform transform = EnsurePageTransform();
         transform.BeginAnimation(TranslateTransform.XProperty, null);
@@ -1390,11 +1409,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return null;
         }
     }
-
-    private BitmapCache CreatePageBitmapCache() =>
-        // Rasterize at the device scale so the animated layer is copied 1:1.
-        // Scaling a 1x cache up on every frame costs more than the extra memory.
-        new(Math.Max(1, VisualTreeHelper.GetDpi(PageList).DpiScaleX));
 
     private TranslateTransform EnsurePageTransform()
     {

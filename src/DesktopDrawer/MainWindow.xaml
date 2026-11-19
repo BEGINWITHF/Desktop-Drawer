@@ -560,6 +560,13 @@
                            Visibility="Collapsed"
                            IsHitTestVisible="False" />
 
+                    <Image x:Name="PageSnapshotIncomingImage"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Stretch="Fill"
+                           Visibility="Collapsed"
+                           IsHitTestVisible="False" />
+
                     <StackPanel x:Name="EmptyState"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
