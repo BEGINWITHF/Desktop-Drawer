@@ -867,7 +867,80 @@ public partial class MainWindow
         SelectionRect.Height = 0;
         UpdateRubberBand(origin);
 
-        PageList.CaptureMouse();
+        if (!PageList.CaptureMouse())
+        {
+            EndRubberBand();
+        }
+    }
+
+    /// <summary>
+    /// Starts a selection marquee from the window chrome as well as from the
+    /// page grid. Clicks on the header, the footer or any other empty part of
+    /// the window used to do nothing, so the only place a selection could begin
+    /// was the inset page area.
+    /// </summary>
+    private void Window_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_cleanedUp || _settingsOpen || _groupsOpen || _layoutEditing ||
+            _renamingItem is not null ||
+            StyleOverlay.Visibility == Visibility.Visible ||
+            ConfirmOverlay.Visibility == Visibility.Visible ||
+            ColorPickerOverlay.Visibility == Visibility.Visible ||
+            FolderFilterOverlay.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+
+        // The page grid and the pager keep their own click handling.
+        if (IsInside(source, PageList) || IsInside(source, PagerBar))
+        {
+            return;
+        }
+
+        // Never steal a click from a control that is meant to be used.
+        if (FindInteractive(source) is not null)
+        {
+            return;
+        }
+
+        PageList.UnselectAll();
+        PageList.Focus();
+        StartRubberBand(e.GetPosition(RootGrid));
+        e.Handled = true;
+    }
+
+    private static bool IsInside(DependencyObject? source, DependencyObject ancestor)
+    {
+        for (DependencyObject? node = source; node is not null; node = ParentOf(node))
+        {
+            if (ReferenceEquals(node, ancestor))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static DependencyObject? ParentOf(DependencyObject node) =>
+        node is Visual or System.Windows.Media.Media3D.Visual3D
+            ? VisualTreeHelper.GetParent(node)
+            : LogicalTreeHelper.GetParent(node);
+
+    private static DependencyObject? FindInteractive(DependencyObject? source)
+    {
+        for (DependencyObject? node = source; node is not null; node = ParentOf(node))
+        {
+            if (node is ButtonBase or TextBoxBase or ScrollBar or Slider or
+                ComboBox or ListBoxItem or Thumb or MenuItem)
+            {
+                return node;
+            }
+        }
+
+        return null;
     }
 
     private void UpdateRubberBand(Point current)
