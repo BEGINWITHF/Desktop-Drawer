@@ -29,7 +29,8 @@
         Activated="Window_Activated"
         Deactivated="Window_Deactivated"
         PreviewKeyDown="Window_PreviewKeyDown"
-        PreviewTextInput="Window_PreviewTextInput">
+        PreviewTextInput="Window_PreviewTextInput"
+        PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown">
 
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="0"
