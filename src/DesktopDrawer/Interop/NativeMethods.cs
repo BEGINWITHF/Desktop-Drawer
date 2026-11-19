@@ -213,6 +213,25 @@ internal static class NativeMethods
     public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct InputMessageSource
+    {
+        public int DeviceType;
+        public int OriginId;
+    }
+
+    /// <summary>
+    /// Tells whether the message currently being processed came from a
+    /// precision touchpad rather than a mouse. Windows reports this for
+    /// touchpad-originated mouse messages once the window is registered as
+    /// touchpad capable.
+    /// </summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetCurrentInputMessageSource(out InputMessageSource source);
+
+    public const int ImdtTouchpad = 5;
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct Margins
     {
         public int Left;

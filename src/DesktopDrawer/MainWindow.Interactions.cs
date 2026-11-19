@@ -394,10 +394,43 @@ public partial class MainWindow
         e.Handled = true;
     }
 
+    /// <summary>
+    /// True when the wheel message came from the touchpad rather than a mouse.
+    /// Touchpad paging is handled as a swipe gesture, so a vertical component
+    /// must not page a second time.
+    /// </summary>
+    private bool IsTouchpadScroll()
+    {
+        if (_touchpadContacts.FingersDown)
+        {
+            return true;
+        }
+
+        // Inertia arrives after the fingers are lifted; a vertical wheel event
+        // right after horizontal input belongs to the same swipe.
+        if (Environment.TickCount64 - _lastHorizontalInputAt < 400)
+        {
+            return true;
+        }
+
+        return Interop.NativeMethods.GetCurrentInputMessageSource(
+                   out Interop.NativeMethods.InputMessageSource source) &&
+               source.DeviceType == Interop.NativeMethods.ImdtTouchpad;
+    }
+
     private void PageArea_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (_settingsOpen)
         {
+            return;
+        }
+
+        // A two-finger swipe reports its horizontal travel through the global
+        // hook and can also report a small vertical component here. Paging on
+        // both turned one swipe into two page changes.
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 && IsTouchpadScroll())
+        {
+            e.Handled = true;
             return;
         }
 

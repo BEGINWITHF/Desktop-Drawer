@@ -146,6 +146,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private long _slideLastTick;
     private long _slideWorstTick;
     private long _lastPageChangeAt;
+    private long _lastHorizontalInputAt;
     private TimeSpan _slideCpuStart;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
@@ -484,6 +485,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
+        _lastHorizontalInputAt = Environment.TickCount64;
+
         if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen ||
             StyleOverlay.Visibility == Visibility.Visible)
         {
