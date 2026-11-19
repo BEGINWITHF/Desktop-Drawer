@@ -4,6 +4,7 @@
   "App.WindowTitle": "Desktop Drawer - {0} 項目",
   "App.TrayTooltip": "Desktop Drawer - {0} 項目 / 全 {1} ページ",
   "App.CrashMessage": "Desktop Drawer で予期しないエラーが発生したため、終了します。\n\n{0}\n\n詳細は次のファイルに記録されました:\n{1}",
+  "App.CrashMessageNoLog": "Desktop Drawer で予期しないエラーが発生したため、終了します。\n\n{0}",
 
   "Search.Placeholder": "デスクトップを検索",
   "Search.Clear": "検索をクリア",
@@ -219,6 +220,8 @@
   "Behavior.CloseToTrayDesc": "ウィンドウを閉じても Desktop Drawer は実行を続けます。",
   "Behavior.StartWithWindows": "Windows と同時に起動",
   "Behavior.StartWithWindowsDesc": "サインイン後に Desktop Drawer を自動で開きます。",
+  "Behavior.Logging": "診断ログを書き出す",
+  "Behavior.LoggingDesc": "トラブルシューティング用のログを %AppData%\\DesktopDrawer に保存します。既定では無効です。",
 
   "Section.Windows": "WINDOWS デスクトップ",
   "Windows.HideNow": "デスクトップ アイコンを今すぐ隠す",

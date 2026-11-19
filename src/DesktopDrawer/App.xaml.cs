@@ -31,6 +31,10 @@ public partial class App : Application
 
         base.OnStartup(e);
 
+        // Diagnostic logging is opt-in. Apply the saved choice before anything
+        // else can write a log line.
+        AppLog.Enabled = new SettingsService().Load().EnableLogging;
+
         try
         {
             _activateEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
@@ -112,8 +116,13 @@ public partial class App : Application
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppLog.Write(e.Exception, "Dispatcher exception");
+
+        string message = AppLog.Enabled
+            ? I18n.F("App.CrashMessage", e.Exception.Message, AppLog.LogPath)
+            : I18n.F("App.CrashMessageNoLog", e.Exception.Message);
+
         MessageBox.Show(
-            I18n.F("App.CrashMessage", e.Exception.Message, AppLog.LogPath),
+            message,
             I18n.T("App.Title"),
             MessageBoxButton.OK,
             MessageBoxImage.Error);

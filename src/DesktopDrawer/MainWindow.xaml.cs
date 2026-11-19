@@ -152,6 +152,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _settingsService = new SettingsService();
         _settings = _settingsService.Load();
+        AppLog.Enabled = _settings.EnableLogging;
         I18n.Apply(_settings.Language);
         _settings.Language = I18n.Current;
         EnsureDefaultCustomGroups();
