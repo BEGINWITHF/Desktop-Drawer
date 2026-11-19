@@ -1183,7 +1183,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         PageList.BeginAnimation(OpacityProperty, null);
-        PageList.Opacity = 1;
+        // The page bitmaps have transparent gaps (the wallpaper shows through),
+        // so the live list must not stay visible underneath or its own icons
+        // show through the moving layers as a ghost image.
+        PageList.Opacity = 0;
         PageList.IsHitTestVisible = false;
         PageList.CacheMode = null;
 
@@ -1239,6 +1242,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             PageSnapshotIncomingImage.Source = null;
             outgoingTransform.X = 0;
             incomingTransform.X = 0;
+            PageList.Opacity = 1;
             PageList.IsHitTestVisible = true;
         };
 
