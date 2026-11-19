@@ -146,6 +146,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private long _slideLastTick;
     private long _slideWorstTick;
     private long _lastPageChangeAt;
+    private TimeSpan _slideCpuStart;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -1238,6 +1239,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void StartSlideFrameProbe()
     {
         StopSlideFrameProbe(TimeSpan.Zero, log: false);
+        _slideCpuStart = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
         _slideFrames = 0;
         _slideLastTick = 0;
         _slideWorstTick = 0;
@@ -1274,12 +1276,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         double worstMs = _slideWorstTick * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        TimeSpan cpu = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - _slideCpuStart;
+        double cpuPercent = duration.TotalMilliseconds > 0
+            ? cpu.TotalMilliseconds / duration.TotalMilliseconds * 100
+            : 0;
 
-        // Only outliers are interesting; a healthy slide stays under one frame.
-        if (worstMs > 30)
-        {
-            AppLog.Write($"Slide {duration.TotalMilliseconds:0} ms: {_slideFrames} frames, worst gap {worstMs:0.0} ms");
-        }
+        AppLog.Write(
+            $"Slide {duration.TotalMilliseconds:0} ms: {_slideFrames} frames, worst gap {worstMs:0.0} ms, cpu {cpuPercent:0}%");
     }
 
     private static TranslateTransform EnsureImageTransform(Image image)
@@ -1364,16 +1367,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             transform.X = 0;
             PageSnapshotImage.Visibility = Visibility.Collapsed;
 
-            // Render at 1x DIP: the snapshot only exists for the length of one
-            // slide, so a 200% display should not pay 4x the pixels and memory.
-            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth));
-            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight));
+            // Render at device resolution so the snapshot is drawn 1:1 during
+            // the slide. A 1x bitmap would be resampled up on every animated
+            // frame, which costs more than the larger buffer costs once.
+            DpiScale dpi = VisualTreeHelper.GetDpi(this);
+            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth * dpi.DpiScaleX));
+            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight * dpi.DpiScaleY));
 
             var bitmap = new RenderTargetBitmap(
                 pixelWidth,
                 pixelHeight,
-                96,
-                96,
+                96 * dpi.DpiScaleX,
+                96 * dpi.DpiScaleY,
                 PixelFormats.Pbgra32);
             bitmap.Render(PageList);
             bitmap.Freeze();
@@ -1387,10 +1392,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private BitmapCache CreatePageBitmapCache() =>
-        // A layered window (AllowsTransparency) is composited on the CPU, so the
-        // cached layer stays at 1x: a 2x layer costs four times the memory
-        // bandwidth on every animated frame.
-        new(1);
+        // Rasterize at the device scale so the animated layer is copied 1:1.
+        // Scaling a 1x cache up on every frame costs more than the extra memory.
+        new(Math.Max(1, VisualTreeHelper.GetDpi(PageList).DpiScaleX));
 
     private TranslateTransform EnsurePageTransform()
     {
