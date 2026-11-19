@@ -849,7 +849,7 @@ public partial class MainWindow
 
             if (!_layoutEditing && !_settingsOpen)
             {
-                StartRubberBand(e.GetPosition(PageList));
+                StartRubberBand(e.GetPosition(RootGrid));
                 e.Handled = true;
             }
 
@@ -901,7 +901,7 @@ public partial class MainWindow
                 continue;
             }
 
-            Point topLeft = container.TransformToAncestor(PageList).Transform(new Point(0, 0));
+            Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
             var bounds = new Rect(topLeft, container.RenderSize);
 
             if (area.IntersectsWith(bounds))
@@ -966,7 +966,7 @@ public partial class MainWindow
         {
             if (e.LeftButton == MouseButtonState.Pressed)
             {
-                UpdateRubberBand(e.GetPosition(PageList));
+                UpdateRubberBand(e.GetPosition(RootGrid));
             }
             else
             {

@@ -246,7 +246,7 @@ public partial class MainWindow
         }
 
         Point topLeft = container
-            .TransformToAncestor(SelectionCanvas)
+            .TransformToAncestor(RootGrid)
             .Transform(new Point(0, 0));
 
         Canvas.SetLeft(ReorderMarker, topLeft.X);
