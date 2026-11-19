@@ -229,6 +229,11 @@ internal static class DesktopKeyForwarder
             ok &= Send(new[] { downs[^1] });
             Thread.Sleep(12);
             ok &= Send(releases.ToArray());
+
+            // A busy shell can miss the synthetic release and keep the Windows
+            // key state active until the user presses Windows again. One extra
+            // release shortly after is harmless and clears that state.
+            ReleaseWindowsKeySoon();
         }
         else
         {
@@ -238,6 +243,16 @@ internal static class DesktopKeyForwarder
         }
 
         return ok;
+    }
+
+    private static void ReleaseWindowsKeySoon()
+    {
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            Thread.Sleep(250);
+            SuspendCapture(100);
+            Send(new[] { KeyInput(VkLWin, up: true) });
+        });
     }
 
     private static bool Send(Input[] inputs)
