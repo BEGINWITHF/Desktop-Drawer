@@ -8,9 +8,9 @@ namespace DesktopDrawer.Bootstrap;
 /// </summary>
 internal static class Lang
 {
-    public static string Current { get; private set; } = Detect();
-
     public static string[] Options { get; } = ["zh-CN", "zh-TW", "en", "ja"];
+
+    public static string Current { get; private set; } = Detect();
 
     public static string Detect()
     {

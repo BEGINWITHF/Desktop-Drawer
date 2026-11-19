@@ -9,6 +9,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        string errorFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "dd-installer-error.txt");
+        DispatcherUnhandledException += (_, ex) => System.IO.File.WriteAllText(errorFile, ex.Exception.ToString());
+        AppDomain.CurrentDomain.UnhandledException += (_, ex) => System.IO.File.WriteAllText(errorFile, ex.ExceptionObject?.ToString() ?? "unknown");
+
         if (e.Args.Any(arg => arg.Equals("--uninstall", StringComparison.OrdinalIgnoreCase)))
         {
             new UninstallWindow().Show();
