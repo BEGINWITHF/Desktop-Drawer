@@ -358,6 +358,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         };
 
         NativeMethods.DwmExtendFrameIntoClientArea(handle, ref glass);
+<<<<<<< HEAD
+=======
+        RegisterTouchpadInput(handle);
+>>>>>>> feat/online-installer
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.

@@ -213,6 +213,7 @@ internal static class NativeMethods
     public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
 
     [StructLayout(LayoutKind.Sequential)]
+<<<<<<< HEAD
     public struct InputMessageSource
     {
         public int DeviceType;
@@ -232,6 +233,8 @@ internal static class NativeMethods
     public const int ImdtTouchpad = 5;
 
     [StructLayout(LayoutKind.Sequential)]
+=======
+>>>>>>> feat/online-installer
     public struct Margins
     {
         public int Left;
