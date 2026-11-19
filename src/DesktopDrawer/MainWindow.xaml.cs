@@ -141,6 +141,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
     private int _pageAnimationToken;
+    private EventHandler? _slideFrameHandler;
+    private int _slideFrames;
+    private long _slideLastTick;
+    private long _slideWorstTick;
+    private long _lastPageChangeAt;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -1183,9 +1188,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // not re-render the whole item list on every frame.
         PageList.CacheMode = CreatePageBitmapCache();
 
+        StartSlideFrameProbe();
         int token = ++_pageAnimationToken;
-        TimeSpan duration = TimeSpan.FromMilliseconds(120);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+
+        // A single page change gets a longer, smoother slide. A burst of input
+        // (wheel or swipe) keeps the short slide so steps do not stack up.
+        long now = Environment.TickCount64;
+        bool rapid = now - _lastPageChangeAt < 300;
+        _lastPageChangeAt = now;
+
+        TimeSpan duration = TimeSpan.FromMilliseconds(rapid ? 120 : 190);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
         var outgoingSlide = new DoubleAnimation(0, -direction * width, duration)
         {
@@ -1203,6 +1216,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
+            StopSlideFrameProbe(duration);
             PageList.CacheMode = null;
             PageSnapshotImage.Visibility = Visibility.Collapsed;
             PageSnapshotImage.Source = null;
@@ -1219,6 +1233,53 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             TranslateTransform.XProperty,
             incomingSlide,
             HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void StartSlideFrameProbe()
+    {
+        StopSlideFrameProbe(TimeSpan.Zero, log: false);
+        _slideFrames = 0;
+        _slideLastTick = 0;
+        _slideWorstTick = 0;
+
+        _slideFrameHandler = (_, _) =>
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+
+            if (_slideLastTick != 0)
+            {
+                _slideWorstTick = Math.Max(_slideWorstTick, now - _slideLastTick);
+            }
+
+            _slideLastTick = now;
+            _slideFrames++;
+        };
+
+        CompositionTarget.Rendering += _slideFrameHandler;
+    }
+
+    private void StopSlideFrameProbe(TimeSpan duration, bool log = true)
+    {
+        if (_slideFrameHandler is null)
+        {
+            return;
+        }
+
+        CompositionTarget.Rendering -= _slideFrameHandler;
+        _slideFrameHandler = null;
+
+        if (!log)
+        {
+            return;
+        }
+
+        double worstMs = _slideWorstTick * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+
+        // Only outliers are interesting; a healthy slide stays under one frame.
+        if (worstMs > 30)
+        {
+            AppLog.Write($"Slide {duration.TotalMilliseconds:0} ms: {_slideFrames} frames, worst gap {worstMs:0.0} ms");
+        }
     }
 
     private static TranslateTransform EnsureImageTransform(Image image)
@@ -1326,7 +1387,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private BitmapCache CreatePageBitmapCache() =>
-        new(Math.Max(1, VisualTreeHelper.GetDpi(PageList).DpiScaleX));
+        // A layered window (AllowsTransparency) is composited on the CPU, so the
+        // cached layer stays at 1x: a 2x layer costs four times the memory
+        // bandwidth on every animated frame.
+        new(1);
 
     private TranslateTransform EnsurePageTransform()
     {
@@ -1385,7 +1449,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         Columns = columns;
         Rows = rows;
-        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}, icon {iconSize:0}");
+        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}, icon {iconSize:0}, render tier {RenderCapability.Tier >> 16}, dpi {VisualTreeHelper.GetDpi(this).PixelsPerDip:0.##}");
 
         if (_hasLoadedOnce)
         {
