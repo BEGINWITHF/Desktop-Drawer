@@ -212,6 +212,18 @@ internal static class NativeMethods
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Margins
+    {
+        public int Left;
+        public int Right;
+        public int Top;
+        public int Bottom;
+    }
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref Margins margins);
+
     public const int DwmwaTransitionsForceDisabled = 3;
     public const int DwmwaExcludedFromPeek = 12;
 

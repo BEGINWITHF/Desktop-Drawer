@@ -336,6 +336,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         HwndSource.FromHwnd(handle)?.AddHook(WindowMessageHook);
         DarkMode.Enable(handle);
 
+        // Transparency without a layered window: the DWM glass frame keeps the
+        // window on the hardware rendering path. A layered window (the old
+        // AllowsTransparency path) copies every frame through system memory with
+        // GDI, which capped full-page animations at roughly 25 fps.
+        if (HwndSource.FromHwnd(handle) is { } source)
+        {
+            source.CompositionTarget.BackgroundColor = Colors.Transparent;
+        }
+
+        var glass = new NativeMethods.Margins
+        {
+            Left = -1,
+            Right = -1,
+            Top = -1,
+            Bottom = -1
+        };
+
+        NativeMethods.DwmExtendFrameIntoClientArea(handle, ref glass);
+
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.
         int disableTransitions = 1;
@@ -1390,18 +1409,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             transform.X = 0;
             PageSnapshotImage.Visibility = Visibility.Collapsed;
 
-            // Render at device resolution so the snapshot is drawn 1:1 during
-            // the slide. A 1x bitmap would be resampled up on every animated
-            // frame, which costs more than the larger buffer costs once.
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth * dpi.DpiScaleX));
-            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight * dpi.DpiScaleY));
+            // Render at 1x DIP. The window is hardware composited now, so the
+            // GPU scales the snapshot for free during the slide; a device-sized
+            // buffer would only make every capture four times as expensive.
+            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth));
+            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight));
 
             var bitmap = new RenderTargetBitmap(
                 pixelWidth,
                 pixelHeight,
-                96 * dpi.DpiScaleX,
-                96 * dpi.DpiScaleY,
+                96,
+                96,
                 PixelFormats.Pbgra32);
             bitmap.Render(PageList);
             bitmap.Freeze();

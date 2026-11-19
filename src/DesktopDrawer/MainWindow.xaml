@@ -9,7 +9,6 @@
         MinHeight="520"
         WindowStyle="None"
         ResizeMode="NoResize"
-        AllowsTransparency="True"
         ShowInTaskbar="False"
         ShowActivated="False"
         WindowStartupLocation="Manual"
@@ -31,6 +30,14 @@
         Deactivated="Window_Deactivated"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewTextInput="Window_PreviewTextInput">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="-1"
+                      ResizeBorderThickness="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <Style x:Key="DesktopListItem" TargetType="{x:Type ListBoxItem}">
