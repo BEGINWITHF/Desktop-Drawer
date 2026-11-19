@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ApplyLanguage();
         Loaded += async (_, _) => await LoadLatestAsync();
     }
 
@@ -34,17 +35,17 @@ public partial class MainWindow : Window
 
             if (_release is null)
             {
-                StatusText.Text = "目前没有可安装的正式版本。";
+                StatusText.Text = Lang.T("noRelease");
                 return;
             }
 
-            StatusText.Text = $"发现新版本 {_release.Version}";
-            MetaText.Text = $"将下载并安装 Desktop Drawer {_release.Version}";
+            StatusText.Text = Lang.F("found", _release.Version);
+            MetaText.Text = Lang.F("willInstall", _release.Version);
             InstallButton.IsEnabled = true;
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"无法获取版本信息：{ex.Message}";
+            StatusText.Text = Lang.F("noInfo", ex.Message);
         }
     }
 
@@ -68,7 +69,7 @@ public partial class MainWindow : Window
 
         _busy = true;
         InstallButton.IsEnabled = false;
-        StatusText.Text = "正在下载…";
+        StatusText.Text = Lang.T("downloading");
 
         try
         {
@@ -76,35 +77,35 @@ public partial class MainWindow : Window
             var progress = new Progress<double>(value =>
             {
                 Progress.Value = value;
-                MetaText.Text = $"已下载 {(int)(value * 100)}%";
+                MetaText.Text = Lang.F("downloaded", (int)(value * 100));
             });
 
             await InstallerCore.DownloadAsync(_client, _release.SetupUrl, path, progress);
-            StatusText.Text = "正在校验安装包…";
+            StatusText.Text = Lang.T("verifying");
             await InstallerCore.VerifyAsync(_client, _release, path);
 
-            StatusText.Text = "正在安装…";
+            StatusText.Text = Lang.T("installing");
             using Process setup = InstallerCore.StartSetup(path, silent: true);
             await setup.WaitForExitAsync();
 
             if (setup.ExitCode != 0)
             {
-                StatusText.Text = $"安装未完成（退出代码 {setup.ExitCode}）。";
+                StatusText.Text = Lang.F("code", setup.ExitCode);
                 InstallButton.IsEnabled = true;
                 return;
             }
 
             _installedPath = path;
             Progress.Value = 1;
-            StatusText.Text = "安装完成";
-            MetaText.Text = "Desktop Drawer 已是最新版本";
-            InstallButton.Content = "启动";
+            StatusText.Text = Lang.T("installed");
+            MetaText.Text = Lang.T("installedNote");
+            InstallButton.Content = Lang.T("launch");
             InstallButton.IsEnabled = true;
-            CloseButton.Content = "关闭";
+            CloseButton.Content = Lang.T("close");
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"安装失败：{ex.Message}";
+            StatusText.Text = Lang.F("failed", ex.Message);
             InstallButton.IsEnabled = true;
         }
         finally
@@ -126,6 +127,43 @@ public partial class MainWindow : Window
         }
 
         Application.Current.Shutdown();
+    }
+
+    private void ApplyLanguage()
+    {
+        SubtitleText.Text = Lang.T("subtitle");
+        CloseButton.Content = Lang.T("cancel");
+        LangButton.Content = Lang.Current switch
+        {
+            "zh-CN" => "简",
+            "zh-TW" => "繁",
+            "ja" => "日",
+            _ => "EN"
+        };
+
+        if (_installedPath is not null)
+        {
+            InstallButton.Content = Lang.T("launch");
+            CloseButton.Content = Lang.T("close");
+        }
+        else
+        {
+            InstallButton.Content = Lang.T("install");
+        }
+    }
+
+    private void LangButton_Click(object sender, RoutedEventArgs e)
+    {
+        int index = Array.IndexOf(Lang.Options, Lang.Current);
+        Lang.Set(Lang.Options[(index + 1) % Lang.Options.Length]);
+        ApplyLanguage();
+
+        if (!_busy && _installedPath is null)
+        {
+            StatusText.Text = Lang.T("checking");
+            MetaText.Text = " ";
+            _ = LoadLatestAsync();
+        }
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
