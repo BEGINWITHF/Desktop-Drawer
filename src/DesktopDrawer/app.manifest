@@ -21,6 +21,11 @@
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
       <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
       <longPathAware xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">true</longPathAware>
+      <!-- Precision touchpads send ultra-high-resolution wheel messages by
+           default. This app consumes standard/high-resolution deltas, so opt
+           out of the 1-unit stream and let Windows scale them. -->
+      <highResolutionScrollingAware xmlns="https://schemas.microsoft.com/SMI/2013/WindowsSettings">true</highResolutionScrollingAware>
+      <ultraHighResolutionScrollingAware xmlns="https://schemas.microsoft.com/SMI/2013/WindowsSettings">false</ultraHighResolutionScrollingAware>
     </windowsSettings>
   </application>
 </assembly>

@@ -139,11 +139,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _wheelAccumulator;
     private DateTime _lastWheel;
     private DateTime _lastPageFlip;
-    private DateTime _lastHorizontalWheel;
-    private double _horizontalAccumulator;
-    private bool _horizontalSwipeConsumed;
-    private int _lastHorizontalLift = -1;
-    private DateTime _lastHorizontalFlip;
+    private readonly SwipePageGesture _swipeGesture = new();
+    private readonly TouchpadContactTracker _touchpadContacts = new();
+    private long _lastHorizontalInputAt;
     private bool _pageTransitionActive;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
@@ -347,7 +345,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         };
 
         NativeMethods.DwmExtendFrameIntoClientArea(handle, ref glass);
-        RegisterTouchpadInput(handle);
 
         // No fade/slide animation when "show desktop" hides and shows the drawer
         // again: the transition used to be visible as a few translucent frames.
@@ -375,8 +372,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _shortcutHook = new GlobalShortcutHook(handle, Dispatcher, ForwardWinChord);
         _shortcutHook.Install();
 
+        // Horizontal touchpad paging is enabled on request. The precision
+        // touchpad driver on this machine can still emit a rare feedback beep;
+        // the page change is deferred and one swipe is capped to one page.
         _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
         _horizontalWheelHook.Install();
+
+        // Windows 11 reports real touchpad contacts through WM_POINTER once the
+        // window is touchpad capable. Paging still uses the wheel deltas, but the
+        // contact down/up bounds each swipe, so its inertia tail cannot page again.
+        _touchpadContacts.Register(handle);
 
         // Re-pin the drawer the moment the shell reorders windows ("show desktop",
         // app switches, WorkerW recreation) instead of waiting for the next tick.
@@ -393,17 +398,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private IntPtr WindowMessageHook(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        const int WmMouseHWheel = 0x020E;
         const int WmSysCommand = 0x0112;
         const int ScMinimize = 0xF020;
         const int WmSize = 0x0005;
         const int SizeMinimized = 1;
-
-        if (message == NativeMethods.WmInput)
-        {
-            HandleRawInput(lParam);
-            return IntPtr.Zero;
-        }
 
         if (message == WmSysCommand && (wParam.ToInt32() & 0xFFF0) == ScMinimize)
         {
@@ -430,79 +428,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }));
         }
 
-        if (message == WmMouseHWheel && !_settingsOpen)
+        // A touchpad contact starts or ends a swipe. The message is left for the
+        // normal processing so the system still turns the pan into the wheel
+        // stream that drives paging.
+        if (_touchpadContacts.Track(message, wParam))
         {
-            // Two-finger horizontal swipes are handled by HorizontalWheelHook,
-            // which also receives them when the drawer is not focused.
+            _swipeGesture.SetContact(_touchpadContacts.FingersDown, Environment.TickCount64);
         }
 
         return IntPtr.Zero;
-    }
-
-    private void RegisterTouchpadInput(IntPtr handle)
-    {
-        try
-        {
-            var touchpad = new NativeMethods.RawInputDevice
-            {
-                UsagePage = 0x0D,          // digitizer
-                Usage = 0x05,              // touchpad
-                Flags = NativeMethods.RidevInputSink,
-                Target = handle
-            };
-
-            bool touchOk = NativeMethods.RegisterRawInputDevices(
-                new[] { touchpad },
-                1,
-                (uint)Marshal.SizeOf<NativeMethods.RawInputDevice>());
-
-            AppLog.Write(touchOk
-                ? "Touchpad contact tracking registered"
-                : $"Touchpad contact tracking unavailable ({Marshal.GetLastWin32Error()})");
-        }
-        catch (Exception ex)
-        {
-            AppLog.Write(ex, "Could not register touchpad input");
-        }
-    }
-
-    /// <summary>
-    /// Handles raw input: digitizer reports tell us whether fingers are on the
-    /// touchpad, which is how the pager knows a swipe has ended.
-    /// </summary>
-    private static void HandleRawInput(IntPtr rawInput)
-    {
-        uint size = 0;
-        uint headerSize = (uint)Marshal.SizeOf<NativeMethods.RawInputHeader>();
-
-        if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, IntPtr.Zero, ref size, headerSize) != 0 ||
-            size == 0)
-        {
-            return;
-        }
-
-        IntPtr buffer = Marshal.AllocHGlobal((int)size);
-
-        try
-        {
-            if (NativeMethods.GetRawInputData(rawInput, NativeMethods.RidInput, buffer, ref size, headerSize) != size)
-            {
-                return;
-            }
-
-            var header = Marshal.PtrToStructure<NativeMethods.RawInputHeader>(buffer);
-
-            // Digitizer reports arrive continuously while the pad is touched, even
-            // without movement, so a pause in them means the fingers were lifted.
-            if (header.Type == 2)
-            {
-                TouchpadMonitor.NoteReport(header.Device, header.Size);
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
     }
 
     private void OnZOrderChanged(
@@ -540,65 +474,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void HandleHorizontalWheel(int delta)
     {
+        _lastHorizontalInputAt = Environment.TickCount64;
+
         if (_cleanedUp || _pageCount <= 1 || _settingsOpen || _groupsOpen ||
             StyleOverlay.Visibility == Visibility.Visible)
         {
             return;
         }
 
-        DateTime now = DateTime.UtcNow;
+        // One swipe, one page: the gesture commits on the first accumulated
+        // threshold and ignores the rest of the stream, including the inertia
+        // tail, until the fingers touch down again.
+        int direction = _swipeGesture.Observe(delta, Environment.TickCount64);
 
-        // A new swipe starts when the fingers come back onto the pad. While the
-        // touchpad reports contact, a pause without movement does not count.
-        if (TouchpadMonitor.Supported)
+        if (direction != 0)
         {
-            if (TouchpadMonitor.LiftCount != _lastHorizontalLift)
-            {
-                _horizontalAccumulator = 0;
-                _horizontalSwipeConsumed = false;
-            }
+            GoToPage(_pageIndex + direction);
         }
-        else if ((now - _lastHorizontalWheel).TotalMilliseconds > 150)
-        {
-            // Fallback for touchpads without digitizer reports.
-            _horizontalAccumulator = 0;
-            _horizontalSwipeConsumed = false;
-        }
-
-        _lastHorizontalWheel = now;
-
-        // One page per swipe: the rest of the gesture (including the inertia tail)
-        // is ignored until the fingers are lifted.
-        if (_horizontalSwipeConsumed)
-        {
-            return;
-        }
-
-        _horizontalAccumulator += delta;
-
-        // A precision touchpad sends many small deltas (often 5-30 each), so the
-        // horizontal threshold is much lower than the 120 of a mouse wheel notch.
-        if (Math.Abs(_horizontalAccumulator) < 40)
-        {
-            return;
-        }
-
-        // Cooldown so a stray event right after a flip cannot turn another page.
-        if ((now - _lastHorizontalFlip).TotalMilliseconds < 500)
-        {
-            _horizontalAccumulator = 0;
-            return;
-        }
-
-        // Swiping left (negative delta) turns back, swiping right turns forward.
-        int direction = _horizontalAccumulator > 0 ? 1 : -1;
-        _horizontalAccumulator = 0;
-        _horizontalSwipeConsumed = true;
-        _lastHorizontalLift = TouchpadMonitor.LiftCount;
-        _lastHorizontalFlip = now;
-        GoToPage(_pageIndex + direction);
     }
-
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         ApplyWorkAreaBounds();

@@ -70,7 +70,10 @@ internal sealed class HorizontalWheelHook : IDisposable
         }
 
         _dispatcher.BeginInvoke(DispatcherPriority.Input, () => _onSwipe(delta));
-        return new IntPtr(1);
+
+        // Let the original event continue; the page change is deferred until
+        // the gesture settles, so the system never sees a mid-gesture layout.
+        return CallNextHookEx(_hook, code, wParam, lParam);
     }
 
     private bool IsOverDrawer(int x, int y)

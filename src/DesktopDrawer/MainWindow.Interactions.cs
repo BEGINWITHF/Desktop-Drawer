@@ -394,10 +394,38 @@ public partial class MainWindow
         e.Handled = true;
     }
 
+    /// <summary>
+    /// True when the wheel message came from the touchpad rather than a mouse.
+    /// Touchpad paging is handled as a swipe gesture, so a vertical component
+    /// must not page a second time.
+    /// </summary>
+    private bool IsTouchpadScroll()
+    {
+        if (_touchpadContacts.FingersDown)
+        {
+            return true;
+        }
+
+        if (Environment.TickCount64 - _lastHorizontalInputAt < 400)
+        {
+            return true;
+        }
+
+        return Interop.NativeMethods.GetCurrentInputMessageSource(
+                   out Interop.NativeMethods.InputMessageSource source) &&
+               source.DeviceType == Interop.NativeMethods.ImdtTouchpad;
+    }
+
     private void PageArea_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (_settingsOpen)
         {
+            return;
+        }
+
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 && IsTouchpadScroll())
+        {
+            e.Handled = true;
             return;
         }
 
