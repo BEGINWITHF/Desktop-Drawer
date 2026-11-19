@@ -87,6 +87,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<FrameworkElement, (double Width, double Height)> _chromeDefaultSizes = new();
     private readonly Dictionary<FrameworkElement, Shapes.Rectangle> _layoutOutlines = new();
     private readonly Dictionary<FrameworkElement, List<(ResizeAxis Axis, Thumb Grip)>> _layoutGrips = new();
+    private const double LayoutSnapDistance = 7;
+    private Shapes.Line? _layoutGuideVertical;
+    private Shapes.Line? _layoutGuideHorizontal;
     private FrameworkElement? _resizeElement;
     private ResizeAxis _resizeAxis;
     private Point _resizeStartMouse;
@@ -1835,26 +1838,64 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             const double deadZone = 4;
 
-            if (_resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both &&
-                Math.Abs(deltaX) >= deadZone)
+            bool resizeWidth = _resizeAxis is ResizeAxis.Horizontal or ResizeAxis.Both &&
+                               Math.Abs(deltaX) >= deadZone;
+            bool resizeHeight = _resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
+                                Math.Abs(deltaY) >= deadZone;
+
+            double newWidth = resizeWidth
+                ? Math.Clamp(_resizeStartWidth + deltaX, 40, maxWidth)
+                : element.Width is double currentWidth && !double.IsNaN(currentWidth)
+                    ? currentWidth
+                    : element.ActualWidth;
+            double newHeight = resizeHeight
+                ? Math.Clamp(_resizeStartHeight + deltaY, 20, maxHeight)
+                : element.Height is double currentHeight && !double.IsNaN(currentHeight)
+                    ? currentHeight
+                    : element.ActualHeight;
+
+            bool resizeSnapping = (Keyboard.Modifiers & ModifierKeys.Alt) == 0;
+            double? resizeGuideX = null;
+            double? resizeGuideY = null;
+
+            if (resizeSnapping && resizeWidth)
+            {
+                double right = SnapEdge(
+                    element.Margin.Left + newWidth,
+                    BuildSnapTargets(element, horizontal: true),
+                    out resizeGuideX);
+
+                newWidth = Math.Clamp(right - element.Margin.Left, 40, maxWidth);
+            }
+
+            if (resizeSnapping && resizeHeight)
+            {
+                double bottom = SnapEdge(
+                    element.Margin.Top + newHeight,
+                    BuildSnapTargets(element, horizontal: false),
+                    out resizeGuideY);
+
+                newHeight = Math.Clamp(bottom - element.Margin.Top, 20, maxHeight);
+            }
+
+            if (resizeWidth)
             {
                 if (element == HeaderBar)
                 {
                     HeaderBar.HorizontalAlignment = HorizontalAlignment.Left;
                 }
 
-                element.Width = Math.Clamp(_resizeStartWidth + deltaX, 40, maxWidth);
+                element.Width = newWidth;
             }
 
-            if (_resizeAxis is ResizeAxis.Vertical or ResizeAxis.Both &&
-                Math.Abs(deltaY) >= deadZone)
+            if (resizeHeight)
             {
-                element.Height = Math.Clamp(_resizeStartHeight + deltaY, 20, maxHeight);
+                element.Height = newHeight;
             }
-
 
             element.UpdateLayout();
             ClampChromePosition(element);
+            UpdateSnapGuides(resizeGuideX, resizeGuideY);
             UpdateLayoutEditorOverlays();
             e.Handled = true;
             return;
@@ -1880,9 +1921,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             x = 0;
         }
 
+        bool snapping = (Keyboard.Modifiers & ModifierKeys.Alt) == 0;
+        double? guideX = null;
+        double? guideY = null;
+
+        if (snapping)
+        {
+            if (_dragElement != HeaderBar)
+            {
+                x = SnapPosition(x, elementWidth, BuildSnapTargets(_dragElement, horizontal: true), out guideX);
+            }
+
+            y = SnapPosition(y, elementHeight, BuildSnapTargets(_dragElement, horizontal: false), out guideY);
+        }
+
         x = Math.Clamp(x, 0, Math.Max(0, width - elementWidth));
         y = Math.Clamp(y, 0, Math.Max(0, height - elementHeight));
         _dragElement.Margin = new Thickness(x, y, 0, 0);
+        UpdateSnapGuides(guideX, guideY);
         UpdateLayoutEditorOverlays();
         e.Handled = true;
     }
@@ -1902,6 +1958,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 ApplyChromeLayout();
             }
 
+            UpdateSnapGuides(null, null);
             e.Handled = true;
             return;
         }
@@ -1921,6 +1978,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         SaveChromePosition(element);
+        UpdateSnapGuides(null, null);
         e.Handled = true;
     }
 
@@ -1999,6 +2057,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             LayoutEditorCanvas.Children.Clear();
             _layoutOutlines.Clear();
             _layoutGrips.Clear();
+            _layoutGuideVertical = null;
+            _layoutGuideHorizontal = null;
             HideLayoutToolbar();
 
             ToastHost.IsHitTestVisible = false;
@@ -2060,6 +2120,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         LayoutEditorCanvas.Visibility = Visibility.Visible;
+
+        // Guides are added last so they draw above the outlines.
+        _layoutGuideVertical = CreateLayoutGuide();
+        _layoutGuideHorizontal = CreateLayoutGuide();
+        LayoutEditorCanvas.Children.Add(_layoutGuideVertical);
+        LayoutEditorCanvas.Children.Add(_layoutGuideHorizontal);
+
         UpdateLayoutEditorOverlays();
     }
 
@@ -2151,6 +2218,140 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         double x = Math.Clamp(element.Margin.Left, 0, Math.Max(0, width - elementWidth));
         double y = Math.Clamp(element.Margin.Top, 0, Math.Max(0, height - elementHeight));
         element.Margin = new Thickness(x, y, 0, 0);
+    }
+
+    private static Shapes.Line CreateLayoutGuide()
+    {
+        var line = new Shapes.Line
+        {
+            StrokeThickness = 1,
+            StrokeDashArray = new DoubleCollection { 3, 3 },
+            IsHitTestVisible = false,
+            Visibility = Visibility.Collapsed,
+            SnapsToDevicePixels = true
+        };
+
+        line.SetResourceReference(Shapes.Shape.StrokeProperty, "AccentBrush");
+        return line;
+    }
+
+    /// <summary>
+    /// Edges and centres a chrome element can align to: the window edges and
+    /// centre, plus the edges and centre of every other chrome element.
+    /// </summary>
+    private List<double> BuildSnapTargets(FrameworkElement element, bool horizontal)
+    {
+        double extent = horizontal ? RootGrid.ActualWidth : RootGrid.ActualHeight;
+        var targets = new List<double> { 0, extent / 2, extent };
+
+        foreach (FrameworkElement other in _chromeElements.Keys)
+        {
+            if (ReferenceEquals(other, element) || !other.IsVisible)
+            {
+                continue;
+            }
+
+            double offset = horizontal ? other.Margin.Left : other.Margin.Top;
+            double size = horizontal ? other.ActualWidth : other.ActualHeight;
+            targets.Add(offset);
+            targets.Add(offset + size / 2);
+            targets.Add(offset + size);
+        }
+
+        return targets;
+    }
+
+    /// <summary>
+    /// Snaps a moving element so its leading edge, trailing edge or centre lands
+    /// on the nearest target inside the snap distance.
+    /// </summary>
+    private static double SnapPosition(
+        double position,
+        double size,
+        IReadOnlyList<double> targets,
+        out double? guide)
+    {
+        double best = LayoutSnapDistance;
+        double result = position;
+        guide = null;
+
+        foreach (double target in targets)
+        {
+            double distance = Math.Abs(position - target);
+            if (distance < best)
+            {
+                best = distance;
+                result = target;
+                guide = target;
+            }
+
+            distance = Math.Abs(position + size - target);
+            if (distance < best)
+            {
+                best = distance;
+                result = target - size;
+                guide = target;
+            }
+
+            distance = Math.Abs(position + size / 2 - target);
+            if (distance < best)
+            {
+                best = distance;
+                result = target - size / 2;
+                guide = target;
+            }
+        }
+
+        return result;
+    }
+
+    private static double SnapEdge(double edge, IReadOnlyList<double> targets, out double? guide)
+    {
+        double best = LayoutSnapDistance;
+        double result = edge;
+        guide = null;
+
+        foreach (double target in targets)
+        {
+            double distance = Math.Abs(edge - target);
+            if (distance < best)
+            {
+                best = distance;
+                result = target;
+                guide = target;
+            }
+        }
+
+        return result;
+    }
+
+    private void UpdateSnapGuides(double? vertical, double? horizontal)
+    {
+        if (_layoutGuideVertical is not null)
+        {
+            _layoutGuideVertical.Visibility = vertical.HasValue ? Visibility.Visible : Visibility.Collapsed;
+
+            if (vertical is double x)
+            {
+                _layoutGuideVertical.X1 = x;
+                _layoutGuideVertical.X2 = x;
+                _layoutGuideVertical.Y1 = 0;
+                _layoutGuideVertical.Y2 = RootGrid.ActualHeight;
+            }
+        }
+
+        if (_layoutGuideHorizontal is not null)
+        {
+            _layoutGuideHorizontal.Visibility = horizontal.HasValue ? Visibility.Visible : Visibility.Collapsed;
+
+            if (horizontal is double y)
+            {
+                _layoutGuideHorizontal.X1 = 0;
+                _layoutGuideHorizontal.X2 = RootGrid.ActualWidth;
+                _layoutGuideHorizontal.Y1 = y;
+                _layoutGuideHorizontal.Y2 = y;
+            }
+        }
     }
 
     private void ShowLayoutToolbar()
