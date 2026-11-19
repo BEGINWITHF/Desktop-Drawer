@@ -41,6 +41,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
     private List<PageSlice> _pages = [];
+    private int _pagesCapacity;
 
     private int _pageIndex;
     private int _pageCount = 1;
@@ -908,12 +909,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void UpdatePage(
         ISet<string>? restoreSelection = null,
-        string? selectPath = null)
+        string? selectPath = null,
+        bool rebuildPages = true)
     {
         EndRubberBand();
 
         int capacity = Math.Max(1, Columns * Rows);
-        _pages = BuildPages(capacity);
+        if (rebuildPages || _pages.Count == 0 || _pagesCapacity != capacity)
+        {
+            _pages = BuildPages(capacity);
+            _pagesCapacity = capacity;
+        }
 
         if (!string.IsNullOrEmpty(selectPath))
         {
@@ -1146,7 +1152,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Title = I18n.F("App.WindowTitle", _allItems.Count);
     }
 
-    private void GoToPage(int targetPage)
+    private void GoToPage(int targetPage, bool lightweight = false)
     {
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
@@ -1158,10 +1164,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         // Snapshot the page that is currently on screen, right before it is
         // replaced. Doing it here (instead of on a timer) means the bitmap always
-        // matches the outgoing page and can never be stale.
+        // matches the outgoing page and can never be stale. Wheel paging skips
+        // the snapshot: rapid flips would otherwise render and freeze a full
+        // page bitmap on the UI thread between every slide.
         ImageSource? outgoing = null;
 
-        if (!_pageTransitionActive)
+        if (!lightweight && !_pageTransitionActive)
         {
             TranslateTransform transform = EnsurePageTransform();
             transform.BeginAnimation(TranslateTransform.XProperty, null);
@@ -1171,7 +1179,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
-        UpdatePage();
+        UpdatePage(rebuildPages: false);
 
         if (outgoing is not null)
         {
