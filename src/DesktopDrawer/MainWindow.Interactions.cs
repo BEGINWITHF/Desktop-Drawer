@@ -408,35 +408,29 @@ public partial class MainWindow
             return;
         }
 
-        DateTime now = DateTime.UtcNow;
-        if ((now - _lastWheel).TotalMilliseconds > 450)
-        {
-            _wheelAccumulator = 0;
-        }
-
-        _lastWheel = now;
         _wheelAccumulator += e.Delta;
 
-        // A high-resolution wheel can report several notches in one event. Turn
-        // the whole accumulated distance into a single multi-page jump so the
-        // pages are not rebuilt once per notch.
+        // Wait for the wheel gesture to settle before laying out the next page.
+        // A fast scroll accumulates its whole distance and produces one page
+        // change instead of a layout for every event.
+        _wheelPageTimer.Stop();
+        _wheelPageTimer.Start();
+        e.Handled = true;
+    }
+
+    private void WheelPageTimer_Tick(object? sender, EventArgs e)
+    {
+        _wheelPageTimer.Stop();
+
         int steps = (int)(Math.Abs(_wheelAccumulator) / 120.0);
         if (steps == 0)
         {
-            e.Handled = true;
-            return;
-        }
-
-        if ((now - _lastPageFlip).TotalMilliseconds < 140)
-        {
-            e.Handled = true;
             return;
         }
 
         int direction = _wheelAccumulator > 0 ? -1 : 1;
         _wheelAccumulator -= Math.Sign(_wheelAccumulator) * steps * 120.0;
         GoToPage(_pageIndex + direction * steps, lightweight: true);
-        e.Handled = true;
     }
 
     private void PrevPage_Click(object sender, RoutedEventArgs e)

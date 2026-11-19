@@ -37,6 +37,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
+    private readonly DispatcherTimer _wheelPageTimer;
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -137,14 +138,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
     private double _wheelAccumulator;
-    private DateTime _lastWheel;
-    private DateTime _lastPageFlip;
     private DateTime _lastHorizontalWheel;
     private double _horizontalAccumulator;
     private bool _horizontalSwipeConsumed;
     private int _lastHorizontalLift = -1;
     private DateTime _lastHorizontalFlip;
     private bool _pageTransitionActive;
+    private int? _pendingPageTarget;
+    private bool _pendingPageLightweight;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -177,6 +178,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
+        _wheelPageTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+        _wheelPageTimer.Tick += WheelPageTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -1157,7 +1160,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
         if (target == _pageIndex)
         {
+            _pendingPageTarget = null;
             return;
+        }
+
+        // While a wheel transition is running, remember only the newest page.
+        // Intermediate pages from a fast scroll never need to be laid out.
+        if (lightweight && _pageTransitionActive)
+        {
+            _pendingPageTarget = target;
+            _pendingPageLightweight = true;
+            return;
+        }
+
+        if (!lightweight)
+        {
+            _pendingPageTarget = null;
         }
 
         int direction = target > _pageIndex ? 1 : -1;
@@ -1177,7 +1195,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             outgoing = CapturePageBitmap();
         }
 
-        _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
 
@@ -1189,6 +1206,23 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             AnimatePageFlip(direction);
         }
+    }
+
+    /// <summary>
+    /// Applies the newest page requested while the previous transition was
+    /// still running, skipping any pages scrolled past in the meantime.
+    /// </summary>
+    private void ApplyPendingPageChange()
+    {
+        if (_pendingPageTarget is not int target)
+        {
+            return;
+        }
+
+        bool lightweight = _pendingPageLightweight;
+        _pendingPageTarget = null;
+        _pendingPageLightweight = false;
+        GoToPage(target, lightweight);
     }
 
     private ImageSource? CapturePageBitmap()
@@ -1273,6 +1307,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             pageTransform.X = 0;
             PageList.IsHitTestVisible = true;
             _pageTransitionActive = false;
+            ApplyPendingPageChange();
         };
 
         snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
@@ -1316,6 +1351,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             transform.BeginAnimation(TranslateTransform.XProperty, null);
             transform.X = 0;
             _pageTransitionActive = false;
+            ApplyPendingPageChange();
         };
 
         transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
@@ -2463,7 +2499,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return "#";
         }
 
-        return char.IsLetter(first) ? first.ToString() : "…";
+        return char.IsLetter(first) ? first.ToString() : "â€¦";
     }
 
     private static string GetDateGroup(DesktopItem item)
@@ -2619,3 +2655,4 @@ internal sealed class PageSlice
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
 }
+
