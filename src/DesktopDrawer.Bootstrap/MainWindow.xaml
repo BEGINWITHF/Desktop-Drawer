@@ -47,6 +47,8 @@
                            Width="22"
                            Height="22"
                            RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Button Content="&#xE921;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="14,0,0,0" Padding="0" FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="MinimizeButton_Click" />
+                    <Button Content="&#xE8BB;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="2,0,0,0" Padding="0" FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" />
                 </StackPanel>
             </Grid>
 
