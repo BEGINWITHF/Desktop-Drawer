@@ -74,6 +74,24 @@ jobs:
 
           "INSTALLER=$installer" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+      - name: Build online installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $stage = Join-Path $env:RUNNER_TEMP 'DesktopDrawer-bootstrap'
+          dotnet publish src/DesktopDrawer.Bootstrap/DesktopDrawer.Bootstrap.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$version -o $stage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $bootstrap = Join-Path $stage 'DesktopDrawer-Installer.exe'
+
+          $installer = $env:INSTALLER
+          $alias = Join-Path (Split-Path $installer) 'DesktopDrawer-Setup.exe'
+          Copy-Item $installer $alias -Force
+          $hash = (Get-FileHash $alias -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "$alias.sha256" -Value "$hash  DesktopDrawer-Setup.exe" -NoNewline
+
+          "BOOTSTRAP=$bootstrap" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SETUP_ALIAS=$alias" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Create GitHub release
         shell: pwsh
         env:
@@ -88,6 +106,9 @@ jobs:
             "$zip.sha256",
             $installer,
             "$installer.sha256",
+            $env:BOOTSTRAP,
+            $env:SETUP_ALIAS,
+            "$env:SETUP_ALIAS.sha256",
             '--title', "Desktop Drawer $tag",
             '--notes', "Desktop Drawer $tag"
           )
