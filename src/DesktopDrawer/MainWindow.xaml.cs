@@ -2556,6 +2556,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Window_Activated(object? sender, EventArgs e)
     {
+        if (_shortcutHook is not null)
+        {
+            _shortcutHook.OwnerActive = true;
+        }
+
         if (!_initializingSettings)
         {
             UpdateDesktopIconsUi();
@@ -2573,8 +2578,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
+    private void Window_Deactivated(object? sender, EventArgs e)
     {
+        if (_shortcutHook is not null)
+        {
+            _shortcutHook.OwnerActive = false;
+        }
+    }
+
+    private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)    {
         _isExiting = true;
         Cleanup();
     }

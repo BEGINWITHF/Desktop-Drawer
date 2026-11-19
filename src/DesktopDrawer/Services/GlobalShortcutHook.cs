@@ -15,6 +15,7 @@ internal readonly record struct WinChord(byte Key, bool Control, bool Shift, boo
 internal sealed class GlobalShortcutHook : IDisposable
 {
     private const int WhKeyboardLl = 13;
+    private const uint WmQuit = 0x0012;
     private const int WmKeyDown = 0x0100;
     private const int WmKeyUp = 0x0101;
     private const int WmSysKeyDown = 0x0104;
@@ -46,6 +47,22 @@ internal sealed class GlobalShortcutHook : IDisposable
     private readonly HashSet<byte> _suppressed = new();
 
     private IntPtr _hook;
+    private Thread? _hookThread;
+    private uint _hookThreadId;
+    private readonly ManualResetEventSlim _installed = new(false);
+
+    /// <summary>
+    /// Set by the window on Activated/Deactivated. The hook now runs on its own
+    /// thread, which has no keyboard focus of its own, so it cannot use GetFocus
+    /// to decide whether the drawer is the active window.
+    /// </summary>
+    public bool OwnerActive
+    {
+        get => _ownerActive;
+        set => _ownerActive = value;
+    }
+
+    private volatile bool _ownerActive;
 
     public GlobalShortcutHook(IntPtr owner, Dispatcher dispatcher, Action<WinChord> onChord)
     {
@@ -57,18 +74,50 @@ internal sealed class GlobalShortcutHook : IDisposable
 
     public bool Install()
     {
-        IntPtr module = GetModuleHandle(null);
+        // A low level keyboard hook is delivered to the thread that installed
+        // it, so hosting it on the UI thread means every keystroke in every app
+        // waits for that thread. A dedicated message loop keeps typing and IME
+        // composition independent of drawer work such as icon or page rendering.
+        _hookThread = new Thread(HookThreadMain)
+        {
+            IsBackground = true,
+            Name = "DesktopDrawer.KeyboardHook"
+        };
+        _hookThread.Start();
 
-        _hook = SetWindowsHookEx(WhKeyboardLl, _callback, module, 0);
+        _installed.Wait(TimeSpan.FromSeconds(5));
+        return _hook != IntPtr.Zero;
+    }
+
+    private void HookThreadMain()
+    {
+        _hookThreadId = GetCurrentThreadId();
+        _hook = SetWindowsHookEx(WhKeyboardLl, _callback, GetModuleHandle(null), 0);
 
         if (_hook == IntPtr.Zero)
         {
             AppLog.Write($"Could not install the shortcut hook (error {Marshal.GetLastWin32Error()})");
-            return false;
+        }
+        else
+        {
+            AppLog.Write("Shortcut hook installed.");
         }
 
-        AppLog.Write("Shortcut hook installed.");
-        return true;
+        _installed.Set();
+
+        if (_hook == IntPtr.Zero)
+        {
+            return;
+        }
+
+        while (GetMessage(out Message message, IntPtr.Zero, 0, 0) > 0)
+        {
+            TranslateMessage(ref message);
+            DispatchMessage(ref message);
+        }
+
+        UnhookWindowsHookEx(_hook);
+        _hook = IntPtr.Zero;
     }
 
     private IntPtr OnKeyboardMessage(int code, IntPtr wParam, IntPtr lParam)
@@ -85,6 +134,16 @@ internal sealed class GlobalShortcutHook : IDisposable
         }
 
         var data = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
+
+        // The hook is called on its own thread; if that thread is ever late, the
+        // key event was delayed before any application saw it. Record only the
+        // outliers so a reported typing freeze can be tied to evidence.
+        int dispatchDelay = unchecked(Environment.TickCount - (int)data.time);
+
+        if (dispatchDelay is > 250 and < 60_000)
+        {
+            AppLog.Write($"Keyboard hook ran {dispatchDelay} ms after the key event");
+        }
 
         int message = wParam.ToInt32();
         bool up = message is WmKeyUp or WmSysKeyUp;
@@ -157,23 +216,18 @@ internal sealed class GlobalShortcutHook : IDisposable
 
     private bool IsOwnerActive()
     {
-        // The drawer is owned by the desktop window, so GetForegroundWindow can
-        // report Progman while the drawer is the active window. The keyboard focus
-        // of our own UI thread is the reliable signal, since the hook runs there.
-        IntPtr focus = GetFocus();
-        if (focus != IntPtr.Zero && (focus == _owner || IsChild(_owner, focus)))
+        if (OwnerActive)
         {
             return true;
         }
 
+        // The drawer is owned by the desktop window, so the foreground window is
+        // not always the drawer itself. Keep this fallback for an activation
+        // message that arrives after the key that triggered it.
         IntPtr foreground = GetForegroundWindow();
 
-        if (foreground == _owner)
-        {
-            return true;
-        }
-
-        return foreground != IntPtr.Zero && GetAncestor(foreground, GaRoot) == _owner;
+        return foreground != IntPtr.Zero &&
+               (foreground == _owner || GetAncestor(foreground, GaRoot) == _owner);
     }
 
     private static bool IsPressed(int key)    {
@@ -182,10 +236,16 @@ internal sealed class GlobalShortcutHook : IDisposable
 
     public void Dispose()
     {
-        if (_hook != IntPtr.Zero)
+        if (_hookThreadId != 0)
         {
-            UnhookWindowsHookEx(_hook);
-            _hook = IntPtr.Zero;
+            PostThreadMessage(_hookThreadId, WmQuit, IntPtr.Zero, IntPtr.Zero);
+            _hookThreadId = 0;
+        }
+
+        if (_hookThread is not null && _hookThread.Join(1000))
+        {
+            _hookThread = null;
+            _installed.Dispose();
         }
     }
 
@@ -219,11 +279,32 @@ internal sealed class GlobalShortcutHook : IDisposable
     [DllImport("user32.dll")]
     private static extern IntPtr GetAncestor(IntPtr window, uint flags);
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetFocus();
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
 
     [DllImport("user32.dll")]
-    private static extern bool IsChild(IntPtr parent, IntPtr child);
+    private static extern int GetMessage(out Message message, IntPtr window, uint min, uint max);
+
+    [DllImport("user32.dll")]
+    private static extern bool TranslateMessage(ref Message message);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr DispatchMessage(ref Message message);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool PostThreadMessage(uint threadId, uint message, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Message
+    {
+        public IntPtr hwnd;
+        public uint message;
+        public IntPtr wParam;
+        public IntPtr lParam;
+        public uint time;
+        public int x;
+        public int y;
+    }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandle(string? moduleName);
