@@ -948,13 +948,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _updatingPage = true;
         try
         {
-            PageList.UnselectAll();
-            VisibleItems.Clear();
-
-            foreach (DesktopItem item in pageItems)
+            if (PageList.SelectedItems.Count > 0)
             {
-                VisibleItems.Add(item);
+                PageList.UnselectAll();
             }
+
+            // Reuse the existing item slots instead of clearing the collection.
+            // Clearing removes every container and the next page has to build a
+            // fresh icon template for each cell; replacing an index keeps the
+            // container and only rebinds its data context.
+            ReplaceVisibleItems(pageItems);
 
             if (restoreSelection is not null && restoreSelection.Count > 0)
             {
@@ -1080,6 +1083,35 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 AppLog.Write(ex, "Icon prefetch failed");
             }
         }, token);
+    }
+
+    /// <summary>
+    /// Makes <see cref="VisibleItems"/> match the given page without rebuilding
+    /// the list. WPF keeps one container per index, so replacing an item only
+    /// rebinds that container's data; clearing and refilling the collection
+    /// discards every icon template and builds it again for the next page.
+    /// </summary>
+    private void ReplaceVisibleItems(List<DesktopItem> items)
+    {
+        int shared = Math.Min(VisibleItems.Count, items.Count);
+
+        for (int i = 0; i < shared; i++)
+        {
+            if (!ReferenceEquals(VisibleItems[i], items[i]))
+            {
+                VisibleItems[i] = items[i];
+            }
+        }
+
+        for (int i = shared; i < items.Count; i++)
+        {
+            VisibleItems.Add(items[i]);
+        }
+
+        while (VisibleItems.Count > items.Count)
+        {
+            VisibleItems.RemoveAt(VisibleItems.Count - 1);
+        }
     }
 
     private void UpdateEmptyState(int visibleCount)
