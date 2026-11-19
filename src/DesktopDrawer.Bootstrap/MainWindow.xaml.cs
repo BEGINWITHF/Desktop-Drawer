@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http;
 using System.Windows;
 
 namespace DesktopDrawer.Bootstrap;
@@ -35,16 +34,17 @@ public partial class MainWindow : Window
 
             if (_release is null)
             {
-                StatusText.Text = "ç›®å‰æ²¡æœ‰å¯å®‰è£…çš„æ­£å¼ç‰ˆæœ¬ã€‚";
+                StatusText.Text = "目前没有可安装的正式版本。";
                 return;
             }
 
-            StatusText.Text = $"æœ€æ–°ç‰ˆæœ¬ï¼š{_release.Version}";
+            StatusText.Text = $"发现新版本 {_release.Version}";
+            MetaText.Text = $"将下载并安装 Desktop Drawer {_release.Version}";
             InstallButton.IsEnabled = true;
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"æ— æ³•èŽ·å–ç‰ˆæœ¬ä¿¡æ¯ï¼š{ex.Message}";
+            StatusText.Text = $"无法获取版本信息：{ex.Message}";
         }
     }
 
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
 
         _busy = true;
         InstallButton.IsEnabled = false;
-        StatusText.Text = $"æ­£åœ¨ä¸‹è½½ {_release.Version}â€¦";
+        StatusText.Text = "正在下载…";
 
         try
         {
@@ -76,34 +76,35 @@ public partial class MainWindow : Window
             var progress = new Progress<double>(value =>
             {
                 Progress.Value = value;
-                StatusText.Text = $"æ­£åœ¨ä¸‹è½½ {_release.Version}â€¦ {(int)(value * 100)}%";
+                MetaText.Text = $"已下载 {(int)(value * 100)}%";
             });
 
             await InstallerCore.DownloadAsync(_client, _release.SetupUrl, path, progress);
-            StatusText.Text = "æ­£åœ¨æ ¡éªŒå®‰è£…åŒ…â€¦";
+            StatusText.Text = "正在校验安装包…";
             await InstallerCore.VerifyAsync(_client, _release, path);
 
-            StatusText.Text = "æ­£åœ¨å®‰è£…â€¦";
+            StatusText.Text = "正在安装…";
             using Process setup = InstallerCore.StartSetup(path, silent: true);
             await setup.WaitForExitAsync();
 
             if (setup.ExitCode != 0)
             {
-                StatusText.Text = $"å®‰è£…æœªå®Œæˆï¼ˆé€€å‡ºä»£ç  {setup.ExitCode}ï¼‰ã€‚";
+                StatusText.Text = $"安装未完成（退出代码 {setup.ExitCode}）。";
                 InstallButton.IsEnabled = true;
                 return;
             }
 
             _installedPath = path;
             Progress.Value = 1;
-            StatusText.Text = "å®‰è£…å®Œæˆã€‚";
-            InstallButton.Content = "å¯åŠ¨ Desktop Drawer";
+            StatusText.Text = "安装完成";
+            MetaText.Text = "Desktop Drawer 已是最新版本";
+            InstallButton.Content = "启动";
             InstallButton.IsEnabled = true;
-            CloseButton.Content = "å…³é—­";
+            CloseButton.Content = "关闭";
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"å®‰è£…å¤±è´¥ï¼š{ex.Message}";
+            StatusText.Text = $"安装失败：{ex.Message}";
             InstallButton.IsEnabled = true;
         }
         finally
@@ -129,4 +130,3 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 }
-
