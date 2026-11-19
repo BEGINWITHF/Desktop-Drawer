@@ -11,8 +11,19 @@ public static class AppLog
 
     public static string LogPath => Path.Combine(LogDirectory, "desktop-drawer.log");
 
+    /// <summary>
+    /// Diagnostic logging is opt-in (Settings > Behavior) and off by default.
+    /// Nothing is written while this is false, including handled exceptions.
+    /// </summary>
+    public static bool Enabled { get; set; }
+
     public static void Write(string message)
     {
+        if (!Enabled)
+        {
+            return;
+        }
+
         try
         {
             lock (Sync)

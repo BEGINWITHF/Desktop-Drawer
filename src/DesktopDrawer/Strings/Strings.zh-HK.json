@@ -4,6 +4,7 @@
   "App.WindowTitle": "Desktop Drawer - {0} 個項目",
   "App.TrayTooltip": "Desktop Drawer - {0} 個項目，共 {1} 頁",
   "App.CrashMessage": "Desktop Drawer 遇到意外錯誤，即將關閉。\n\n{0}\n\n詳細資訊已寫入：\n{1}",
+  "App.CrashMessageNoLog": "Desktop Drawer 遇到意外錯誤，即將關閉。\n\n{0}",
 
   "Search.Placeholder": "搜尋桌面",
   "Search.Clear": "清除搜尋",
@@ -219,6 +220,8 @@
   "Behavior.CloseToTrayDesc": "關閉視窗後，Desktop Drawer 會繼續在系統匣中執行。",
   "Behavior.StartWithWindows": "開機時啟動",
   "Behavior.StartWithWindowsDesc": "登入 Windows 後自動開啟 Desktop Drawer。",
+  "Behavior.Logging": "寫入診斷日誌",
+  "Behavior.LoggingDesc": "在 %AppData%\\DesktopDrawer 儲存日誌檔案以便排查問題，預設關閉。",
 
   "Section.Windows": "WINDOWS 桌面",
   "Windows.HideNow": "立即隱藏桌面圖示",

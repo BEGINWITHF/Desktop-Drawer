@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using Microsoft.Win32;
 
 namespace DesktopDrawer.Watchdog;
@@ -18,6 +19,37 @@ internal static class Program
     private const int ToggleAttempts = 4;
     private const int ShcneAssocChanged = 0x08000000;
     private const uint ShcnfIdList = 0x0000;
+
+    /// <summary>
+    /// Diagnostic logging is opt-in in the app settings. The watchdog is a
+    /// separate process, so it reads the saved choice before writing anything.
+    /// </summary>
+    private static readonly bool LogEnabled = ReadLogEnabled();
+
+    private static bool ReadLogEnabled()
+    {
+        try
+        {
+            string path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "DesktopDrawer",
+                "settings.json");
+
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+
+            return document.RootElement.TryGetProperty("EnableLogging", out JsonElement value) &&
+                   value.ValueKind == JsonValueKind.True;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     private static int Main(string[] args)
     {
@@ -169,6 +201,11 @@ internal static class Program
 
     private static void Log(string message)
     {
+        if (!LogEnabled)
+        {
+            return;
+        }
+
         try
         {
             string directory = Path.Combine(

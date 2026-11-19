@@ -1377,6 +1377,24 @@
                                           Unchecked="StartWithWindowsToggle_Changed" />
                             </Grid>
 
+                            <Grid Margin="0,8,10,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Str.Behavior.Logging}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Behavior.LoggingDesc}"
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="LoggingToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="LoggingToggle_Changed"
+                                          Unchecked="LoggingToggle_Changed" />
+                            </Grid>
+
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <ContentControl Content="{DynamicResource Str.Section.Windows}" Style="{StaticResource SectionHeader}" />

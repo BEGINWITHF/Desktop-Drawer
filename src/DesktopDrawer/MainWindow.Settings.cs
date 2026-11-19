@@ -98,6 +98,7 @@ public partial class MainWindow
         AlwaysShowChromeToggle.IsChecked = _settings.AlwaysShowChrome;
         StartWithWindowsToggle.IsChecked = _settings.StartWithWindows;
         HideIconsOnLaunchToggle.IsChecked = _settings.HideIconsOnLaunch;
+        LoggingToggle.IsChecked = _settings.EnableLogging;
         HideIconsSettingsToggle.IsChecked = _desktopIconsService.AreHidden();
         UpdateLayoutEditButton();
 
@@ -480,6 +481,23 @@ public partial class MainWindow
 
         _settings.HideIconsOnLaunch = HideIconsOnLaunchToggle.IsChecked == true;
         SaveSettings();
+    }
+
+    private void LoggingToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializingSettings)
+        {
+            return;
+        }
+
+        _settings.EnableLogging = LoggingToggle.IsChecked == true;
+        AppLog.Enabled = _settings.EnableLogging;
+        SaveSettings();
+
+        if (_settings.EnableLogging)
+        {
+            AppLog.Write("Diagnostic logging enabled from Settings");
+        }
     }
 
     private void SetDesktopIconsHidden(bool hidden)
