@@ -26,7 +26,8 @@
     box-shadow:0 24px 70px rgba(0,0,0,.55);
   }
   .head{display:flex;align-items:center;gap:12px}
-  .brand{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);white-space:nowrap}
+  .brand{margin-right:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .brand img{width:26px;height:26px;display:block}
   .brand img{width:22px;height:22px;display:block}
   .logo{display:grid;place-items:center}
   .logo img{width:40px;height:40px;display:block}
@@ -37,7 +38,7 @@
   .meta{font-size:11px;color:var(--muted);margin-top:4px;min-height:16px}
   .track{height:4px;background:rgba(255,255,255,.09);border-radius:99px;overflow:hidden;margin-top:14px}
   .bar{height:100%;width:0;background:#fff;border-radius:99px;transition:width .18s ease}
-  .row{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+  .row{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:20px}
   button{
     height:32px;padding:0 18px;font:inherit;font-size:12.5px;
     color:var(--text);background:transparent;border:1px solid var(--line);
@@ -59,10 +60,6 @@
         <h1>Desktop Drawer</h1>
         <div class="sub">A paged desktop</div>
       </div>
-      <div class="brand">
-        <span>Team Daydream</span>
-        <img src="team-daydream.png" alt="Team Daydream">
-      </div>
     </div>
 
     <div class="divider"></div>
@@ -72,6 +69,10 @@
     <div class="track"><div class="bar" id="bar"></div></div>
 
     <div class="row">
+      <div class="brand">
+        <img src="team-daydream.png" alt="Team Daydream">
+        <span>Team Daydream</span>
+      </div>
       <button id="close">取消</button>
       <button class="primary" id="install" disabled>安装</button>
     </div>

@@ -38,15 +38,6 @@
                             Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
-                    <TextBlock Text="Team Daydream"
-                               FontSize="11"
-                               Foreground="#8F8F9A"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0" />
-                    <Image Source="pack://application:,,,/team-daydream.png"
-                           Width="22"
-                           Height="22"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
                     <Button x:Name="LangButton" Content="EN" Width="30" Height="22" Margin="14,0,0,0" Padding="0" FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Cursor="Hand" Click="LangButton_Click" />
                     <Button Content="&#xE921;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="14,0,0,0" Padding="0" FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="MinimizeButton_Click" />
                     <Button Content="&#xE8BB;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="2,0,0,0" Padding="0" FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="CloseButton_Click" />
@@ -76,7 +67,26 @@
                          Background="#17FFFFFF"
                          BorderThickness="0" />
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Grid Margin="0,20,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="pack://application:,,,/team-daydream.png"
+                           Width="20"
+                           Height="20"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Text="Team Daydream"
+                               FontSize="11"
+                               Foreground="#8F8F9A"
+                               VerticalAlignment="Center"
+                               Margin="6,0,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="CloseButton"
                         Content="取消"
                         Height="32"
@@ -99,7 +109,8 @@
                         IsEnabled="False"
                         Cursor="Hand"
                         Click="InstallButton_Click" />
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </StackPanel>
     </Border>
 </Window>
