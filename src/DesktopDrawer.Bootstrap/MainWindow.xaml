@@ -7,11 +7,11 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
+
+        Background="#080808"
         FontFamily="Segoe UI Variable Text, Segoe UI"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
-    <Border Background="#D2080808"
+    <Border Background="#080808"
             BorderBrush="#3DFFFFFF"
             BorderThickness="1"
             Padding="22">
@@ -79,7 +79,7 @@
                         Height="32"
                         Padding="18,0"
                         Foreground="#F7F7FA"
-                        Background="Transparent"
+                        Background="#080808"
                         BorderBrush="#3DFFFFFF"
                         BorderThickness="1"
                         Cursor="Hand"
