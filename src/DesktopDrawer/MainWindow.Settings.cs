@@ -92,6 +92,15 @@ public partial class MainWindow
         ColumnSpacingValueText.Text = $"{(int)Math.Round(ColumnSpacingSlider.Value)} px";
         RowSpacingValueText.Text = $"{(int)Math.Round(RowSpacingSlider.Value)} px";
 
+        PageTopMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingTop, -40, 120);
+        PageBottomMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingBottom, -40, 120);
+        PageLeftPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingLeft, -40, 120);
+        PageRightPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingRight, -40, 120);
+        PageTopMarginValueText.Text = $"{(int)Math.Round(PageTopMarginSlider.Value)} px";
+        PageBottomMarginValueText.Text = $"{(int)Math.Round(PageBottomMarginSlider.Value)} px";
+        PageLeftPaddingValueText.Text = $"{(int)Math.Round(PageLeftPaddingSlider.Value)} px";
+        PageRightPaddingValueText.Text = $"{(int)Math.Round(PageRightPaddingSlider.Value)} px";
+
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
         CloseToTrayToggle.IsChecked = _settings.CloseToTray;
@@ -483,6 +492,25 @@ public partial class MainWindow
         SaveSettings();
     }
 
+    private void PageMarginSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || PageTopMarginSlider is null || PageBottomMarginSlider is null)
+        {
+            return;
+        }
+
+        _settings.SelectionPaddingTop = (int)Math.Round(PageTopMarginSlider.Value);
+        _settings.SelectionPaddingBottom = (int)Math.Round(PageBottomMarginSlider.Value);
+        _settings.SelectionPaddingLeft = (int)Math.Round(PageLeftPaddingSlider.Value);
+        _settings.SelectionPaddingRight = (int)Math.Round(PageRightPaddingSlider.Value);
+        PageTopMarginValueText.Text = $"{_settings.SelectionPaddingTop} px";
+        PageBottomMarginValueText.Text = $"{_settings.SelectionPaddingBottom} px";
+        PageLeftPaddingValueText.Text = $"{_settings.SelectionPaddingLeft} px";
+        PageRightPaddingValueText.Text = $"{_settings.SelectionPaddingRight} px";
+        RefreshSelectionPills();
+        SaveSettings();
+    }
+
     private void LoggingToggle_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializingSettings)
@@ -671,7 +699,7 @@ public partial class MainWindow
         }
 
         _settingsOpen = false;
-        var slide = new DoubleAnimation(0, 404, TimeSpan.FromMilliseconds(180))
+        var slide = new DoubleAnimation(-40, 1204, TimeSpan.FromMilliseconds(180))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };

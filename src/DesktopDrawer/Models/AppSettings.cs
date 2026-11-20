@@ -52,6 +52,10 @@ public sealed class AppSettings
     public int GridRows { get; set; }          // 0 = fit to the window
     public int ColumnSpacing { get; set; } = 4; // pixels between grid columns
     public int RowSpacing { get; set; } = 4;    // pixels between grid rows
+    public int SelectionPaddingTop { get; set; } = 8;     // capsule padding above the icon
+    public int SelectionPaddingBottom { get; set; } = 12;  // capsule padding below the name
+    public int SelectionPaddingLeft { get; set; } = 8;     // capsule padding left of the content
+    public int SelectionPaddingRight { get; set; } = 8;    // capsule padding right of the content
     public SortMode SortMode { get; set; } = SortMode.Name;
     public GroupMode GroupMode { get; set; } = GroupMode.None;
     public List<CustomGroup> CustomGroups { get; set; } = [];

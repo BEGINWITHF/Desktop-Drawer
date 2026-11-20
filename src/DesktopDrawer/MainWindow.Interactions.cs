@@ -572,7 +572,7 @@ public partial class MainWindow
 
         if (focused)
         {
-            AnimateSearchLayer(SearchHoverLayer, 0, 120);
+            AnimateSearchLayer(SearchHoverLayer, -40, 120);
         }
         else if (SearchField.IsMouseOver)
         {
@@ -1111,11 +1111,23 @@ public partial class MainWindow
         }
 
         Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+        FrameworkElement? hoverTile = FindNamed<FrameworkElement>(container, "Tile");
+        double hoverTop = hoverTile is null
+            ? topLeft.Y
+            : hoverTile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
+        double hoverBottom = hoverTile is null
+            ? topLeft.Y + container.ActualHeight
+            : hoverTop + hoverTile.ActualHeight;
+        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, -40, 120);
+        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, -40, 120);
+        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, -40, 120);
+        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, -40, 120);
 
-        Canvas.SetLeft(_hoverBox, topLeft.X);
-        Canvas.SetTop(_hoverBox, topLeft.Y);
-        _hoverBox.Width = Math.Max(0, container.ActualWidth);
-        _hoverBox.Height = Math.Max(0, container.ActualHeight);
+        double hoverLeft = hoverTile is null ? topLeft.X : hoverTile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).X;
+        Canvas.SetLeft(_hoverBox, hoverLeft - hoverPadLeft);
+        Canvas.SetTop(_hoverBox, hoverTop - hoverPadTop);
+        _hoverBox.Width = Math.Max(0, (hoverTile?.ActualWidth ?? container.ActualWidth)) + hoverPadLeft + hoverPadRight;
+        _hoverBox.Height = Math.Max(0, hoverBottom - hoverTop) + hoverPadTop + hoverPadBottom;
         _hoverBox.Visibility = Visibility.Visible;
     }
 
@@ -1158,7 +1170,12 @@ public partial class MainWindow
             }
 
             Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
-            double bottom = topLeft.Y + container.ActualHeight;
+            double tileTopY = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
+            double padTop = Math.Clamp(_settings.SelectionPaddingTop, -40, 120);
+            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, -40, 120);
+            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, -40, 120);
+            double padRight = Math.Clamp(_settings.SelectionPaddingRight, -40, 120);
+            double bottom = tileTopY + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
 
@@ -1181,12 +1198,12 @@ public partial class MainWindow
                 SnapsToDevicePixels = true
             };
 
-            Canvas.SetLeft(pill, topLeft.X);
-            Canvas.SetTop(pill, topLeft.Y);
-            pill.Width = Math.Max(0, container.ActualWidth);
+            Canvas.SetLeft(pill, tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).X - padLeft);
+            Canvas.SetTop(pill, tileTopY - padTop);
+            pill.Width = Math.Max(0, tile.ActualWidth) + padLeft + padRight;
             // Long names wrap past the cell; keep a small breathing space under
             // the last line so the capsule never touches the text.
-            pill.Height = Math.Max(0, bottom - topLeft.Y) + 12;
+            pill.Height = Math.Max(0, bottom - tileTopY) + padTop + padBottom;
 
             SelectionBackdropCanvas.Children.Insert(0, pill);
             _selectionPills[item] = pill;
