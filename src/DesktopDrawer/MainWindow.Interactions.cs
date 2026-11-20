@@ -1159,6 +1159,8 @@ public partial class MainWindow
 
             Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
             double tileTopY = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
+            double padTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
+            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
             double bottom = tileTopY + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
@@ -1183,11 +1185,11 @@ public partial class MainWindow
             };
 
             Canvas.SetLeft(pill, topLeft.X);
-            Canvas.SetTop(pill, tileTopY);
+            Canvas.SetTop(pill, tileTopY - padTop);
             pill.Width = Math.Max(0, container.ActualWidth);
             // Long names wrap past the cell; keep a small breathing space under
             // the last line so the capsule never touches the text.
-            pill.Height = Math.Max(0, bottom - tileTopY) + 12;
+            pill.Height = Math.Max(0, bottom - tileTopY) + padTop + padBottom;
 
             SelectionBackdropCanvas.Children.Insert(0, pill);
             _selectionPills[item] = pill;
