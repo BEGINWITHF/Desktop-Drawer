@@ -1101,7 +1101,7 @@ public partial class MainWindow
                 continue;
             }
 
-            Point topLeft = tile.TransformToAncestor(SelectionCanvas).Transform(new Point(0, 0));
+            Point topLeft = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
             double bottom = topLeft.Y + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
@@ -1109,7 +1109,7 @@ public partial class MainWindow
             if (name is not null)
             {
                 Point nameBottom = name
-                    .TransformToAncestor(SelectionCanvas)
+                    .TransformToAncestor(RootGrid)
                     .Transform(new Point(0, name.ActualHeight));
 
                 bottom = Math.Max(bottom, nameBottom.Y);
