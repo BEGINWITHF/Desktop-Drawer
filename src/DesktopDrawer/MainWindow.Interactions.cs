@@ -1111,11 +1111,20 @@ public partial class MainWindow
         }
 
         Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+        FrameworkElement? hoverTile = FindNamed<FrameworkElement>(container, "Tile");
+        double hoverTop = hoverTile is null
+            ? topLeft.Y
+            : hoverTile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
+        double hoverBottom = hoverTile is null
+            ? topLeft.Y + container.ActualHeight
+            : hoverTop + hoverTile.ActualHeight;
+        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
+        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
 
         Canvas.SetLeft(_hoverBox, topLeft.X);
-        Canvas.SetTop(_hoverBox, topLeft.Y);
+        Canvas.SetTop(_hoverBox, hoverTop - hoverPadTop);
         _hoverBox.Width = Math.Max(0, container.ActualWidth);
-        _hoverBox.Height = Math.Max(0, container.ActualHeight);
+        _hoverBox.Height = Math.Max(0, hoverBottom - hoverTop) + hoverPadTop + hoverPadBottom;
         _hoverBox.Visibility = Visibility.Visible;
     }
 
