@@ -572,7 +572,7 @@ public partial class MainWindow
 
         if (focused)
         {
-            AnimateSearchLayer(SearchHoverLayer, 0, 120);
+            AnimateSearchLayer(SearchHoverLayer, -40, 120);
         }
         else if (SearchField.IsMouseOver)
         {
@@ -1118,10 +1118,10 @@ public partial class MainWindow
         double hoverBottom = hoverTile is null
             ? topLeft.Y + container.ActualHeight
             : hoverTop + hoverTile.ActualHeight;
-        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 120);
-        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 120);
-        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
-        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
+        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, -40, 120);
+        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, -40, 120);
+        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, -40, 120);
+        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, -40, 120);
 
         double hoverLeft = hoverTile is null ? topLeft.X : hoverTile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).X;
         Canvas.SetLeft(_hoverBox, hoverLeft - hoverPadLeft);
@@ -1171,10 +1171,10 @@ public partial class MainWindow
 
             Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
             double tileTopY = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
-            double padTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 120);
-            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 120);
-            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
-            double padRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
+            double padTop = Math.Clamp(_settings.SelectionPaddingTop, -40, 120);
+            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, -40, 120);
+            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, -40, 120);
+            double padRight = Math.Clamp(_settings.SelectionPaddingRight, -40, 120);
             double bottom = tileTopY + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
