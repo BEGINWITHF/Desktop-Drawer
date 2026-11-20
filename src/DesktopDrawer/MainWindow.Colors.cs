@@ -407,11 +407,24 @@ public partial class MainWindow
         OpenStylePanel();
     }
 
-    private void CapsulePaddingButton_Click(object? sender, RoutedEventArgs e)
+    private void ThemesSectionButton_Click(object sender, RoutedEventArgs e)
     {
-        bool show = CapsuleSection.Visibility != Visibility.Visible;
-        CapsuleSection.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        ColorRowsPanel.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+        ShowStyleSection(true);
+    }
+
+    private void CapsulePaddingButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(false);
+    }
+
+    private void ShowStyleSection(bool showThemes)
+    {
+        ThemesSection.Visibility = showThemes ? Visibility.Visible : Visibility.Collapsed;
+        CapsuleSection.Visibility = showThemes ? Visibility.Collapsed : Visibility.Visible;
+        ThemesSectionButton.SetResourceReference(
+            Control.ForegroundProperty, showThemes ? "TextPrimaryBrush" : "TextMutedBrush");
+        CapsulePaddingButton.SetResourceReference(
+            Control.ForegroundProperty, showThemes ? "TextMutedBrush" : "TextPrimaryBrush");
     }
 
     private void StyleCloseButton_Click(object sender, RoutedEventArgs e)
@@ -428,6 +441,7 @@ public partial class MainWindow
     {
         BuildColorRows();
         BuildStyleThemes();
+        ShowStyleSection(true);
 
         StyleOverlay.Visibility = Visibility.Visible;
         StyleOverlay.BeginAnimation(OpacityProperty, null);

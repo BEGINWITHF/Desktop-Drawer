@@ -1777,122 +1777,153 @@
 
                     <Grid Grid.Row="1" Margin="0,16,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="250" />
+                            <ColumnDefinition Width="200" />
                             <ColumnDefinition Width="1" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <DockPanel Grid.Column="0" Margin="0,0,16,0">
-                            <TextBlock DockPanel.Dock="Top"
-                                       Text="{DynamicResource Str.Style.Themes}"
-                                       Style="{StaticResource SettingTitle}"
-                                       Margin="2,0,0,8" />
-                            <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
-                                <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,0,0,12" />
-                                <Button x:Name="CapsulePaddingButton" Content="{DynamicResource Str.Style.CapsulePadding}" Background="Transparent" BorderThickness="0" Padding="2,0" HorizontalAlignment="Left" Cursor="Hand" FontFamily="{StaticResource DisplayFont}" FontSize="{DynamicResource FontSize14}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Click="CapsulePaddingButton_Click" />
-                            </StackPanel>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                          HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel x:Name="StyleThemePanel" />
-                            </ScrollViewer>
-                        </DockPanel>
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                            <Button x:Name="ThemesSectionButton"
+                                    Content="{DynamicResource Str.Style.Themes}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="8,6"
+                                    HorizontalContentAlignment="Left"
+                                    Cursor="Hand"
+                                    FontFamily="{StaticResource DisplayFont}"
+                                    FontSize="{DynamicResource FontSize14}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource TextPrimaryBrush}"
+                                    Click="ThemesSectionButton_Click" />
+                            <Button x:Name="CapsulePaddingButton"
+                                    Content="{DynamicResource Str.Style.CapsulePadding}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="8,6"
+                                    Margin="0,2,0,0"
+                                    HorizontalContentAlignment="Left"
+                                    Cursor="Hand"
+                                    FontFamily="{StaticResource DisplayFont}"
+                                    FontSize="{DynamicResource FontSize14}"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource TextMutedBrush}"
+                                    Click="CapsulePaddingButton_Click" />
+                        </StackPanel>
 
                         <Border Grid.Column="1"
                                 Width="1"
                                 Background="{DynamicResource DividerBrush}"
                                 Margin="0,0,16,0" />
 
-                        <DockPanel Grid.Column="2">
-                            <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
-                                <TextBlock Text="{DynamicResource Str.Style.Colors}"
-                                           Style="{StaticResource SettingTitle}"
-                                           VerticalAlignment="Center" />
-                                <Button Content="{DynamicResource Str.Style.ResetColors}"
-                                        Style="{StaticResource GhostButton}"
-                                        HorizontalAlignment="Right"
-                                        Height="26"
-                                        Padding="10,0"
-                                        FontSize="{DynamicResource FontSize105}"
-                                        Click="ResetColorsButton_Click" />
-                            </Grid>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        <Grid Grid.Column="2">
+                            <ScrollViewer x:Name="ThemesSection"
+                                          VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
-                                <Border Padding="6"
-                                        Background="{DynamicResource SegmentSurfaceBrush}"
-                                        BorderBrush="{DynamicResource StrokeBrush}"
-                                        BorderThickness="1">
                                 <StackPanel>
-                                    <StackPanel x:Name="ColorRowsPanel" />
-                                <StackPanel x:Name="CapsuleSection" Visibility="Collapsed">
-                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
+                                    <TextBlock Text="{DynamicResource Str.Style.Themes}"
+                                               Style="{StaticResource SettingTitle}"
+                                               Margin="2,0,0,8" />
+                                    <StackPanel x:Name="StyleThemePanel" />
 
-                            <Grid Margin="0,0,10,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Page.TopMargin}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Grid Grid.Column="1" Width="180">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="44" />
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PageTopMarginSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
-                                    <TextBlock x:Name="PageTopMarginValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
-                                </Grid>
-                            </Grid>
+                                    <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,14" />
 
-                            <Grid Margin="0,0,10,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Page.BottomMargin}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Grid Grid.Column="1" Width="180">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="44" />
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PageBottomMarginSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
-                                    <TextBlock x:Name="PageBottomMarginValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
-                                </Grid>
-                            </Grid>
-                            <Grid Margin="0,8,10,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Page.LeftPadding}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Grid Grid.Column="1" Width="180">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="44" />
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PageLeftPaddingSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
-                                    <TextBlock x:Name="PageLeftPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
-                                </Grid>
-                            </Grid>
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="{DynamicResource Str.Style.Colors}"
+                                                   Style="{StaticResource SettingTitle}"
+                                                   VerticalAlignment="Center" />
+                                        <Button Content="{DynamicResource Str.Style.ResetColors}"
+                                                Style="{StaticResource GhostButton}"
+                                                HorizontalAlignment="Right"
+                                                Height="26"
+                                                Padding="10,0"
+                                                FontSize="{DynamicResource FontSize105}"
+                                                Click="ResetColorsButton_Click" />
+                                    </Grid>
 
-                            <Grid Margin="0,0,10,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Page.RightPadding}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Grid Grid.Column="1" Width="180">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="44" />
-                                    </Grid.ColumnDefinitions>
-                                    <Slider x:Name="PageRightPaddingSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
-                                    <TextBlock x:Name="PageRightPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
-                                </Grid>
-                            </Grid>
+                                    <Border Padding="6"
+                                            Background="{DynamicResource SegmentSurfaceBrush}"
+                                            BorderBrush="{DynamicResource StrokeBrush}"
+                                            BorderThickness="1">
+                                        <StackPanel x:Name="ColorRowsPanel" />
+                                    </Border>
                                 </StackPanel>
-                                </StackPanel>
-                                </Border>
                             </ScrollViewer>
-                        </DockPanel>
+
+                            <ScrollViewer x:Name="CapsuleSection"
+                                          Visibility="Collapsed"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Str.Style.CapsulePadding}"
+                                               Style="{StaticResource SettingTitle}"
+                                               Margin="2,0,0,12" />
+
+                                    <Grid Margin="0,0,10,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{DynamicResource Str.Page.TopMargin}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" Width="180">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="44" />
+                                            </Grid.ColumnDefinitions>
+                                            <Slider x:Name="PageTopMarginSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
+                                            <TextBlock x:Name="PageTopMarginValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,10,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{DynamicResource Str.Page.BottomMargin}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" Width="180">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="44" />
+                                            </Grid.ColumnDefinitions>
+                                            <Slider x:Name="PageBottomMarginSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
+                                            <TextBlock x:Name="PageBottomMarginValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,10,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{DynamicResource Str.Page.LeftPadding}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" Width="180">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="44" />
+                                            </Grid.ColumnDefinitions>
+                                            <Slider x:Name="PageLeftPaddingSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
+                                            <TextBlock x:Name="PageLeftPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,10,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{DynamicResource Str.Page.RightPadding}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" Width="180">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="44" />
+                                            </Grid.ColumnDefinitions>
+                                            <Slider x:Name="PageRightPaddingSlider" Minimum="-40" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" ValueChanged="PageMarginSlider_ValueChanged" />
+                                            <TextBlock x:Name="PageRightPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
+                                        </Grid>
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
                     </Grid>
                 </Grid>
             </Border>
