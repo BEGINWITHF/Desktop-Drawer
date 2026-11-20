@@ -92,10 +92,10 @@ public partial class MainWindow
         ColumnSpacingValueText.Text = $"{(int)Math.Round(ColumnSpacingSlider.Value)} px";
         RowSpacingValueText.Text = $"{(int)Math.Round(RowSpacingSlider.Value)} px";
 
-        PageTopMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
-        PageBottomMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
-        PageLeftPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
-        PageRightPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
+        PageTopMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingTop, 0, 120);
+        PageBottomMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingBottom, 0, 120);
+        PageLeftPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
+        PageRightPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
         PageTopMarginValueText.Text = $"{(int)Math.Round(PageTopMarginSlider.Value)} px";
         PageBottomMarginValueText.Text = $"{(int)Math.Round(PageBottomMarginSlider.Value)} px";
         PageLeftPaddingValueText.Text = $"{(int)Math.Round(PageLeftPaddingSlider.Value)} px";
@@ -699,7 +699,7 @@ public partial class MainWindow
         }
 
         _settingsOpen = false;
-        var slide = new DoubleAnimation(0, 404, TimeSpan.FromMilliseconds(180))
+        var slide = new DoubleAnimation(0, 1204, TimeSpan.FromMilliseconds(180))
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
         };

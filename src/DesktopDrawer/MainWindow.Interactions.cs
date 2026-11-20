@@ -1118,10 +1118,10 @@ public partial class MainWindow
         double hoverBottom = hoverTile is null
             ? topLeft.Y + container.ActualHeight
             : hoverTop + hoverTile.ActualHeight;
-        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
-        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
-        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
-        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
+        double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 120);
+        double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 120);
+        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
+        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
 
         Canvas.SetLeft(_hoverBox, topLeft.X - hoverPadLeft);
         Canvas.SetTop(_hoverBox, hoverTop - hoverPadTop);
@@ -1170,10 +1170,10 @@ public partial class MainWindow
 
             Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
             double tileTopY = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
-            double padTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
-            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
-            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
-            double padRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
+            double padTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 120);
+            double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 120);
+            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
+            double padRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
             double bottom = tileTopY + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
