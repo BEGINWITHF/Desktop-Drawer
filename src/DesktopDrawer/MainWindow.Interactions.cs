@@ -1123,9 +1123,10 @@ public partial class MainWindow
         double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 120);
         double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 120);
 
-        Canvas.SetLeft(_hoverBox, topLeft.X - hoverPadLeft);
+        double hoverLeft = hoverTile is null ? topLeft.X : hoverTile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).X;
+        Canvas.SetLeft(_hoverBox, hoverLeft - hoverPadLeft);
         Canvas.SetTop(_hoverBox, hoverTop - hoverPadTop);
-        _hoverBox.Width = Math.Max(0, container.ActualWidth) + hoverPadLeft + hoverPadRight;
+        _hoverBox.Width = Math.Max(0, (hoverTile?.ActualWidth ?? container.ActualWidth)) + hoverPadLeft + hoverPadRight;
         _hoverBox.Height = Math.Max(0, hoverBottom - hoverTop) + hoverPadTop + hoverPadBottom;
         _hoverBox.Visibility = Visibility.Visible;
     }
@@ -1197,9 +1198,9 @@ public partial class MainWindow
                 SnapsToDevicePixels = true
             };
 
-            Canvas.SetLeft(pill, topLeft.X - padLeft);
+            Canvas.SetLeft(pill, tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).X - padLeft);
             Canvas.SetTop(pill, tileTopY - padTop);
-            pill.Width = Math.Max(0, container.ActualWidth) + padLeft + padRight;
+            pill.Width = Math.Max(0, tile.ActualWidth) + padLeft + padRight;
             // Long names wrap past the cell; keep a small breathing space under
             // the last line so the capsule never touches the text.
             pill.Height = Math.Max(0, bottom - tileTopY) + padTop + padBottom;
