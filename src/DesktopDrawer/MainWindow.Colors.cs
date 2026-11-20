@@ -407,6 +407,72 @@ public partial class MainWindow
         OpenStylePanel();
     }
 
+    private void ThemesSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Themes);
+    }
+
+    private void CapsulePaddingButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Capsule);
+    }
+
+    private void IconsSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Icons);
+    }
+
+    private void GridSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Grid);
+    }
+
+    private void WallpaperSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Wallpaper);
+    }
+
+    private enum StyleSection
+    {
+        Themes,
+        Capsule,
+        Icons,
+        Grid,
+        Wallpaper
+    }
+
+    private void ShowStyleSection(StyleSection section)
+    {
+        var views = new FrameworkElement[]
+        {
+            ThemesSection, CapsuleSection, IconsSection, GridSection, WallpaperSection
+        };
+        var buttons = new[]
+        {
+            ThemesSectionButton, CapsulePaddingButton, IconsSectionButton,
+            GridSectionButton, WallpaperSectionButton
+        };
+
+        for (int i = 0; i < views.Length; i++)
+        {
+            bool selected = i == (int)section;
+            views[i].Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+            ApplySectionButton(buttons[i], selected);
+        }
+    }
+
+    private void ApplySectionButton(Button button, bool selected)
+    {
+        button.Background = selected
+            ? (Brush)FindResource("PanelHoverBrush")
+            : Brushes.Transparent;
+        button.BorderBrush = selected
+            ? (Brush)FindResource("StrokeStrongBrush")
+            : Brushes.Transparent;
+        button.SetResourceReference(
+            Control.ForegroundProperty, selected ? "TextPrimaryBrush" : "TextSecondaryBrush");
+    }
+
     private void StyleCloseButton_Click(object sender, RoutedEventArgs e)
     {
         CloseStylePanel();
@@ -421,6 +487,7 @@ public partial class MainWindow
     {
         BuildColorRows();
         BuildStyleThemes();
+        ShowStyleSection(StyleSection.Themes);
 
         StyleOverlay.Visibility = Visibility.Visible;
         StyleOverlay.BeginAnimation(OpacityProperty, null);
@@ -473,7 +540,7 @@ public partial class MainWindow
 
             var button = new Button
             {
-                Style = (Style)FindResource("GhostButton"),
+                Style = (Style)FindResource("PanelListButton"),
                 Height = 48,
                 Margin = new Thickness(0, 0, 0, 6),
                 Padding = new Thickness(8, 0, 8, 0),
