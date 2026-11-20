@@ -721,42 +721,77 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Grows the selected tile downwards so its selection box covers the full
+    /// Grows every selected tile downwards so its selection box covers the full
     /// (wrapped) file name instead of clipping it at the normal label height.
     /// </summary>
     private void UpdateExpandedLabel()
     {
-        if (_expandedContainer is not null)
-        {
-            if (_expandedContainer.Template?.FindName("Card", _expandedContainer) is Border previousCard)
-            {
-                previousCard.Margin = new Thickness(4);
-            }
-
-            if (_expandedContainer.Template?.FindName("ContentHost", _expandedContainer) is FrameworkElement previousHost)
-            {
-                previousHost.Margin = new Thickness(0);
-                previousHost.VerticalAlignment = VerticalAlignment.Stretch;
-            }
-
-            _expandedContainer = null;
-        }
-
-        if (_cleanedUp || _updatingPage || PageList.SelectedItems.Count != 1 ||
-            PageList.SelectedItems[0] is not DesktopItem item)
+        if (_cleanedUp)
         {
             return;
         }
 
-        if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
-            container.Template?.FindName("Card", container) is not Border card ||
+        HashSet<DesktopItem> selected = _updatingPage
+            ? []
+            : PageList.SelectedItems.Cast<DesktopItem>().ToHashSet();
+
+        for (int i = _expandedContainers.Count - 1; i >= 0; i--)
+        {
+            ListBoxItem previous = _expandedContainers[i];
+
+            if (!_updatingPage &&
+                previous.DataContext is DesktopItem item &&
+                selected.Contains(item))
+            {
+                continue;
+            }
+
+            ResetExpandedContainer(previous);
+            _expandedContainers.RemoveAt(i);
+        }
+
+        if (_updatingPage)
+        {
+            return;
+        }
+
+        foreach (DesktopItem item in selected)
+        {
+            if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+                _expandedContainers.Contains(container))
+            {
+                continue;
+            }
+
+            _expandedContainers.Add(container);
+            ExpandLabel(item, container);
+        }
+    }
+
+    private static void ResetExpandedContainer(ListBoxItem container)
+    {
+        if (container.Template?.FindName("Card", container) is Border previousCard)
+        {
+            previousCard.Margin = new Thickness(4);
+        }
+
+        if (container.Template?.FindName("ContentHost", container) is FrameworkElement previousHost)
+        {
+            previousHost.Margin = new Thickness(0);
+            previousHost.VerticalAlignment = VerticalAlignment.Stretch;
+        }
+    }
+
+    private void ExpandLabel(DesktopItem item, ListBoxItem container)
+    {
+        if (container.Template?.FindName("Card", container) is not Border card ||
             container.Template?.FindName("ContentHost", container) is not FrameworkElement contentHost)
         {
             return;
         }
 
-        // The previous expansion (if it was this same tile) has just been reset;
-        // make sure the layout is back to its normal state before measuring.
+        // Any previous expansion has just been reset; make sure the layout is
+        // back to its normal state before measuring.
         container.UpdateLayout();
 
         double labelWidth = Math.Max(40, container.ActualWidth - 8);
@@ -808,8 +843,6 @@ public partial class MainWindow
             ? topGap
             : Math.Max(0, contentTop - borderTop - tile.Margin.Top);
         contentHost.Margin = new Thickness(0, hostTop, 0, 0);
-
-        _expandedContainer = container;
     }
 
     private static TextBlock? FindLabel(DependencyObject root)
