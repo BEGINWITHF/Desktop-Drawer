@@ -407,6 +407,13 @@ public partial class MainWindow
         OpenStylePanel();
     }
 
+    private void CapsulePaddingButton_Click(object? sender, RoutedEventArgs e)
+    {
+        bool show = CapsuleSection.Visibility != Visibility.Visible;
+        CapsuleSection.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        ColorRowsPanel.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private void StyleCloseButton_Click(object sender, RoutedEventArgs e)
     {
         CloseStylePanel();

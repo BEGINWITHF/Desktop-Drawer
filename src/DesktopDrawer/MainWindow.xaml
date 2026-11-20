@@ -1787,6 +1787,7 @@
                                        Text="{DynamicResource Str.Style.Themes}"
                                        Style="{StaticResource SettingTitle}"
                                        Margin="2,0,0,8" />
+                            <Button DockPanel.Dock="Bottom" x:Name="CapsulePaddingButton" Content="{DynamicResource Str.Style.CapsulePadding}" Style="{StaticResource GhostButton}" Margin="0,10,0,0" HorizontalAlignment="Left" Click="CapsulePaddingButton_Click" />
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel x:Name="StyleThemePanel" />
@@ -1819,6 +1820,7 @@
                                         BorderThickness="1">
                                 <StackPanel>
                                     <StackPanel x:Name="ColorRowsPanel" />
+                                <StackPanel x:Name="CapsuleSection" Visibility="Collapsed">
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <Grid Margin="0,0,10,10">
@@ -1883,6 +1885,7 @@
                                     <TextBlock x:Name="PageRightPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
                                 </Grid>
                             </Grid>
+                                </StackPanel>
                                 </StackPanel>
                                 </Border>
                             </ScrollViewer>
