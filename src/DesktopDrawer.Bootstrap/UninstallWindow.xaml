@@ -1,0 +1,59 @@
+<Window x:Class="DesktopDrawer.Bootstrap.UninstallWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="卸载 Desktop Drawer"
+        Width="520"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        Background="#080808"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Border Background="#080808" BorderBrush="#3DFFFFFF" BorderThickness="1" Padding="22">
+        <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Image Grid.Column="0" Source="pack://application:,,,/app.png" Width="40" Height="40"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Desktop Drawer" FontSize="16" FontWeight="SemiBold" Foreground="#F7F7FA" />
+                    <TextBlock Text="卸载" FontSize="11" Foreground="#8F8F9A" Margin="0,1,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="Team Daydream" FontSize="11" Foreground="#8F8F9A" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Image Source="pack://application:,,,/team-daydream.png" Width="22" Height="22"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Button Content="&#xE921;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="14,0,0,0" Padding="0"
+                            FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="MinimizeButton_Click" />
+                    <Button Content="&#xE8BB;" FontFamily="Segoe Fluent Icons" Width="26" Height="22" Margin="2,0,0,0" Padding="0"
+                            FontSize="10" Foreground="#C9C9D1" Background="Transparent" BorderThickness="0" Click="CancelButton_Click" />
+                </StackPanel>
+            </Grid>
+
+            <Border Height="1" Background="#1CFFFFFF" Margin="0,18,0,18" />
+
+            <TextBlock x:Name="StatusText" Text="将卸载 Desktop Drawer" FontSize="13" Foreground="#C9C9D1" TextWrapping="Wrap" />
+            <TextBlock x:Name="MetaText" Text="桌面上的文件不会被删除。" FontSize="11" Foreground="#8F8F9A" Margin="0,4,0,0" />
+
+            <CheckBox x:Name="KeepSettings" Content="保留设置和日志" IsChecked="True" Margin="0,16,0,0"
+                      Foreground="#F7F7FA" FontSize="12" />
+
+            <ProgressBar x:Name="Progress" Height="4" Minimum="0" Maximum="1" Margin="0,16,0,0"
+                         Foreground="#FFFFFF" Background="#17FFFFFF" BorderThickness="0" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                <Button x:Name="CancelButton" Content="取消" Height="32" Padding="18,0" Foreground="#F7F7FA"
+                        Background="Transparent" BorderBrush="#3DFFFFFF" BorderThickness="1" Cursor="Hand"
+                        Click="CancelButton_Click" />
+                <Button x:Name="UninstallButton" Content="卸载" Height="32" Padding="18,0" Margin="8,0,0,0"
+                        Foreground="#101014" Background="#FFFFFF" BorderThickness="0" FontWeight="SemiBold"
+                        Cursor="Hand" Click="UninstallButton_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

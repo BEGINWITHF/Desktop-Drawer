@@ -1,0 +1,45 @@
+name: Installer release
+
+on:
+  push:
+    tags:
+      - 'installer-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^installer-v', ''
+          $stage = Join-Path $env:RUNNER_TEMP 'bootstrap'
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+
+          dotnet publish src/DesktopDrawer.Bootstrap/DesktopDrawer.Bootstrap.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:Version=$version -o $stage
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+          $exe = Join-Path $stage 'DesktopDrawer-Installer.exe'
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path "$exe.sha256" -Value "$hash  DesktopDrawer-Installer.exe" -NoNewline
+
+          "EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" $env:EXE "$env:EXE.sha256" --title "Desktop Drawer Installer ${{ github.ref_name }}" --notes "Online installer for the latest Desktop Drawer release."

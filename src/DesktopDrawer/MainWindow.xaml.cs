@@ -37,6 +37,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _chromeTimer;
     private readonly DispatcherTimer _embedTimer;
     private readonly DispatcherTimer _desktopZOrderTimer;
+    private readonly DispatcherTimer _wheelStepTimer;
+    private readonly PageStepGate _wheelStepGate = new();
+    private readonly SwipePageGesture _swipeGesture = new();
+    private readonly TouchpadContactTracker _touchpadContacts = new();
 
     private List<DesktopItem> _allItems = [];
     private List<DesktopItem> _filteredItems = [];
@@ -139,13 +143,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private string _typeAhead = string.Empty;
     private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
-    private double _wheelAccumulator;
-    private DateTime _lastWheel;
-    private DateTime _lastPageFlip;
-    private readonly SwipePageGesture _swipeGesture = new();
-    private readonly TouchpadContactTracker _touchpadContacts = new();
+    private int _pageAnimationToken;
+    private EventHandler? _slideFrameHandler;
+    private int _slideFrames;
+    private long _slideLastTick;
+    private long _slideWorstTick;
+    private long _lastPageChangeAt;
     private long _lastHorizontalInputAt;
-    private bool _pageTransitionActive;
+    private TimeSpan _slideCpuStart;
     private WinForms.NotifyIcon? _trayIcon;
     private WinForms.ToolStripMenuItem? _trayHideIconsItem;
     private WinForms.ToolStripMenuItem? _trayStartupItem;
@@ -179,6 +184,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _embedTimer.Tick += EmbedTimer_Tick;
         _desktopZOrderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _desktopZOrderTimer.Tick += DesktopZOrderTimer_Tick;
+        _wheelStepTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(PageStepGate.StepIntervalMilliseconds)
+        };
+        _wheelStepTimer.Tick += WheelStepTimer_Tick;
 
         InitializeComponent();
         DataContext = this;
@@ -189,6 +199,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyWallpaperDim();
 
         PageList.RenderTransform = new TranslateTransform();
+        PageList.SelectionChanged += (_, _) => RefreshSelectionPills();
+        PageList.MouseLeave += (_, _) => UpdateHoverBox(null);
         DotsHost.SizeChanged += DotsHost_SizeChanged;
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();
@@ -381,9 +393,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _horizontalWheelHook = new HorizontalWheelHook(handle, Dispatcher, HandleHorizontalWheel);
         _horizontalWheelHook.Install();
 
-        // Windows 11 reports real touchpad contacts through WM_POINTER once the
-        // window is touchpad capable. Paging still uses the wheel deltas, but the
-        // contact down/up bounds each swipe, so its inertia tail cannot page again.
+        // Windows 11 can report real touchpad contacts through WM_POINTER.
+        // When that works, a swipe is bounded by the actual finger down/up
+        // instead of a pause in the wheel stream; paging still uses the wheel
+        // deltas, so a touchpad without support keeps the old behaviour.
         _touchpadContacts.Register(handle);
 
         // Re-pin the drawer the moment the shell reorders windows ("show desktop",
@@ -487,14 +500,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         // One swipe, one page: the gesture commits on the first accumulated
         // threshold and ignores the rest of the stream, including the inertia
-        // tail, until the fingers touch down again.
+        // tail, until the fingers stop.
         int direction = _swipeGesture.Observe(delta, Environment.TickCount64);
-
         if (direction != 0)
         {
-            GoToPage(_pageIndex + direction);
+            GoToPage(_pageIndex + direction, lightweight: true);
         }
     }
+
+    private void WheelStepTimer_Tick(object? sender, EventArgs e)
+    {
+        _wheelStepTimer.Stop();
+
+        int direction = _wheelStepGate.Take(Environment.TickCount64);
+        if (direction != 0)
+        {
+            GoToPage(_pageIndex - direction, lightweight: true);
+        }
+
+        ScheduleStepTail(_wheelStepGate, _wheelStepTimer);
+    }
+
+    /// <summary>
+    /// Releases input that was buffered when a gesture stopped between two
+    /// page steps, so a fast spin never loses its last queued pages.
+    /// </summary>
+    private static void ScheduleStepTail(PageStepGate gate, DispatcherTimer timer)
+    {
+        long delay = gate.NextStepDelay(Environment.TickCount64);
+        timer.Stop();
+
+        if (delay < 0)
+        {
+            return;
+        }
+
+        timer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, delay));
+        timer.Start();
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         ApplyWorkAreaBounds();
@@ -835,6 +879,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _pages = BuildPages(capacity);
             _pagesCapacity = capacity;
+            ResetPagePaging();
         }
 
         if (!string.IsNullOrEmpty(selectPath))
@@ -935,6 +980,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         SchedulePagerUpdate();
+        RefreshSelectionPills();
 
         CurrentPageLabel = BuildPageLabel(slice, pageCount);
         PrevButton.IsEnabled = _pageIndex > 0;
@@ -1108,6 +1154,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Title = I18n.F("App.WindowTitle", _allItems.Count);
     }
 
+    private void ResetPagePaging()
+    {
+        // The page set changed, so queued steps from the old set are meaningless.
+        _wheelStepGate.Reset();
+        _swipeGesture.Reset();
+        _wheelStepTimer.Stop();
+    }
+
     private void GoToPage(int targetPage, bool lightweight = false)
     {
         int target = Math.Clamp(targetPage, 0, Math.Max(0, _pageCount - 1));
@@ -1118,36 +1172,244 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         int direction = target > _pageIndex ? 1 : -1;
 
-        // Snapshot the page that is currently on screen, right before it is
-        // replaced. Doing it here (instead of on a timer) means the bitmap always
-        // matches the outgoing page and can never be stale. Wheel paging skips
-        // the snapshot: rapid flips would otherwise render and freeze a full
-        // page bitmap on the UI thread between every slide.
-        ImageSource? outgoing = null;
+        // Snapshot the outgoing page, then the incoming one, and slide the two
+        // bitmaps across each other. The live list stays at rest underneath, so
+        // no item container is rendered or measured during the animation.
+        BitmapSource? outgoing = CapturePageBitmap();
 
-        if (!lightweight && !_pageTransitionActive)
-        {
-            TranslateTransform transform = EnsurePageTransform();
-            transform.BeginAnimation(TranslateTransform.XProperty, null);
-            transform.X = 0;
-            outgoing = CapturePageBitmap();
-        }
-
-        _lastPageFlip = DateTime.UtcNow;
         _pageIndex = target;
         UpdatePage(rebuildPages: false);
 
+        BitmapSource? incoming = null;
+
         if (outgoing is not null)
         {
-            AnimateFullPageSlide(outgoing, direction);
+            PageList.UpdateLayout();
+            incoming = CapturePageBitmap();
+        }
+
+        if (outgoing is not null && incoming is not null)
+        {
+            AnimatePageSlide(outgoing, incoming, direction);
         }
         else
         {
-            AnimatePageFlip(direction);
+            AnimatePageEnter(direction, lightweight);
         }
     }
 
-    private ImageSource? CapturePageBitmap()
+    /// <summary>
+    /// Slides two page snapshots past each other: the outgoing page moves out
+    /// and the incoming page moves in. The live list is already at rest
+    /// underneath, so the animation only moves bitmaps and never renders item
+    /// containers. The slide is shorter than one page-step interval so every
+    /// step finishes before the next one.
+    /// </summary>
+    private void AnimatePageSlide(
+        BitmapSource outgoing,
+        BitmapSource incoming,
+        int direction)
+    {
+        double width = PageList.ActualWidth;
+        double height = PageList.ActualHeight;
+        if (width < 80 || height < 80)
+        {
+            AnimatePageEnter(direction, lightweight: true);
+            return;
+        }
+
+        PageList.BeginAnimation(OpacityProperty, null);
+        // The page bitmaps have transparent gaps (the wallpaper shows through),
+        // so the live list must not stay visible underneath or its own icons
+        // show through the moving layers as a ghost image.
+        PageList.Opacity = 0;
+        PageList.IsHitTestVisible = false;
+        PageList.CacheMode = null;
+
+        PageSnapshotImage.Source = outgoing;
+        PageSnapshotImage.Width = width;
+        PageSnapshotImage.Height = height;
+        PageSnapshotImage.Visibility = Visibility.Visible;
+
+        PageSnapshotIncomingImage.Source = incoming;
+        PageSnapshotIncomingImage.Width = width;
+        PageSnapshotIncomingImage.Height = height;
+        PageSnapshotIncomingImage.Visibility = Visibility.Visible;
+
+        TranslateTransform outgoingTransform = EnsureImageTransform(PageSnapshotImage);
+        TranslateTransform incomingTransform = EnsureImageTransform(PageSnapshotIncomingImage);
+        outgoingTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        incomingTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        outgoingTransform.X = 0;
+        incomingTransform.X = direction * width;
+
+        StartSlideFrameProbe();
+        int token = ++_pageAnimationToken;
+
+        // A single page change gets a longer, smoother slide. A burst of input
+        // (wheel or swipe) keeps the short slide so steps do not stack up.
+        long now = Environment.TickCount64;
+        bool rapid = now - _lastPageChangeAt < 300;
+        _lastPageChangeAt = now;
+
+        TimeSpan duration = TimeSpan.FromMilliseconds(rapid ? 120 : 190);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration)
+        {
+            EasingFunction = ease
+        };
+        var incomingSlide = new DoubleAnimation(direction * width, 0, duration)
+        {
+            EasingFunction = ease
+        };
+
+        incomingSlide.Completed += (_, _) =>
+        {
+            if (token != _pageAnimationToken)
+            {
+                return;
+            }
+
+            StopSlideFrameProbe(duration);
+            PageSnapshotImage.Visibility = Visibility.Collapsed;
+            PageSnapshotImage.Source = null;
+            PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+            PageSnapshotIncomingImage.Source = null;
+            outgoingTransform.X = 0;
+            incomingTransform.X = 0;
+            PageList.Opacity = 1;
+            PageList.IsHitTestVisible = true;
+        };
+
+        outgoingTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            outgoingSlide,
+            HandoffBehavior.SnapshotAndReplace);
+        incomingTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            incomingSlide,
+            HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private void StartSlideFrameProbe()
+    {
+        StopSlideFrameProbe(TimeSpan.Zero, log: false);
+        _slideCpuStart = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
+        _slideFrames = 0;
+        _slideLastTick = 0;
+        _slideWorstTick = 0;
+
+        _slideFrameHandler = (_, _) =>
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+
+            if (_slideLastTick != 0)
+            {
+                _slideWorstTick = Math.Max(_slideWorstTick, now - _slideLastTick);
+            }
+
+            _slideLastTick = now;
+            _slideFrames++;
+        };
+
+        CompositionTarget.Rendering += _slideFrameHandler;
+    }
+
+    private void StopSlideFrameProbe(TimeSpan duration, bool log = true)
+    {
+        if (_slideFrameHandler is null)
+        {
+            return;
+        }
+
+        CompositionTarget.Rendering -= _slideFrameHandler;
+        _slideFrameHandler = null;
+
+        if (!log)
+        {
+            return;
+        }
+
+        double worstMs = _slideWorstTick * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        TimeSpan cpu = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - _slideCpuStart;
+        double cpuPercent = duration.TotalMilliseconds > 0
+            ? cpu.TotalMilliseconds / duration.TotalMilliseconds * 100
+            : 0;
+
+        AppLog.Write(
+            $"Slide {duration.TotalMilliseconds:0} ms: {_slideFrames} frames, worst gap {worstMs:0.0} ms, cpu {cpuPercent:0}%");
+    }
+
+    private static TranslateTransform EnsureImageTransform(Image image)
+    {
+        if (image.RenderTransform is TranslateTransform transform)
+        {
+            return transform;
+        }
+
+        transform = new TranslateTransform();
+        image.RenderTransform = transform;
+        return transform;
+    }
+
+    /// <summary>
+    /// Fluent-style page entry: the new page fades in with a short directional
+    /// offset. No full-page snapshot or full-width slide is rendered, which keeps
+    /// fast paging cheap.
+    /// </summary>
+    private void AnimatePageEnter(int direction, bool lightweight)
+    {
+        PageList.CacheMode = null;
+        PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotImage.Visibility = Visibility.Collapsed;
+        PageSnapshotImage.Source = null;
+        PageSnapshotIncomingImage.BeginAnimation(TranslateTransform.XProperty, null);
+        PageSnapshotIncomingImage.Visibility = Visibility.Collapsed;
+        PageSnapshotIncomingImage.Source = null;
+
+        TranslateTransform transform = EnsurePageTransform();
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        double offset = direction * (lightweight ? 7 : 11);
+        transform.X = offset;
+
+        PageList.BeginAnimation(OpacityProperty, null);
+        double startOpacity = lightweight ? 0.7 : 0.55;
+        PageList.Opacity = startOpacity;
+        PageList.IsHitTestVisible = true;
+
+        int token = ++_pageAnimationToken;
+
+        double fadeMs = lightweight ? 70 : 90;
+        double slideMs = lightweight ? 110 : 140;
+
+        var fade = new DoubleAnimation(startOpacity, 1, TimeSpan.FromMilliseconds(fadeMs))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        };
+        var slide = new DoubleAnimation(offset, 0, TimeSpan.FromMilliseconds(slideMs))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        slide.Completed += (_, _) =>
+        {
+            if (token != _pageAnimationToken)
+            {
+                return;
+            }
+
+            PageList.BeginAnimation(OpacityProperty, null);
+            PageList.Opacity = 1;
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
+        };
+
+        PageList.BeginAnimation(OpacityProperty, fade, HandoffBehavior.SnapshotAndReplace);
+        transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
+    }
+
+    private BitmapSource? CapturePageBitmap()
     {
         if (_cleanedUp || PageList.ActualWidth < 40 || PageList.ActualHeight < 40)
         {
@@ -1156,15 +1418,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         try
         {
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth * dpi.DpiScaleX));
-            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight * dpi.DpiScaleY));
+            // The snapshot must show a settled page. A slide may still be
+            // running when the next step arrives, so snap the list back to its
+            // resting position before rendering it.
+            TranslateTransform transform = EnsurePageTransform();
+            transform.BeginAnimation(TranslateTransform.XProperty, null);
+            transform.X = 0;
+            PageSnapshotImage.Visibility = Visibility.Collapsed;
+
+            // Render at 1x DIP. The window is hardware composited now, so the
+            // GPU scales the snapshot for free during the slide; a device-sized
+            // buffer would only make every capture four times as expensive.
+            int pixelWidth = Math.Max(1, (int)Math.Round(PageList.ActualWidth));
+            int pixelHeight = Math.Max(1, (int)Math.Round(PageList.ActualHeight));
 
             var bitmap = new RenderTargetBitmap(
                 pixelWidth,
                 pixelHeight,
-                96 * dpi.DpiScaleX,
-                96 * dpi.DpiScaleY,
+                96,
+                96,
                 PixelFormats.Pbgra32);
             bitmap.Render(PageList);
             bitmap.Freeze();
@@ -1177,64 +1449,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    /// <summary>
-    /// Slides the outgoing page out and the incoming page in at the same time,
-    /// like a paged app switcher.
-    /// </summary>
-    private void AnimateFullPageSlide(ImageSource outgoing, int direction)
-    {
-        double width = PageArea.ActualWidth;
-        if (width < 80)
-        {
-            AnimatePageFlip(direction);
-            return;
-        }
-
-        PageSnapshotImage.Source = outgoing;
-        PageSnapshotImage.Width = PageList.ActualWidth;
-        PageSnapshotImage.Height = PageList.ActualHeight;
-        PageSnapshotImage.Visibility = Visibility.Visible;
-        PageSnapshotImage.IsHitTestVisible = false;
-
-        if (PageSnapshotImage.RenderTransform is not TranslateTransform snapshotTransform)
-        {
-            snapshotTransform = new TranslateTransform();
-            PageSnapshotImage.RenderTransform = snapshotTransform;
-        }
-
-        snapshotTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        snapshotTransform.X = 0;
-
-        TranslateTransform pageTransform = EnsurePageTransform();
-        pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        pageTransform.X = direction * width;
-
-        PageList.IsHitTestVisible = false;
-        _pageTransitionActive = true;
-
-        // Both layers share the same curve and duration, so they always stay exactly
-        // adjacent: different curves would make them overlap (or leave a gap) in the
-        // middle of the slide.
-        TimeSpan duration = TimeSpan.FromMilliseconds(300);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-
-        var outgoingSlide = new DoubleAnimation(0, -direction * width, duration) { EasingFunction = ease };
-        var incomingSlide = new DoubleAnimation(direction * width, 0, duration) { EasingFunction = ease };
-
-        incomingSlide.Completed += (_, _) =>
-        {
-            PageSnapshotImage.Visibility = Visibility.Collapsed;
-            PageSnapshotImage.Source = null;
-            pageTransform.BeginAnimation(TranslateTransform.XProperty, null);
-            pageTransform.X = 0;
-            PageList.IsHitTestVisible = true;
-            _pageTransitionActive = false;
-        };
-
-        snapshotTransform.BeginAnimation(TranslateTransform.XProperty, outgoingSlide, HandoffBehavior.SnapshotAndReplace);
-        pageTransform.BeginAnimation(TranslateTransform.XProperty, incomingSlide, HandoffBehavior.SnapshotAndReplace);
-    }
-
     private TranslateTransform EnsurePageTransform()
     {
         if (PageList.RenderTransform is TranslateTransform transform)
@@ -1245,36 +1459,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         transform = new TranslateTransform();
         PageList.RenderTransform = transform;
         return transform;
-    }
-
-    private void AnimatePageFlip(int direction)
-    {
-        // Never leave a previous snapshot on screen: it would sit on top of the new
-        // page and look like overlapping icons.
-        PageSnapshotImage.BeginAnimation(TranslateTransform.XProperty, null);
-        PageSnapshotImage.Visibility = Visibility.Collapsed;
-        PageSnapshotImage.Source = null;
-
-        PageList.IsHitTestVisible = true;
-        TranslateTransform transform = EnsurePageTransform();
-        transform.BeginAnimation(TranslateTransform.XProperty, null);
-        transform.X = direction * 40;
-
-        _pageTransitionActive = true;
-
-        var slide = new DoubleAnimation(direction * 40, 0, TimeSpan.FromMilliseconds(260))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        slide.Completed += (_, _) =>
-        {
-            transform.BeginAnimation(TranslateTransform.XProperty, null);
-            transform.X = 0;
-            _pageTransitionActive = false;
-        };
-
-        transform.BeginAnimation(TranslateTransform.XProperty, slide, HandoffBehavior.SnapshotAndReplace);
     }
 
     private void RecalculateGrid(bool force = false)
@@ -1322,7 +1506,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         Columns = columns;
         Rows = rows;
-        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}, icon {iconSize:0}");
+        AppLog.Write($"Layout {ActualWidth:0}x{ActualHeight:0} dip, page {availableWidth:0}x{availableHeight:0}, grid {columns}x{rows}, tile {_tileWidth}x{_tileHeight}, icon {iconSize:0}, render tier {RenderCapability.Tier >> 16}, dpi {VisualTreeHelper.GetDpi(this).PixelsPerDip:0.##}");
 
         if (_hasLoadedOnce)
         {
@@ -2617,7 +2801,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return "#";
         }
 
-        return char.IsLetter(first) ? first.ToString() : "…";
+        return char.IsLetter(first) ? first.ToString() : "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
     }
 
     private static string GetDateGroup(DesktopItem item)
@@ -2735,6 +2919,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _chromeTimer.Stop();
         _embedTimer.Stop();
         _desktopZOrderTimer.Stop();
+        _wheelStepTimer.Stop();
         _desktopService.DesktopChanged -= OnDesktopChanged;
         _desktopService.Dispose();
         _iconService.Dispose();
@@ -2785,3 +2970,7 @@ internal sealed class PageSlice
     public int GroupPages { get; init; } = 1;
     public int GroupTotal { get; init; }
 }
+
+
+
+

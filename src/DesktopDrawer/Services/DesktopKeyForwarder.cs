@@ -230,11 +230,9 @@ internal static class DesktopKeyForwarder
             Thread.Sleep(12);
             ok &= Send(releases.ToArray());
 
-            // The shell can ignore the synthetic Windows release while the
-            // physical key is still held, leaving its Windows key state active
-            // until the user presses Windows again. Release it once more after
-            // the physical key is up; it is a no-op when the first release was
-            // processed.
+            // A busy shell can miss the synthetic release and keep the Windows
+            // key state active until the user presses Windows again. One extra
+            // release shortly after is harmless and clears that state.
             ReleaseWindowsKeySoon();
         }
         else

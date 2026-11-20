@@ -14,7 +14,7 @@ internal static class InstallerCore
     private const string StableSetupName = "DesktopDrawer-Setup.exe";
 
     private static readonly Uri LatestReleaseUri =
-        new("https://api.github.com/repos/BEGINWITHF/Desktop-Drawer/releases/latest");
+        new("https://api.github.com/repos/BEGINWITHF/Desktop-Drawer/releases?per_page=30");
 
     public static HttpClient CreateClient()
     {
@@ -35,11 +35,26 @@ internal static class InstallerCore
         response.EnsureSuccessStatusCode();
 
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        JsonElement root = document.RootElement;
+        JsonElement root = document.RootElement.EnumerateArray().FirstOrDefault(release =>
+            (release.TryGetProperty("tag_name", out JsonElement name) ? name.GetString() : null) is string tag &&
+            tag.StartsWith("app-v", StringComparison.OrdinalIgnoreCase) &&
+            !(release.TryGetProperty("prerelease", out JsonElement pre) && pre.ValueKind == JsonValueKind.True));
+
+        if (root.ValueKind == JsonValueKind.Undefined)
+        {
+            return null;
+        }
 
         string version = root.TryGetProperty("tag_name", out JsonElement tag)
-            ? (tag.GetString() ?? string.Empty).TrimStart('v', 'V')
+            ? (tag.GetString() ?? string.Empty)
             : string.Empty;
+
+        if (version.StartsWith("app-", StringComparison.OrdinalIgnoreCase))
+        {
+            version = version[4..];
+        }
+
+        version = version.TrimStart('v', 'V');
 
         bool prerelease = root.TryGetProperty("prerelease", out JsonElement pre) &&
                           pre.ValueKind == JsonValueKind.True;

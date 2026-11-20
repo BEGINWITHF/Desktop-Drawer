@@ -406,6 +406,8 @@ public partial class MainWindow
             return true;
         }
 
+        // Inertia arrives after the fingers are lifted; a vertical wheel event
+        // right after horizontal input belongs to the same swipe.
         if (Environment.TickCount64 - _lastHorizontalInputAt < 400)
         {
             return true;
@@ -423,6 +425,9 @@ public partial class MainWindow
             return;
         }
 
+        // A two-finger swipe reports its horizontal travel through the global
+        // hook and can also report a small vertical component here. Paging on
+        // both turned one swipe into two page changes.
         if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 && IsTouchpadScroll())
         {
             e.Handled = true;
@@ -455,34 +460,16 @@ public partial class MainWindow
             return;
         }
 
-        DateTime now = DateTime.UtcNow;
-        if ((now - _lastWheel).TotalMilliseconds > 450)
+        // One page for every accumulated wheel notch, paced by the same fixed
+        // interval as the touchpad gate. Input that arrives during the interval
+        // is kept, so a steady spin turns pages at a steady rate.
+        int direction = _wheelStepGate.Add(e.Delta, Environment.TickCount64);
+        if (direction != 0)
         {
-            _wheelAccumulator = 0;
+            GoToPage(_pageIndex - direction, lightweight: true);
         }
 
-        _lastWheel = now;
-        _wheelAccumulator += e.Delta;
-
-        // A high-resolution wheel can report several notches in one event. Turn
-        // the whole accumulated distance into a single multi-page jump so the
-        // pages are not rebuilt once per notch.
-        int steps = (int)(Math.Abs(_wheelAccumulator) / 120.0);
-        if (steps == 0)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        if ((now - _lastPageFlip).TotalMilliseconds < 140)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        int direction = _wheelAccumulator > 0 ? -1 : 1;
-        _wheelAccumulator -= Math.Sign(_wheelAccumulator) * steps * 120.0;
-        GoToPage(_pageIndex + direction * steps, lightweight: true);
+        ScheduleStepTail(_wheelStepGate, _wheelStepTimer);
         e.Handled = true;
     }
 
@@ -1071,10 +1058,159 @@ public partial class MainWindow
             PageList.SelectedItems.Add(hit);
         }
 
-        // The click path lets the containers re-measure as they are selected,
-        // which is what grows the card for a wrapped name. Programmatic
-        // selection skips that pass.
+        // Match the single-click path: it lets the item containers re-measure
+        // as they are selected, which is what grows the selection card for a
+        // wrapped name. Programmatic selection skips that pass.
         PageList.UpdateLayout();
+        RefreshSelectionPills();
+    }
+
+    private DesktopItem? _hoverItem;
+    private Border? _hoverBox;
+
+    /// <summary>
+    /// Hover outline for the tile under the cursor. It is drawn on the overlay
+    /// canvas with the same bounds as the selection capsule, so the two always
+    /// line up; the item card itself stays transparent.
+    /// </summary>
+    private void UpdateHoverBox(DesktopItem? item)
+    {
+        if (ReferenceEquals(item, _hoverItem))
+        {
+            return;
+        }
+
+        _hoverItem = item;
+
+        if (item is null ||
+            PageList.SelectedItems.Contains(item) ||
+            PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+            !container.IsVisible)
+        {
+            if (_hoverBox is not null)
+            {
+                _hoverBox.Visibility = Visibility.Collapsed;
+            }
+
+            return;
+        }
+
+        if (_hoverBox is null)
+        {
+            _hoverBox = new Border
+            {
+                Background = (Brush)FindResource("TileHoverBrush"),
+                BorderBrush = (Brush)FindResource("TileHoverBorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            SelectionBackdropCanvas.Children.Insert(0, _hoverBox);
+        }
+
+        Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+
+        Canvas.SetLeft(_hoverBox, topLeft.X);
+        Canvas.SetTop(_hoverBox, topLeft.Y);
+        _hoverBox.Width = Math.Max(0, container.ActualWidth);
+        _hoverBox.Height = Math.Max(0, container.ActualHeight);
+        _hoverBox.Visibility = Visibility.Visible;
+    }
+
+    private readonly Dictionary<DesktopItem, Border> _selectionPills = new();
+
+    /// <summary>
+    /// Draws the selection capsule for every selected tile on the overlay
+    /// canvas. The capsule lives outside the item container, so it can follow
+    /// a name that wraps beyond the uniform grid cell.
+    /// </summary>
+    private void RefreshSelectionPills()
+    {
+        UpdateHoverBox(null);
+
+        foreach (Border existing in _selectionPills.Values)
+        {
+            SelectionBackdropCanvas.Children.Remove(existing);
+        }
+
+        _selectionPills.Clear();
+
+        if (!IsLoaded || _cleanedUp)
+        {
+            return;
+        }
+
+        foreach (DesktopItem item in PageList.SelectedItems.OfType<DesktopItem>())
+        {
+            if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+                !container.IsVisible)
+            {
+                continue;
+            }
+
+            FrameworkElement? tile = FindNamed<FrameworkElement>(container, "Tile");
+
+            if (tile is null)
+            {
+                continue;
+            }
+
+            Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+            double bottom = topLeft.Y + container.ActualHeight;
+
+            FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
+
+            if (name is not null)
+            {
+                Point nameBottom = name
+                    .TransformToAncestor(RootGrid)
+                    .Transform(new Point(0, name.ActualHeight));
+
+                bottom = Math.Max(bottom, nameBottom.Y);
+            }
+
+            var pill = new Border
+            {
+                Background = (Brush)FindResource("AccentSoftBrush"),
+                BorderBrush = (Brush)FindResource("AccentBorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            Canvas.SetLeft(pill, topLeft.X);
+            Canvas.SetTop(pill, topLeft.Y);
+            pill.Width = Math.Max(0, container.ActualWidth);
+            // Long names wrap past the cell; keep a small breathing space under
+            // the last line so the capsule never touches the text.
+            pill.Height = Math.Max(0, bottom - topLeft.Y) + 12;
+
+            SelectionBackdropCanvas.Children.Insert(0, pill);
+            _selectionPills[item] = pill;
+        }
+    }
+
+    private static T? FindNamed<T>(DependencyObject root, string name) where T : FrameworkElement
+    {
+        if (root is T match && string.Equals(match.Name, name, StringComparison.Ordinal))
+        {
+            return match;
+        }
+
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (FindNamed<T>(VisualTreeHelper.GetChild(root, i), name) is T found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void EndRubberBand()
@@ -1116,6 +1252,11 @@ public partial class MainWindow
 
     private void PageList_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (!_rubberBandActive && e.LeftButton != MouseButtonState.Pressed)
+        {
+            UpdateHoverBox(GetItemFromSource(e.OriginalSource));
+        }
+
         if (_rubberBandActive)
         {
             if (e.LeftButton == MouseButtonState.Pressed)

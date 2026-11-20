@@ -61,14 +61,8 @@
                             <ContentPresenter x:Name="ContentHost" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource TileHoverBrush}" />
-                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource TileHoverBorderBrush}" />
-                            </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Panel.ZIndex" Value="10" />
-                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -232,6 +226,7 @@
                    Fill="#000000"
                    Opacity="0"
                    IsHitTestVisible="False" />
+        <Canvas x:Name="SelectionBackdropCanvas" IsHitTestVisible="False" />
         <Grid>
             <Border x:Name="HeaderBar"
                     Height="58"
@@ -562,6 +557,13 @@
                     </ListBox>
 
                     <Image x:Name="PageSnapshotImage"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           Stretch="Fill"
+                           Visibility="Collapsed"
+                           IsHitTestVisible="False" />
+
+                    <Image x:Name="PageSnapshotIncomingImage"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Top"
                            Stretch="Fill"
