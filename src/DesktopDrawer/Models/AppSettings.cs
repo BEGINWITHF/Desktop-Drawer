@@ -52,6 +52,8 @@ public sealed class AppSettings
     public int GridRows { get; set; }          // 0 = fit to the window
     public int ColumnSpacing { get; set; } = 4; // pixels between grid columns
     public int RowSpacing { get; set; } = 4;    // pixels between grid rows
+    public int PageTopMargin { get; set; } = 58;    // space above the page grid
+    public int PageBottomMargin { get; set; } = 54; // space below the page grid
     public SortMode SortMode { get; set; } = SortMode.Name;
     public GroupMode GroupMode { get; set; } = GroupMode.None;
     public List<CustomGroup> CustomGroups { get; set; } = [];

@@ -161,7 +161,9 @@
   "Grid.Rows": "行",
   "Grid.AutoTip": "ウィンドウに合わせる",
   "Grid.Spacing": "間隔",
-  "Grid.SpacingDesc": "アイコン間の横方向と縦方向の余白を調整します。値を大きくすると 1 ページに入るアイコンが減ります。",
+  "Grid.SpacingDesc": "アイコン間の横方向と縦方向の余白を調整します。値を大きくすると 1 ページに入るアイコンが減ります。",,
+  "Page.TopMargin": "上マージン",
+  "Page.BottomMargin": "下マージン"
   "Grid.ColumnSpacing": "横の間隔",
   "Grid.RowSpacing": "縦の間隔",
   "Grid.ResetSpacing": "間隔をリセット",

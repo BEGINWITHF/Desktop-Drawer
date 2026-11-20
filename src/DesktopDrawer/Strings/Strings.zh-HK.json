@@ -161,7 +161,9 @@
   "Grid.Rows": "列數",
   "Grid.AutoTip": "符合視窗",
   "Grid.Spacing": "間距",
-  "Grid.SpacingDesc": "調整圖示之間的橫向和縱向空隙。數值越大，每頁能放的圖示越少。",
+  "Grid.SpacingDesc": "調整圖示之間的橫向和縱向空隙。數值越大，每頁能放的圖示越少。",,
+  "Page.TopMargin": "上邊距",
+  "Page.BottomMargin": "下邊距"
   "Grid.ColumnSpacing": "欄間距",
   "Grid.RowSpacing": "列間距",
   "Grid.ResetSpacing": "還原預設間距",

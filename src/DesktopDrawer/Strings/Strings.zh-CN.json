@@ -161,7 +161,9 @@
   "Grid.Rows": "行数",
   "Grid.AutoTip": "适应窗口",
   "Grid.Spacing": "间距",
-  "Grid.SpacingDesc": "调整图标之间的横向和纵向空隙。数值越大，每页能放的图标越少。",
+  "Grid.SpacingDesc": "调整图标之间的横向和纵向空隙。数值越大，每页能放的图标越少。",,
+  "Page.TopMargin": "上边距",
+  "Page.BottomMargin": "下边距"
   "Grid.ColumnSpacing": "列间距",
   "Grid.RowSpacing": "行间距",
   "Grid.ResetSpacing": "恢复默认间距",

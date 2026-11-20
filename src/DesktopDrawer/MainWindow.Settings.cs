@@ -92,6 +92,12 @@ public partial class MainWindow
         ColumnSpacingValueText.Text = $"{(int)Math.Round(ColumnSpacingSlider.Value)} px";
         RowSpacingValueText.Text = $"{(int)Math.Round(RowSpacingSlider.Value)} px";
 
+        PageTopMarginSlider.Value = Math.Clamp(_settings.PageTopMargin, 0, 240);
+        PageBottomMarginSlider.Value = Math.Clamp(_settings.PageBottomMargin, 0, 240);
+        PageTopMarginValueText.Text = $"{(int)Math.Round(PageTopMarginSlider.Value)} px";
+        PageBottomMarginValueText.Text = $"{(int)Math.Round(PageBottomMarginSlider.Value)} px";
+        ApplyPageMargins();
+
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
         CloseToTrayToggle.IsChecked = _settings.CloseToTray;
@@ -481,6 +487,33 @@ public partial class MainWindow
 
         _settings.HideIconsOnLaunch = HideIconsOnLaunchToggle.IsChecked == true;
         SaveSettings();
+    }
+
+    private void PageMarginSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_initializingSettings || PageTopMarginSlider is null || PageBottomMarginSlider is null)
+        {
+            return;
+        }
+
+        _settings.PageTopMargin = (int)Math.Round(PageTopMarginSlider.Value);
+        _settings.PageBottomMargin = (int)Math.Round(PageBottomMarginSlider.Value);
+        PageTopMarginValueText.Text = $"{_settings.PageTopMargin} px";
+        PageBottomMarginValueText.Text = $"{_settings.PageBottomMargin} px";
+        ApplyPageMargins();
+        SaveSettings();
+    }
+
+    private void ApplyPageMargins()
+    {
+        double top = Math.Clamp(_settings.PageTopMargin, 0, 240);
+        double bottom = Math.Clamp(_settings.PageBottomMargin, 0, 240);
+        PageArea.Margin = new Thickness(14, top, 14, bottom);
+
+        if (_hasLoadedOnce)
+        {
+            RecalculateGrid(force: true);
+        }
     }
 
     private void LoggingToggle_Changed(object sender, RoutedEventArgs e)

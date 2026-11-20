@@ -161,7 +161,9 @@
   "Grid.Rows": "Rows",
   "Grid.AutoTip": "Fit to the window",
   "Grid.Spacing": "Spacing",
-  "Grid.SpacingDesc": "Adjust the horizontal and vertical gaps between icons. Larger values fit fewer icons per page.",
+  "Grid.SpacingDesc": "Adjust the horizontal and vertical gaps between icons. Larger values fit fewer icons per page.",,
+  "Page.TopMargin": "Top margin",
+  "Page.BottomMargin": "Bottom margin"
   "Grid.ColumnSpacing": "Column gap",
   "Grid.RowSpacing": "Row gap",
   "Grid.ResetSpacing": "Reset spacing",
