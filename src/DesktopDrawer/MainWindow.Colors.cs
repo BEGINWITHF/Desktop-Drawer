@@ -409,20 +409,56 @@ public partial class MainWindow
 
     private void ThemesSectionButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowStyleSection(true);
+        ShowStyleSection(StyleSection.Themes);
     }
 
     private void CapsulePaddingButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowStyleSection(false);
+        ShowStyleSection(StyleSection.Capsule);
     }
 
-    private void ShowStyleSection(bool showThemes)
+    private void IconsSectionButton_Click(object sender, RoutedEventArgs e)
     {
-        ThemesSection.Visibility = showThemes ? Visibility.Visible : Visibility.Collapsed;
-        CapsuleSection.Visibility = showThemes ? Visibility.Collapsed : Visibility.Visible;
-        ApplySectionButton(ThemesSectionButton, showThemes);
-        ApplySectionButton(CapsulePaddingButton, !showThemes);
+        ShowStyleSection(StyleSection.Icons);
+    }
+
+    private void GridSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Grid);
+    }
+
+    private void WallpaperSectionButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowStyleSection(StyleSection.Wallpaper);
+    }
+
+    private enum StyleSection
+    {
+        Themes,
+        Capsule,
+        Icons,
+        Grid,
+        Wallpaper
+    }
+
+    private void ShowStyleSection(StyleSection section)
+    {
+        var views = new FrameworkElement[]
+        {
+            ThemesSection, CapsuleSection, IconsSection, GridSection, WallpaperSection
+        };
+        var buttons = new[]
+        {
+            ThemesSectionButton, CapsulePaddingButton, IconsSectionButton,
+            GridSectionButton, WallpaperSectionButton
+        };
+
+        for (int i = 0; i < views.Length; i++)
+        {
+            bool selected = i == (int)section;
+            views[i].Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+            ApplySectionButton(buttons[i], selected);
+        }
     }
 
     private void ApplySectionButton(Button button, bool selected)
@@ -451,7 +487,7 @@ public partial class MainWindow
     {
         BuildColorRows();
         BuildStyleThemes();
-        ShowStyleSection(true);
+        ShowStyleSection(StyleSection.Themes);
 
         StyleOverlay.Visibility = Visibility.Visible;
         StyleOverlay.BeginAnimation(OpacityProperty, null);

@@ -972,97 +972,6 @@
                                     Click="ResetLayoutButton_Click" />
 
                             <ContentControl Content="{DynamicResource Str.Section.Appearance}" Style="{StaticResource SectionHeader}" />
-                            <TextBlock Text="{DynamicResource Str.Appearance.IconSize}" Style="{StaticResource SettingTitle}" />
-                            <TextBlock Text="{DynamicResource Str.Appearance.IconSizeDesc}"
-                                       Style="{StaticResource SettingDescription}" />
-                            <Border Background="{DynamicResource SegmentSurfaceBrush}"
-                                    BorderBrush="{DynamicResource StrokeBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="0"
-                                    Padding="2"
-                                    Margin="0,10,10,0"
-                                    HorizontalAlignment="Left">
-                                <StackPanel Orientation="Horizontal">
-                                    <RadioButton x:Name="CompactRadio"
-                                                 GroupName="IconSize"
-                                                 Style="{StaticResource SegmentRadio}"
-                                                 Content="{DynamicResource Str.Density.Compact}"
-                                                 Tag="Compact"
-                                                 Checked="DensityRadio_Checked" />
-                                    <RadioButton x:Name="CozyRadio"
-                                                 GroupName="IconSize"
-                                                 Style="{StaticResource SegmentRadio}"
-                                                 Content="{DynamicResource Str.Density.Cozy}"
-                                                 Tag="Cozy"
-                                                 Checked="DensityRadio_Checked" />
-                                    <RadioButton x:Name="LargeRadio"
-                                                 GroupName="IconSize"
-                                                 Style="{StaticResource SegmentRadio}"
-                                                 Content="{DynamicResource Str.Density.Large}"
-                                                 Tag="Large"
-                                                 Checked="DensityRadio_Checked" />
-                                </StackPanel>
-                            </Border>
-
-                            <Grid Margin="0,14,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Appearance.CustomIcon}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="IconSizeValueText" FontFamily="{StaticResource MonoFont}"
-                                           Grid.Column="1"
-                                           Text="72 px"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Button Grid.Column="2"
-                                        Content="{DynamicResource Str.Appearance.Auto}"
-                                        x:Name="AutoIconSizeButton"
-                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoIconTip}"
-                                        Style="{StaticResource AutoButton}"
-                                        Margin="8,0,0,0"
-                                        ToolTip="{DynamicResource Str.Appearance.AutoIconTip}"
-                                        Click="ResetIconSizeButton_Click" />
-                            </Grid>
-                            <Slider x:Name="IconSizeSlider"
-                                    Minimum="24"
-                                    Maximum="160"
-                                    TickFrequency="2"
-                                    IsSnapToTickEnabled="True"
-                                    Margin="0,8,10,0"
-                                    ValueChanged="IconSizeSlider_ValueChanged" />
-
-                            <Grid Margin="0,16,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Appearance.TextSize}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="FontScaleValueText" FontFamily="{StaticResource MonoFont}"
-                                           Grid.Column="1"
-                                           Text="100%"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Button Grid.Column="2"
-                                        Content="{DynamicResource Str.Appearance.Auto}"
-                                        x:Name="AutoFontScaleButton"
-                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoTextTip}"
-                                        Style="{StaticResource AutoButton}"
-                                        Margin="8,0,0,0"
-                                        ToolTip="{DynamicResource Str.Appearance.AutoTextTip}"
-                                        Click="ResetFontScaleButton_Click" />
-                            </Grid>
-                            <TextBlock Text="{DynamicResource Str.Appearance.TextSizeDesc}"
-                                       Style="{StaticResource SettingDescription}" />
-                            <Slider x:Name="FontScaleSlider"
-                                    Minimum="80"
-                                    Maximum="140"
-                                    TickFrequency="5"
-                                    IsSnapToTickEnabled="True"
-                                    Margin="0,8,10,0"
-                                    ValueChanged="FontScaleSlider_ValueChanged" />
 
                             <Grid Margin="0,16,10,0">
                                 <Grid.ColumnDefinitions>
@@ -1083,198 +992,6 @@
                                         VerticalAlignment="Center"
                                         Click="ManageStylesButton_Click" />
                             </Grid>
-
-                            <Grid Margin="0,16,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDim}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="WallpaperDimValueText" FontFamily="{StaticResource MonoFont}"
-                                           Grid.Column="1"
-                                           Text="0%"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Button Grid.Column="2"
-                                        Content="{DynamicResource Str.Appearance.Auto}"
-                                        x:Name="AutoWallpaperDimButton"
-                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoDimTip}"
-                                        Style="{StaticResource AutoButton}"
-                                        Margin="8,0,0,0"
-                                        ToolTip="{DynamicResource Str.Appearance.AutoDimTip}"
-                                        Click="ResetWallpaperDimButton_Click" />
-                            </Grid>
-                            <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDimDesc}"
-                                       Style="{StaticResource SettingDescription}" />
-                            <Slider x:Name="WallpaperDimSlider"
-                                    Minimum="0"
-                                    Maximum="60"
-                                    TickFrequency="5"
-                                    IsSnapToTickEnabled="True"
-                                    Margin="0,8,10,0"
-                                    ValueChanged="WallpaperDimSlider_ValueChanged" />
-
-                            <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,18,10,16" />
-
-                            <ContentControl Content="{DynamicResource Str.Section.Grid}" Style="{StaticResource SectionHeader}" />
-
-                            <Grid Margin="0,0,10,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="{DynamicResource Str.Grid.Fit}" Style="{StaticResource SettingTitle}" />
-                                    <TextBlock Text="{DynamicResource Str.Grid.FitDesc}"
-                                               Style="{StaticResource SettingDescription}" />
-                                </StackPanel>
-                                <CheckBox x:Name="AutoGridToggle"
-                                          Grid.Column="1"
-                                          Style="{StaticResource ToggleSwitch}"
-                                          VerticalAlignment="Center"
-                                          Checked="AutoGridToggle_Changed"
-                                          Unchecked="AutoGridToggle_Changed" />
-                            </Grid>
-
-                            <Grid Margin="0,6,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="76" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="36" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Grid.Columns}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Slider x:Name="ColumnsSlider"
-                                        Grid.Column="1"
-                                        Minimum="2"
-                                        Maximum="16"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"
-                                        Margin="0,0,10,0"
-                                        ValueChanged="GridSlider_ValueChanged" />
-                                <TextBlock x:Name="ColumnsValueText" FontFamily="{StaticResource MonoFont}"
-                                           Grid.Column="2"
-                                           Text="8"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Button Grid.Column="3"
-                                        Content="{DynamicResource Str.Appearance.Auto}"
-                                        x:Name="AutoColumnsButton"
-                                        AutomationProperties.Name="{DynamicResource Str.Grid.AutoTip}"
-                                        Style="{StaticResource AutoButton}"
-                                        Height="24"
-                                        Padding="6,0"
-                                        Margin="6,0,0,0"
-                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
-                                        Click="AutoGridButton_Click" />
-                            </Grid>
-
-                            <Grid Margin="0,8,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="76" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="36" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Grid.Rows}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
-                                <Slider x:Name="RowsSlider"
-                                        Grid.Column="1"
-                                        Minimum="1"
-                                        Maximum="16"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"
-                                        Margin="0,0,10,0"
-                                        ValueChanged="GridSlider_ValueChanged" />
-                                <TextBlock x:Name="RowsValueText" FontFamily="{StaticResource MonoFont}"
-                                           Grid.Column="2"
-                                           Text="4"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <Button Grid.Column="3"
-                                        Content="{DynamicResource Str.Appearance.Auto}"
-                                        x:Name="AutoRowsButton"
-                                        AutomationProperties.Name="{DynamicResource Str.Grid.AutoTip}"
-                                        Style="{StaticResource AutoButton}"
-                                        Height="24"
-                                        Padding="6,0"
-                                        Margin="6,0,0,0"
-                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
-                                        Click="AutoGridButton_Click" />
-                            </Grid>
-
-                            <TextBlock Text="{DynamicResource Str.Grid.Spacing}"
-                                       Style="{StaticResource SettingTitle}"
-                                       Margin="0,16,0,0" />
-                            <TextBlock Text="{DynamicResource Str.Grid.SpacingDesc}"
-                                       Style="{StaticResource SettingDescription}"
-                                       Margin="0,4,10,0" />
-
-                            <Grid Margin="0,6,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="76" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Grid.ColumnSpacing}"
-                                           FontSize="{DynamicResource FontSize115}"
-                                           VerticalAlignment="Center" />
-                                <Slider x:Name="ColumnSpacingSlider"
-                                        Grid.Column="1"
-                                        Minimum="0"
-                                        Maximum="48"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"
-                                        Margin="0,0,10,0"
-                                        ValueChanged="SpacingSlider_ValueChanged" />
-                                <TextBlock x:Name="ColumnSpacingValueText"
-                                           Grid.Column="2"
-                                           FontFamily="{StaticResource MonoFont}"
-                                           Text="4 px"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </Grid>
-
-                            <Grid Margin="0,8,10,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="76" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{DynamicResource Str.Grid.RowSpacing}"
-                                           FontSize="{DynamicResource FontSize115}"
-                                           VerticalAlignment="Center" />
-                                <Slider x:Name="RowSpacingSlider"
-                                        Grid.Column="1"
-                                        Minimum="0"
-                                        Maximum="48"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"
-                                        Margin="0,0,10,0"
-                                        ValueChanged="SpacingSlider_ValueChanged" />
-                                <TextBlock x:Name="RowSpacingValueText"
-                                           Grid.Column="2"
-                                           FontFamily="{StaticResource MonoFont}"
-                                           Text="4 px"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </Grid>
-
-                            <Button Content="{DynamicResource Str.Grid.ResetSpacing}"
-                                    Style="{StaticResource GhostButton}"
-                                    HorizontalAlignment="Left"
-                                    Height="26"
-                                    Padding="10,0"
-                                    Margin="0,8,0,4"
-                                    Click="ResetSpacingButton_Click" />
 
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
@@ -1818,6 +1535,10 @@
                                         BorderBrush="Transparent"
                                         Foreground="{DynamicResource TextSecondaryBrush}"
                                         Click="CapsulePaddingButton_Click" />
+
+                                <Button x:Name="IconsSectionButton" Content="{DynamicResource Str.Style.Icons}" Style="{StaticResource PanelListButton}" Height="30" Margin="0,0,0,4" Padding="8,0" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" Click="IconsSectionButton_Click" />
+                                <Button x:Name="GridSectionButton" Content="{DynamicResource Str.Style.Grid}" Style="{StaticResource PanelListButton}" Height="30" Margin="0,0,0,4" Padding="8,0" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" Click="GridSectionButton_Click" />
+                                <Button x:Name="WallpaperSectionButton" Content="{DynamicResource Str.Style.Wallpaper}" Style="{StaticResource PanelListButton}" Height="30" Margin="0,0,0,4" Padding="8,0" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" Click="WallpaperSectionButton_Click" />
                             </StackPanel>
                         </DockPanel>
 
@@ -1925,6 +1646,299 @@
                                             <TextBlock x:Name="PageRightPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
                                         </Grid>
                                     </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <ScrollViewer x:Name="IconsSection" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,0,4,4">
+                            <TextBlock Text="{DynamicResource Str.Appearance.IconSize}" Style="{StaticResource SettingTitle}" />
+                            <TextBlock Text="{DynamicResource Str.Appearance.IconSizeDesc}"
+                                       Style="{StaticResource SettingDescription}" />
+                            <Border Background="{DynamicResource SegmentSurfaceBrush}"
+                                    BorderBrush="{DynamicResource StrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="0"
+                                    Padding="2"
+                                    Margin="0,10,10,0"
+                                    HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="CompactRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="{DynamicResource Str.Density.Compact}"
+                                                 Tag="Compact"
+                                                 Checked="DensityRadio_Checked" />
+                                    <RadioButton x:Name="CozyRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="{DynamicResource Str.Density.Cozy}"
+                                                 Tag="Cozy"
+                                                 Checked="DensityRadio_Checked" />
+                                    <RadioButton x:Name="LargeRadio"
+                                                 GroupName="IconSize"
+                                                 Style="{StaticResource SegmentRadio}"
+                                                 Content="{DynamicResource Str.Density.Large}"
+                                                 Tag="Large"
+                                                 Checked="DensityRadio_Checked" />
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Margin="0,14,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Appearance.CustomIcon}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="IconSizeValueText" FontFamily="{StaticResource MonoFont}"
+                                           Grid.Column="1"
+                                           Text="72 px"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
+                                        x:Name="AutoIconSizeButton"
+                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoIconTip}"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoIconTip}"
+                                        Click="ResetIconSizeButton_Click" />
+                            </Grid>
+                            <Slider x:Name="IconSizeSlider"
+                                    Minimum="24"
+                                    Maximum="160"
+                                    TickFrequency="2"
+                                    IsSnapToTickEnabled="True"
+                                    Margin="0,8,10,0"
+                                    ValueChanged="IconSizeSlider_ValueChanged" />
+
+                            <Grid Margin="0,16,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Appearance.TextSize}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="FontScaleValueText" FontFamily="{StaticResource MonoFont}"
+                                           Grid.Column="1"
+                                           Text="100%"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
+                                        x:Name="AutoFontScaleButton"
+                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoTextTip}"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoTextTip}"
+                                        Click="ResetFontScaleButton_Click" />
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Str.Appearance.TextSizeDesc}"
+                                       Style="{StaticResource SettingDescription}" />
+                            <Slider x:Name="FontScaleSlider"
+                                    Minimum="80"
+                                    Maximum="140"
+                                    TickFrequency="5"
+                                    IsSnapToTickEnabled="True"
+                                    Margin="0,8,10,0"
+                                    ValueChanged="FontScaleSlider_ValueChanged" />
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <ScrollViewer x:Name="GridSection" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,0,4,4">
+
+                            <Grid Margin="0,0,10,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Str.Grid.Fit}" Style="{StaticResource SettingTitle}" />
+                                    <TextBlock Text="{DynamicResource Str.Grid.FitDesc}"
+                                               Style="{StaticResource SettingDescription}" />
+                                </StackPanel>
+                                <CheckBox x:Name="AutoGridToggle"
+                                          Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"
+                                          Checked="AutoGridToggle_Changed"
+                                          Unchecked="AutoGridToggle_Changed" />
+                            </Grid>
+
+                            <Grid Margin="0,6,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.Columns}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                <Slider x:Name="ColumnsSlider"
+                                        Grid.Column="1"
+                                        Minimum="2"
+                                        Maximum="16"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="GridSlider_ValueChanged" />
+                                <TextBlock x:Name="ColumnsValueText" FontFamily="{StaticResource MonoFont}"
+                                           Grid.Column="2"
+                                           Text="8"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="3"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
+                                        x:Name="AutoColumnsButton"
+                                        AutomationProperties.Name="{DynamicResource Str.Grid.AutoTip}"
+                                        Style="{StaticResource AutoButton}"
+                                        Height="24"
+                                        Padding="6,0"
+                                        Margin="6,0,0,0"
+                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
+                                        Click="AutoGridButton_Click" />
+                            </Grid>
+
+                            <Grid Margin="0,8,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="36" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.Rows}" FontSize="{DynamicResource FontSize115}" VerticalAlignment="Center" />
+                                <Slider x:Name="RowsSlider"
+                                        Grid.Column="1"
+                                        Minimum="1"
+                                        Maximum="16"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="GridSlider_ValueChanged" />
+                                <TextBlock x:Name="RowsValueText" FontFamily="{StaticResource MonoFont}"
+                                           Grid.Column="2"
+                                           Text="4"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="3"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
+                                        x:Name="AutoRowsButton"
+                                        AutomationProperties.Name="{DynamicResource Str.Grid.AutoTip}"
+                                        Style="{StaticResource AutoButton}"
+                                        Height="24"
+                                        Padding="6,0"
+                                        Margin="6,0,0,0"
+                                        ToolTip="{DynamicResource Str.Grid.AutoTip}"
+                                        Click="AutoGridButton_Click" />
+                            </Grid>
+
+                            <TextBlock Text="{DynamicResource Str.Grid.Spacing}"
+                                       Style="{StaticResource SettingTitle}"
+                                       Margin="0,16,0,0" />
+                            <TextBlock Text="{DynamicResource Str.Grid.SpacingDesc}"
+                                       Style="{StaticResource SettingDescription}"
+                                       Margin="0,4,10,0" />
+
+                            <Grid Margin="0,6,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.ColumnSpacing}"
+                                           FontSize="{DynamicResource FontSize115}"
+                                           VerticalAlignment="Center" />
+                                <Slider x:Name="ColumnSpacingSlider"
+                                        Grid.Column="1"
+                                        Minimum="0"
+                                        Maximum="48"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="SpacingSlider_ValueChanged" />
+                                <TextBlock x:Name="ColumnSpacingValueText"
+                                           Grid.Column="2"
+                                           FontFamily="{StaticResource MonoFont}"
+                                           Text="4 px"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Grid>
+
+                            <Grid Margin="0,8,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="76" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="44" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Grid.RowSpacing}"
+                                           FontSize="{DynamicResource FontSize115}"
+                                           VerticalAlignment="Center" />
+                                <Slider x:Name="RowSpacingSlider"
+                                        Grid.Column="1"
+                                        Minimum="0"
+                                        Maximum="48"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,0,10,0"
+                                        ValueChanged="SpacingSlider_ValueChanged" />
+                                <TextBlock x:Name="RowSpacingValueText"
+                                           Grid.Column="2"
+                                           FontFamily="{StaticResource MonoFont}"
+                                           Text="4 px"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Grid>
+
+                            <Button Content="{DynamicResource Str.Grid.ResetSpacing}"
+                                    Style="{StaticResource GhostButton}"
+                                    HorizontalAlignment="Left"
+                                    Height="26"
+                                    Padding="10,0"
+                                    Margin="0,8,0,4"
+                                    Click="ResetSpacingButton_Click" />
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <ScrollViewer x:Name="WallpaperSection" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,0,4,4">
+                            <Grid Margin="0,16,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDim}" Style="{StaticResource SettingTitle}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="WallpaperDimValueText" FontFamily="{StaticResource MonoFont}"
+                                           Grid.Column="1"
+                                           Text="0%"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2"
+                                        Content="{DynamicResource Str.Appearance.Auto}"
+                                        x:Name="AutoWallpaperDimButton"
+                                        AutomationProperties.Name="{DynamicResource Str.Appearance.AutoDimTip}"
+                                        Style="{StaticResource AutoButton}"
+                                        Margin="8,0,0,0"
+                                        ToolTip="{DynamicResource Str.Appearance.AutoDimTip}"
+                                        Click="ResetWallpaperDimButton_Click" />
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Str.Appearance.WallpaperDimDesc}"
+                                       Style="{StaticResource SettingDescription}" />
+                            <Slider x:Name="WallpaperDimSlider"
+                                    Minimum="0"
+                                    Maximum="60"
+                                    TickFrequency="5"
+                                    IsSnapToTickEnabled="True"
+                                    Margin="0,8,10,0"
+                                    ValueChanged="WallpaperDimSlider_ValueChanged" />
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
