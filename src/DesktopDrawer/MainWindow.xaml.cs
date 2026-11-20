@@ -199,6 +199,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyWallpaperDim();
 
         PageList.RenderTransform = new TranslateTransform();
+        PageList.SelectionChanged += (_, _) => RefreshSelectionPills();
         DotsHost.SizeChanged += DotsHost_SizeChanged;
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();
@@ -978,6 +979,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         SchedulePagerUpdate();
+        RefreshSelectionPills();
 
         CurrentPageLabel = BuildPageLabel(slice, pageCount);
         PrevButton.IsEnabled = _pageIndex > 0;

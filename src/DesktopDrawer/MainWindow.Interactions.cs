@@ -1062,6 +1062,95 @@ public partial class MainWindow
         // as they are selected, which is what grows the selection card for a
         // wrapped name. Programmatic selection skips that pass.
         PageList.UpdateLayout();
+        RefreshSelectionPills();
+    }
+
+    private readonly Dictionary<DesktopItem, Border> _selectionPills = new();
+
+    /// <summary>
+    /// Draws the selection capsule for every selected tile on the overlay
+    /// canvas. The capsule lives outside the item container, so it can follow
+    /// a name that wraps beyond the uniform grid cell.
+    /// </summary>
+    private void RefreshSelectionPills()
+    {
+        foreach (Border existing in _selectionPills.Values)
+        {
+            SelectionCanvas.Children.Remove(existing);
+        }
+
+        _selectionPills.Clear();
+
+        if (!IsLoaded || _cleanedUp)
+        {
+            return;
+        }
+
+        foreach (DesktopItem item in PageList.SelectedItems.OfType<DesktopItem>())
+        {
+            if (PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+                !container.IsVisible)
+            {
+                continue;
+            }
+
+            FrameworkElement? tile = FindNamed<FrameworkElement>(container, "Tile");
+
+            if (tile is null)
+            {
+                continue;
+            }
+
+            Point topLeft = tile.TransformToAncestor(SelectionCanvas).Transform(new Point(0, 0));
+            double bottom = topLeft.Y + tile.ActualHeight;
+
+            FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
+
+            if (name is not null)
+            {
+                Point nameBottom = name
+                    .TransformToAncestor(SelectionCanvas)
+                    .Transform(new Point(0, name.ActualHeight));
+
+                bottom = Math.Max(bottom, nameBottom.Y);
+            }
+
+            var pill = new Border
+            {
+                Background = (Brush)FindResource("AccentSoftBrush"),
+                CornerRadius = new CornerRadius(14),
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            Canvas.SetLeft(pill, topLeft.X);
+            Canvas.SetTop(pill, topLeft.Y);
+            pill.Width = Math.Max(0, tile.ActualWidth);
+            pill.Height = Math.Max(0, bottom - topLeft.Y);
+
+            SelectionCanvas.Children.Insert(0, pill);
+            _selectionPills[item] = pill;
+        }
+    }
+
+    private static T? FindNamed<T>(DependencyObject root, string name) where T : FrameworkElement
+    {
+        if (root is T match && string.Equals(match.Name, name, StringComparison.Ordinal))
+        {
+            return match;
+        }
+
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (FindNamed<T>(VisualTreeHelper.GetChild(root, i), name) is T found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void EndRubberBand()
