@@ -163,9 +163,9 @@
   "Grid.Spacing": "間隔",
   "Grid.SpacingDesc": "アイコン間の横方向と縦方向の余白を調整します。値を大きくすると 1 ページに入るアイコンが減ります。",
   "Page.TopMargin": "選択枠の上余白",
-  "Page.BottomMargin": "選択枠の下余白",,
+  "Page.BottomMargin": "選択枠の下余白",
   "Page.LeftPadding": "選択枠の左余白",
-  "Page.RightPadding": "選択枠の右余白"
+  "Page.RightPadding": "選択枠の右余白",
   "Grid.ColumnSpacing": "横の間隔",
   "Grid.RowSpacing": "縦の間隔",
   "Grid.ResetSpacing": "間隔をリセット",

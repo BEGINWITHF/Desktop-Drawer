@@ -163,9 +163,9 @@
   "Grid.Spacing": "Spacing",
   "Grid.SpacingDesc": "Adjust the horizontal and vertical gaps between icons. Larger values fit fewer icons per page.",
   "Page.TopMargin": "Capsule padding (top)",
-  "Page.BottomMargin": "Capsule padding (bottom)",,
+  "Page.BottomMargin": "Capsule padding (bottom)",
   "Page.LeftPadding": "Capsule padding (left)",
-  "Page.RightPadding": "Capsule padding (right)"
+  "Page.RightPadding": "Capsule padding (right)",
   "Grid.ColumnSpacing": "Column gap",
   "Grid.RowSpacing": "Row gap",
   "Grid.ResetSpacing": "Reset spacing",

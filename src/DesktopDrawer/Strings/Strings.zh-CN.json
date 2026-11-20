@@ -163,9 +163,9 @@
   "Grid.Spacing": "间距",
   "Grid.SpacingDesc": "调整图标之间的横向和纵向空隙。数值越大，每页能放的图标越少。",
   "Page.TopMargin": "选中框上内边距",
-  "Page.BottomMargin": "选中框下内边距",,
+  "Page.BottomMargin": "选中框下内边距",
   "Page.LeftPadding": "选中框左内边距",
-  "Page.RightPadding": "选中框右内边距"
+  "Page.RightPadding": "选中框右内边距",
   "Grid.ColumnSpacing": "列间距",
   "Grid.RowSpacing": "行间距",
   "Grid.ResetSpacing": "恢复默认间距",
