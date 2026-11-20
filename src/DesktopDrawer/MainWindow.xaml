@@ -1817,51 +1817,8 @@
                                         Background="{DynamicResource SegmentSurfaceBrush}"
                                         BorderBrush="{DynamicResource StrokeBrush}"
                                         BorderThickness="1">
+                                <StackPanel>
                                     <StackPanel x:Name="ColorRowsPanel" />
-                                </Border>
-                            </ScrollViewer>
-                        </DockPanel>
-                    </Grid>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <Grid x:Name="GroupsOverlay"
-              Visibility="Collapsed"
-              Panel.ZIndex="25">
-            <Border x:Name="GroupsBackdrop"
-                    Background="{DynamicResource ScrimBrush}"
-                    MouseDown="GroupsBackdrop_MouseDown" />
-
-            <Border x:Name="GroupsCard"
-                    Width="820"
-                    MaxHeight="620"
-                    Margin="0,36"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Background="{DynamicResource SettingsPanelBrush}"
-                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="0">
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="GroupsTranslate" Y="18" />
-                </Border.RenderTransform>
-
-                <Grid Margin="24,20,20,18">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Grid>
-                        <StackPanel>
-                            <TextBlock Text="{DynamicResource Str.Section.Groups}"
-                                       FontFamily="{StaticResource DisplayFont}"
-                                       FontSize="{DynamicResource FontSize18}"
-                                       FontWeight="Bold" />
-                            <TextBlock Text="{DynamicResource Str.App.Title}"
-                                       FontSize="{DynamicResource FontSize105}"
-                                       Foreground="{DynamicResource TextMutedBrush}" />
                             <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,10,18" />
 
                             <Grid Margin="0,0,10,10">
@@ -1926,6 +1883,51 @@
                                     <TextBlock x:Name="PageRightPaddingValueText" Grid.Column="1" FontFamily="{StaticResource MonoFont}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextAlignment="Right" />
                                 </Grid>
                             </Grid>
+                                </StackPanel>
+                                </Border>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="GroupsOverlay"
+              Visibility="Collapsed"
+              Panel.ZIndex="25">
+            <Border x:Name="GroupsBackdrop"
+                    Background="{DynamicResource ScrimBrush}"
+                    MouseDown="GroupsBackdrop_MouseDown" />
+
+            <Border x:Name="GroupsCard"
+                    Width="820"
+                    MaxHeight="620"
+                    Margin="0,36"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SettingsPanelBrush}"
+                    BorderBrush="{DynamicResource SettingsPanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="0">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="GroupsTranslate" Y="18" />
+                </Border.RenderTransform>
+
+                <Grid Margin="24,20,20,18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Str.Section.Groups}"
+                                       FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="{DynamicResource FontSize18}"
+                                       FontWeight="Bold" />
+                            <TextBlock Text="{DynamicResource Str.App.Title}"
+                                       FontSize="{DynamicResource FontSize105}"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
                         </StackPanel>
                         <Button HorizontalAlignment="Right"
                                 VerticalAlignment="Top"
