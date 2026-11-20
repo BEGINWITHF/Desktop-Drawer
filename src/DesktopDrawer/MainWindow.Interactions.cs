@@ -1024,6 +1024,11 @@ public partial class MainWindow
         {
             PageList.SelectedItems.Add(hit);
         }
+
+        // Match the single-click path: it lets the item containers re-measure
+        // as they are selected, which is what grows the selection card for a
+        // wrapped name. Programmatic selection skips that pass.
+        PageList.UpdateLayout();
     }
 
     private void EndRubberBand()

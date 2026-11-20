@@ -203,9 +203,7 @@
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}"
                                  Value="True">
-                        <Setter TargetName="NameText" Property="MaxHeight" Value="480" />
-                        <Setter TargetName="NameText" Property="TextTrimming" Value="None" />
-                    </DataTrigger>
+                                                            </DataTrigger>
                     <DataTrigger Binding="{Binding HasIcon}" Value="False">
                         <Setter TargetName="FileGlyph" Property="Visibility" Value="Visible" />
                     </DataTrigger>
