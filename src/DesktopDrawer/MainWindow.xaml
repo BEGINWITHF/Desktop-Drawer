@@ -1734,7 +1734,7 @@
 
             <Border x:Name="StyleCard"
                     Width="820"
-                    MaxHeight="620"
+                    Height="620"
                     Margin="0,36"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
@@ -1943,7 +1943,7 @@
 
             <Border x:Name="GroupsCard"
                     Width="820"
-                    MaxHeight="620"
+                    Height="620"
                     Margin="0,36"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
