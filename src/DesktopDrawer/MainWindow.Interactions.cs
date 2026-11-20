@@ -1120,10 +1120,12 @@ public partial class MainWindow
             : hoverTop + hoverTile.ActualHeight;
         double hoverPadTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
         double hoverPadBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
+        double hoverPadLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
+        double hoverPadRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
 
-        Canvas.SetLeft(_hoverBox, topLeft.X);
+        Canvas.SetLeft(_hoverBox, topLeft.X - hoverPadLeft);
         Canvas.SetTop(_hoverBox, hoverTop - hoverPadTop);
-        _hoverBox.Width = Math.Max(0, container.ActualWidth);
+        _hoverBox.Width = Math.Max(0, container.ActualWidth) + hoverPadLeft + hoverPadRight;
         _hoverBox.Height = Math.Max(0, hoverBottom - hoverTop) + hoverPadTop + hoverPadBottom;
         _hoverBox.Visibility = Visibility.Visible;
     }
@@ -1170,6 +1172,8 @@ public partial class MainWindow
             double tileTopY = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0)).Y;
             double padTop = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
             double padBottom = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
+            double padLeft = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
+            double padRight = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
             double bottom = tileTopY + tile.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
@@ -1193,9 +1197,9 @@ public partial class MainWindow
                 SnapsToDevicePixels = true
             };
 
-            Canvas.SetLeft(pill, topLeft.X);
+            Canvas.SetLeft(pill, topLeft.X - padLeft);
             Canvas.SetTop(pill, tileTopY - padTop);
-            pill.Width = Math.Max(0, container.ActualWidth);
+            pill.Width = Math.Max(0, container.ActualWidth) + padLeft + padRight;
             // Long names wrap past the cell; keep a small breathing space under
             // the last line so the capsule never touches the text.
             pill.Height = Math.Max(0, bottom - tileTopY) + padTop + padBottom;

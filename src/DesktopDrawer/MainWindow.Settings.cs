@@ -94,8 +94,12 @@ public partial class MainWindow
 
         PageTopMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingTop, 0, 40);
         PageBottomMarginSlider.Value = Math.Clamp(_settings.SelectionPaddingBottom, 0, 40);
+        PageLeftPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingLeft, 0, 40);
+        PageRightPaddingSlider.Value = Math.Clamp(_settings.SelectionPaddingRight, 0, 40);
         PageTopMarginValueText.Text = $"{(int)Math.Round(PageTopMarginSlider.Value)} px";
         PageBottomMarginValueText.Text = $"{(int)Math.Round(PageBottomMarginSlider.Value)} px";
+        PageLeftPaddingValueText.Text = $"{(int)Math.Round(PageLeftPaddingSlider.Value)} px";
+        PageRightPaddingValueText.Text = $"{(int)Math.Round(PageRightPaddingSlider.Value)} px";
 
         FoldersFirstToggle.IsChecked = _settings.FoldersFirst;
         ShowHiddenToggle.IsChecked = _settings.ShowHidden;
@@ -497,8 +501,12 @@ public partial class MainWindow
 
         _settings.SelectionPaddingTop = (int)Math.Round(PageTopMarginSlider.Value);
         _settings.SelectionPaddingBottom = (int)Math.Round(PageBottomMarginSlider.Value);
+        _settings.SelectionPaddingLeft = (int)Math.Round(PageLeftPaddingSlider.Value);
+        _settings.SelectionPaddingRight = (int)Math.Round(PageRightPaddingSlider.Value);
         PageTopMarginValueText.Text = $"{_settings.SelectionPaddingTop} px";
         PageBottomMarginValueText.Text = $"{_settings.SelectionPaddingBottom} px";
+        PageLeftPaddingValueText.Text = $"{_settings.SelectionPaddingLeft} px";
+        PageRightPaddingValueText.Text = $"{_settings.SelectionPaddingRight} px";
         RefreshSelectionPills();
         SaveSettings();
     }
