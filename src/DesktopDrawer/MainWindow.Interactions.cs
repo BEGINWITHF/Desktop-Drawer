@@ -1174,6 +1174,8 @@ public partial class MainWindow
             var pill = new Border
             {
                 Background = (Brush)FindResource("AccentSoftBrush"),
+                BorderBrush = (Brush)FindResource("AccentBorderBrush"),
+                BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(14),
                 IsHitTestVisible = false,
                 SnapsToDevicePixels = true
