@@ -1754,11 +1754,11 @@
 
                     <Grid>
                         <StackPanel>
-                            <TextBlock Text="{DynamicResource Str.Appearance.Colors}"
+                            <TextBlock Text="{DynamicResource Str.Style.Title}"
                                        FontFamily="{StaticResource DisplayFont}"
                                        FontSize="{DynamicResource FontSize18}"
                                        FontWeight="Bold" />
-                            <TextBlock Text="{DynamicResource Str.Style.PanelDescription}"
+                            <TextBlock Text="{DynamicResource Str.App.Title}"
                                        FontSize="{DynamicResource FontSize105}"
                                        Foreground="{DynamicResource TextMutedBrush}" />
                         </StackPanel>
@@ -1776,39 +1776,50 @@
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="0,16,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200" />
-                            <ColumnDefinition Width="1" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                            <Button x:Name="ThemesSectionButton"
-                                    Content="{DynamicResource Str.Style.Themes}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="8,6"
-                                    HorizontalContentAlignment="Left"
-                                    Cursor="Hand"
-                                    FontFamily="{StaticResource DisplayFont}"
-                                    FontSize="{DynamicResource FontSize14}"
-                                    FontWeight="SemiBold"
-                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                    Click="ThemesSectionButton_Click" />
-                            <Button x:Name="CapsulePaddingButton"
-                                    Content="{DynamicResource Str.Style.CapsulePadding}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Padding="8,6"
-                                    Margin="0,2,0,0"
-                                    HorizontalContentAlignment="Left"
-                                    Cursor="Hand"
-                                    FontFamily="{StaticResource DisplayFont}"
-                                    FontSize="{DynamicResource FontSize14}"
-                                    FontWeight="SemiBold"
-                                    Foreground="{DynamicResource TextMutedBrush}"
-                                    Click="CapsulePaddingButton_Click" />
-                        </StackPanel>
+                        <TextBlock Text="{DynamicResource Str.Style.PanelDescription}"
+                                   Style="{StaticResource SettingDescription}" />
+
+                        <Grid Grid.Row="1" Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="216" />
+                                <ColumnDefinition Width="1" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                        <DockPanel Grid.Column="0" Margin="0,0,16,0">
+                            <TextBlock DockPanel.Dock="Top"
+                                       Text="{DynamicResource Str.Style.Sections}"
+                                       Style="{StaticResource SettingTitle}"
+                                       Margin="2,0,0,8" />
+
+                            <StackPanel>
+                                <Button x:Name="ThemesSectionButton"
+                                        Content="{DynamicResource Str.Style.Themes}"
+                                        Style="{StaticResource PanelListButton}"
+                                        Height="30"
+                                        Margin="0,0,0,4"
+                                        Padding="8,0"
+                                        Background="{DynamicResource PanelHoverBrush}"
+                                        BorderBrush="{DynamicResource StrokeStrongBrush}"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        Click="ThemesSectionButton_Click" />
+                                <Button x:Name="CapsulePaddingButton"
+                                        Content="{DynamicResource Str.Style.CapsulePadding}"
+                                        Style="{StaticResource PanelListButton}"
+                                        Height="30"
+                                        Margin="0,0,0,4"
+                                        Padding="8,0"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Foreground="{DynamicResource TextSecondaryBrush}"
+                                        Click="CapsulePaddingButton_Click" />
+                            </StackPanel>
+                        </DockPanel>
 
                         <Border Grid.Column="1"
                                 Width="1"
@@ -1819,10 +1830,7 @@
                             <ScrollViewer x:Name="ThemesSection"
                                           VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel>
-                                    <TextBlock Text="{DynamicResource Str.Style.Themes}"
-                                               Style="{StaticResource SettingTitle}"
-                                               Margin="2,0,0,8" />
+                                <StackPanel Margin="0,0,4,4">
                                     <StackPanel x:Name="StyleThemePanel" />
 
                                     <Border Height="1" Background="{DynamicResource DividerBrush}" Margin="0,16,0,14" />
@@ -1853,11 +1861,7 @@
                                           Visibility="Collapsed"
                                           VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
-                                <StackPanel>
-                                    <TextBlock Text="{DynamicResource Str.Style.CapsulePadding}"
-                                               Style="{StaticResource SettingTitle}"
-                                               Margin="2,0,0,12" />
-
+                                <StackPanel Margin="0,0,4,4">
                                     <Grid Margin="0,0,10,10">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -1926,6 +1930,7 @@
                         </Grid>
                     </Grid>
                 </Grid>
+            </Grid>
             </Border>
         </Grid>
 

@@ -421,10 +421,20 @@ public partial class MainWindow
     {
         ThemesSection.Visibility = showThemes ? Visibility.Visible : Visibility.Collapsed;
         CapsuleSection.Visibility = showThemes ? Visibility.Collapsed : Visibility.Visible;
-        ThemesSectionButton.SetResourceReference(
-            Control.ForegroundProperty, showThemes ? "TextPrimaryBrush" : "TextMutedBrush");
-        CapsulePaddingButton.SetResourceReference(
-            Control.ForegroundProperty, showThemes ? "TextMutedBrush" : "TextPrimaryBrush");
+        ApplySectionButton(ThemesSectionButton, showThemes);
+        ApplySectionButton(CapsulePaddingButton, !showThemes);
+    }
+
+    private void ApplySectionButton(Button button, bool selected)
+    {
+        button.Background = selected
+            ? (Brush)FindResource("PanelHoverBrush")
+            : Brushes.Transparent;
+        button.BorderBrush = selected
+            ? (Brush)FindResource("StrokeStrongBrush")
+            : Brushes.Transparent;
+        button.SetResourceReference(
+            Control.ForegroundProperty, selected ? "TextPrimaryBrush" : "TextSecondaryBrush");
     }
 
     private void StyleCloseButton_Click(object sender, RoutedEventArgs e)
@@ -494,7 +504,7 @@ public partial class MainWindow
 
             var button = new Button
             {
-                Style = (Style)FindResource("GhostButton"),
+                Style = (Style)FindResource("PanelListButton"),
                 Height = 48,
                 Margin = new Thickness(0, 0, 0, 6),
                 Padding = new Thickness(8, 0, 8, 0),
