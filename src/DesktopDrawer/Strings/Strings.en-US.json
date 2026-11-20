@@ -145,6 +145,8 @@
   "Style.Icons": "Icons",
   "Style.Grid": "Grid",
   "Style.Wallpaper": "Wallpaper",
+  "Style.AutoPaddingTip": "Reset to the default padding",
+  "Grid.AutoSpacingTip": "Reset to 4 px",
   "Style.Title": "STYLE",
   "Style.Themes": "Themes",
   "Style.Colors": "Colors",

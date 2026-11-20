@@ -145,6 +145,8 @@
   "Style.Icons": "圖示",
   "Style.Grid": "網格",
   "Style.Wallpaper": "桌布",
+  "Style.AutoPaddingTip": "回復預設內邊距",
+  "Grid.AutoSpacingTip": "回復為 4 px",
   "Style.Title": "樣式",
   "Style.Themes": "主題",
   "Style.Colors": "顏色",

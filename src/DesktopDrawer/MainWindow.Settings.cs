@@ -364,6 +364,36 @@ public partial class MainWindow
         RecalculateGrid(force: true);
     }
 
+    private void ResetColumnSpacingButton_Click(object sender, RoutedEventArgs e)
+    {
+        ColumnSpacingSlider.Value = 4;
+    }
+
+    private void ResetRowSpacingButton_Click(object sender, RoutedEventArgs e)
+    {
+        RowSpacingSlider.Value = 4;
+    }
+
+    private void ResetCapsuleTopButton_Click(object sender, RoutedEventArgs e)
+    {
+        PageTopMarginSlider.Value = 8;
+    }
+
+    private void ResetCapsuleBottomButton_Click(object sender, RoutedEventArgs e)
+    {
+        PageBottomMarginSlider.Value = 12;
+    }
+
+    private void ResetCapsuleLeftButton_Click(object sender, RoutedEventArgs e)
+    {
+        PageLeftPaddingSlider.Value = 8;
+    }
+
+    private void ResetCapsuleRightButton_Click(object sender, RoutedEventArgs e)
+    {
+        PageRightPaddingSlider.Value = 8;
+    }
+
     private void FoldersFirstToggle_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializingSettings)

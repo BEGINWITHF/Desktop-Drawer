@@ -145,6 +145,8 @@
   "Style.Icons": "アイコン",
   "Style.Grid": "グリッド",
   "Style.Wallpaper": "壁紙",
+  "Style.AutoPaddingTip": "既定の余白に戻す",
+  "Grid.AutoSpacingTip": "4 px に戻す",
   "Style.Title": "スタイル",
   "Style.Themes": "テーマ",
   "Style.Colors": "色",
