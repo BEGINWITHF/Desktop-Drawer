@@ -1182,7 +1182,9 @@ public partial class MainWindow
             Canvas.SetLeft(pill, topLeft.X);
             Canvas.SetTop(pill, topLeft.Y);
             pill.Width = Math.Max(0, container.ActualWidth);
-            // Long names wrap past the cell; keep a small breathing space under\n            // the last line so the capsule never touches the text.\n            pill.Height = Math.Max(0, bottom - topLeft.Y) + 12;
+            // Long names wrap past the cell; keep a small breathing space under
+            // the last line so the capsule never touches the text.
+            pill.Height = Math.Max(0, bottom - topLeft.Y) + 12;
 
             SelectionBackdropCanvas.Children.Insert(0, pill);
             _selectionPills[item] = pill;
