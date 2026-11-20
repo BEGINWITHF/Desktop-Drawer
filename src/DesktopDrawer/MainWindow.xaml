@@ -67,8 +67,6 @@
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Panel.ZIndex" Value="10" />
-                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
