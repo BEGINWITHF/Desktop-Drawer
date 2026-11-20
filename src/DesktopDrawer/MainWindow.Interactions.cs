@@ -1107,7 +1107,7 @@ public partial class MainWindow
                 SnapsToDevicePixels = true
             };
 
-            SelectionCanvas.Children.Insert(0, _hoverBox);
+            SelectionBackdropCanvas.Children.Insert(0, _hoverBox);
         }
 
         Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
@@ -1128,9 +1128,11 @@ public partial class MainWindow
     /// </summary>
     private void RefreshSelectionPills()
     {
+        UpdateHoverBox(null);
+
         foreach (Border existing in _selectionPills.Values)
         {
-            SelectionCanvas.Children.Remove(existing);
+            SelectionBackdropCanvas.Children.Remove(existing);
         }
 
         _selectionPills.Clear();
@@ -1182,7 +1184,7 @@ public partial class MainWindow
             pill.Width = Math.Max(0, container.ActualWidth);
             pill.Height = Math.Max(0, bottom - topLeft.Y);
 
-            SelectionCanvas.Children.Insert(0, pill);
+            SelectionBackdropCanvas.Children.Insert(0, pill);
             _selectionPills[item] = pill;
         }
     }

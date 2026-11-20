@@ -61,9 +61,6 @@
                             <ContentPresenter x:Name="ContentHost" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource TileHoverBorderBrush}" />
-                            </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Panel.ZIndex" Value="10" />
                             </Trigger>
@@ -229,6 +226,7 @@
                    Fill="#000000"
                    Opacity="0"
                    IsHitTestVisible="False" />
+        <Canvas x:Name="SelectionBackdropCanvas" IsHitTestVisible="False" />
         <Grid>
             <Border x:Name="HeaderBar"
                     Height="58"
