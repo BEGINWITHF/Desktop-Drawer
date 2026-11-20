@@ -135,7 +135,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private Point _rubberBandOrigin;
     private bool _shellMenuPending;
     private Point _lastContextMenuPoint;
-    private ListBoxItem? _expandedContainer;
+    private readonly List<ListBoxItem> _expandedContainers = [];
     private string _typeAhead = string.Empty;
     private DateTime _typeAheadTime;
     private CancellationTokenSource? _prefetchCts;
@@ -955,6 +955,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _ = LoadVisibleIconsAsync(pageItems);
+
+        // Selection restored by a refresh or a page change happens while
+        // _updatingPage is set, so the change handler skips the expansion pass.
+        if (_hasLoadedOnce)
+        {
+            PageList.UpdateLayout();
+            UpdateExpandedLabel();
+        }
     }
 
     private async Task LoadVisibleIconsAsync(List<DesktopItem> items)
