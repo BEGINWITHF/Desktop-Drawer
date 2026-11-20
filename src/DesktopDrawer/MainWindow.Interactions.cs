@@ -1065,6 +1065,60 @@ public partial class MainWindow
         RefreshSelectionPills();
     }
 
+    private DesktopItem? _hoverItem;
+    private Border? _hoverBox;
+
+    /// <summary>
+    /// Hover outline for the tile under the cursor. It is drawn on the overlay
+    /// canvas with the same bounds as the selection capsule, so the two always
+    /// line up; the item card itself stays transparent.
+    /// </summary>
+    private void UpdateHoverBox(DesktopItem? item)
+    {
+        if (ReferenceEquals(item, _hoverItem))
+        {
+            return;
+        }
+
+        _hoverItem = item;
+
+        if (item is null ||
+            PageList.SelectedItems.Contains(item) ||
+            PageList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem container ||
+            !container.IsVisible)
+        {
+            if (_hoverBox is not null)
+            {
+                _hoverBox.Visibility = Visibility.Collapsed;
+            }
+
+            return;
+        }
+
+        if (_hoverBox is null)
+        {
+            _hoverBox = new Border
+            {
+                Background = (Brush)FindResource("TileHoverBrush"),
+                BorderBrush = (Brush)FindResource("TileHoverBorderBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            SelectionCanvas.Children.Insert(0, _hoverBox);
+        }
+
+        Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+
+        Canvas.SetLeft(_hoverBox, topLeft.X);
+        Canvas.SetTop(_hoverBox, topLeft.Y);
+        _hoverBox.Width = Math.Max(0, container.ActualWidth);
+        _hoverBox.Height = Math.Max(0, container.ActualHeight);
+        _hoverBox.Visibility = Visibility.Visible;
+    }
+
     private readonly Dictionary<DesktopItem, Border> _selectionPills = new();
 
     /// <summary>
@@ -1101,8 +1155,8 @@ public partial class MainWindow
                 continue;
             }
 
-            Point topLeft = tile.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
-            double bottom = topLeft.Y + tile.ActualHeight;
+            Point topLeft = container.TransformToAncestor(RootGrid).Transform(new Point(0, 0));
+            double bottom = topLeft.Y + container.ActualHeight;
 
             FrameworkElement? name = FindNamed<FrameworkElement>(tile, "NameText");
 
@@ -1125,7 +1179,7 @@ public partial class MainWindow
 
             Canvas.SetLeft(pill, topLeft.X);
             Canvas.SetTop(pill, topLeft.Y);
-            pill.Width = Math.Max(0, tile.ActualWidth);
+            pill.Width = Math.Max(0, container.ActualWidth);
             pill.Height = Math.Max(0, bottom - topLeft.Y);
 
             SelectionCanvas.Children.Insert(0, pill);
@@ -1192,6 +1246,11 @@ public partial class MainWindow
 
     private void PageList_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (!_rubberBandActive && e.LeftButton != MouseButtonState.Pressed)
+        {
+            UpdateHoverBox(GetItemFromSource(e.OriginalSource));
+        }
+
         if (_rubberBandActive)
         {
             if (e.LeftButton == MouseButtonState.Pressed)

@@ -200,6 +200,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         PageList.RenderTransform = new TranslateTransform();
         PageList.SelectionChanged += (_, _) => RefreshSelectionPills();
+        PageList.MouseLeave += (_, _) => UpdateHoverBox(null);
         DotsHost.SizeChanged += DotsHost_SizeChanged;
         ApplyDensity(_settings.Density);
         PageList.ContextMenu = BuildEmptyAreaMenu();

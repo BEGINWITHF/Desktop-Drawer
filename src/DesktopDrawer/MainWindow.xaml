@@ -62,7 +62,6 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource TileHoverBrush}" />
                                 <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource TileHoverBorderBrush}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
