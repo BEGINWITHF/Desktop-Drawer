@@ -5,7 +5,14 @@ using DesktopDrawer.Helpers;
 namespace DesktopDrawer.Services;
 
 /// <summary>A Windows key combination caught before the shell can consume it.</summary>
-internal readonly record struct WinChord(byte Key, bool Control, bool Shift, bool Alt);
+internal readonly record struct WinChord(
+    byte Key,
+    bool Control,
+    bool Shift,
+    bool Alt,
+    bool ControlInject,
+    bool ShiftInject,
+    bool AltInject);
 
 /// <summary>
 /// Watches the keyboard for Windows key combinations while the drawer is the
@@ -22,10 +29,17 @@ internal sealed class GlobalShortcutHook : IDisposable
     private const int WmSysKeyUp = 0x0105;
 
     private const int GaRoot = 2;
+    private const uint LlkhfInjected = 0x10;
 
     private const int VkShift = 0x10;
     private const int VkControl = 0x11;
     private const int VkMenu = 0x12;
+    private const int VkLShift = 0xA0;
+    private const int VkRShift = 0xA1;
+    private const int VkLControl = 0xA2;
+    private const int VkRControl = 0xA3;
+    private const int VkLMenu = 0xA4;
+    private const int VkRMenu = 0xA5;
     private const int VkLWin = 0x5B;
     private const int VkRWin = 0x5C;
 
@@ -37,6 +51,16 @@ internal sealed class GlobalShortcutHook : IDisposable
     private bool _winDown;
     private bool _chordPressed;
     private DateTime _winExpiry = DateTime.MinValue;
+
+    /// <summary>
+    /// Modifiers pressed after the Windows key are swallowed too: if the Shift
+    /// key reached the IME on its own, Microsoft Pinyin treats it as a bare
+    /// Shift tap and switches to English. The chord is replayed with the
+    /// modifier instead.
+    /// </summary>
+    private bool _shiftHeld;
+    private bool _controlHeld;
+    private bool _altHeld;
 
     private readonly IntPtr _owner;
     private readonly Dispatcher _dispatcher;
@@ -127,23 +151,7 @@ internal sealed class GlobalShortcutHook : IDisposable
             return CallNextHookEx(_hook, code, wParam, lParam);
         }
 
-        // Our own replay must never be captured again.
-        if (DesktopKeyForwarder.IsForwarding)
-        {
-            return CallNextHookEx(_hook, code, wParam, lParam);
-        }
-
         var data = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
-
-        // The hook is called on its own thread; if that thread is ever late, the
-        // key event was delayed before any application saw it. Record only the
-        // outliers so a reported typing freeze can be tied to evidence.
-        int dispatchDelay = unchecked(Environment.TickCount - (int)data.time);
-
-        if (dispatchDelay is > 250 and < 60_000)
-        {
-            AppLog.Write($"Keyboard hook ran {dispatchDelay} ms after the key event");
-        }
 
         int message = wParam.ToInt32();
         bool up = message is WmKeyUp or WmSysKeyUp;
@@ -156,12 +164,47 @@ internal sealed class GlobalShortcutHook : IDisposable
 
         byte key = (byte)data.vkCode;
 
+        // Our own replay must never be captured again, but a real key release
+        // that happens while it is running still has to clear the suppression
+        // list. Otherwise a swallowed Shift up lingers and the next real Shift
+        // up is eaten, leaving the IME thinking Shift is still held.
+        if (DesktopKeyForwarder.IsForwarding)
+        {
+            bool injected = (data.flags & LlkhfInjected) != 0;
+
+            if (!injected && up && _suppressed.Remove(key))
+            {
+                ClearModifier(key);
+
+                if (key is VkLWin or VkRWin)
+                {
+                    _winDown = false;
+                }
+
+                return new IntPtr(1);
+            }
+
+            return CallNextHookEx(_hook, code, wParam, lParam);
+        }
+
+        // The hook is called on its own thread; if that thread is ever late, the
+        // key event was delayed before any application saw it. Record only the
+        // outliers so a reported typing freeze can be tied to evidence.
+        int dispatchDelay = unchecked(Environment.TickCount - (int)data.time);
+
+        if (dispatchDelay is > 250 and < 60_000)
+        {
+            AppLog.Write($"Keyboard hook ran {dispatchDelay} ms after the key event");
+        }
+
         if (up)
         {
             if (!_suppressed.Remove(key))
             {
                 return CallNextHookEx(_hook, code, wParam, lParam);
             }
+
+            ClearModifier(key);
 
             if (key is VkLWin or VkRWin)
             {
@@ -193,26 +236,81 @@ internal sealed class GlobalShortcutHook : IDisposable
             _suppressed.Add(key);
             _winDown = true;
             _chordPressed = false;
+            _shiftHeld = false;
+            _controlHeld = false;
+            _altHeld = false;
             _winExpiry = DateTime.UtcNow.AddSeconds(3);
             return new IntPtr(1);
         }
 
-        if (!_winDown || key is VkShift or VkControl or VkMenu)
+        if (!_winDown)
         {
             return CallNextHookEx(_hook, code, wParam, lParam);
         }
 
+        if (IsModifierKey(key))
+        {
+            _suppressed.Add(key);
+
+            if (IsShiftKey(key))
+            {
+                _shiftHeld = true;
+            }
+            else if (IsControlKey(key))
+            {
+                _controlHeld = true;
+            }
+            else
+            {
+                _altHeld = true;
+            }
+
+            _chordPressed = true;
+            return new IntPtr(1);
+        }
+
         var chord = new WinChord(
             key,
-            IsPressed(VkControl),
-            IsPressed(VkShift),
-            IsPressed(VkMenu));
+            IsPressed(VkControl) || _controlHeld,
+            IsPressed(VkShift) || _shiftHeld,
+            IsPressed(VkMenu) || _altHeld,
+            _controlHeld,
+            _shiftHeld,
+            _altHeld);
 
         _suppressed.Add(key);
         _chordPressed = true;
         _dispatcher.BeginInvoke(DispatcherPriority.Input, () => _onChord(chord));
         return new IntPtr(1);
     }
+
+    private void ClearModifier(byte key)
+    {
+        if (IsShiftKey(key))
+        {
+            _shiftHeld = false;
+        }
+        else if (IsControlKey(key))
+        {
+            _controlHeld = false;
+        }
+        else if (IsAltKey(key))
+        {
+            _altHeld = false;
+        }
+    }
+
+    private static bool IsShiftKey(byte key) =>
+        key is VkShift or VkLShift or VkRShift;
+
+    private static bool IsControlKey(byte key) =>
+        key is VkControl or VkLControl or VkRControl;
+
+    private static bool IsAltKey(byte key) =>
+        key is VkMenu or VkLMenu or VkRMenu;
+
+    private static bool IsModifierKey(byte key) =>
+        IsShiftKey(key) || IsControlKey(key) || IsAltKey(key);
 
     private bool IsOwnerActive()
     {

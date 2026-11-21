@@ -75,7 +75,10 @@ internal static class DesktopKeyForwarder
         bool control,
         bool shift,
         bool alt,
-        bool win)
+        bool win,
+        bool controlInject = false,
+        bool shiftInject = false,
+        bool altInject = false)
     {
         if (IsForwarding)
         {
@@ -83,7 +86,9 @@ internal static class DesktopKeyForwarder
         }
 
         SuspendCapture(500);
-        return SendChord(virtualKey, control, shift, alt, win);
+        return SendChord(
+            virtualKey, control, shift, alt, win,
+            controlInject, shiftInject, altInject);
     }
 
     public static bool TryForward(
@@ -93,7 +98,10 @@ internal static class DesktopKeyForwarder
         bool control,
         bool shift,
         bool alt,
-        bool win)
+        bool win,
+        bool controlInject = false,
+        bool shiftInject = false,
+        bool altInject = false)
     {
         lock (Gate)
         {
@@ -149,7 +157,9 @@ internal static class DesktopKeyForwarder
                 }
 
                 _ignoreUntil = DateTime.UtcNow.AddMilliseconds(500);
-                injected = SendChord(virtualKey, control, shift, alt, win);
+                injected = SendChord(
+                    virtualKey, control, shift, alt, win,
+                    controlInject, shiftInject, altInject);
 
                 if (!injected)
                 {
@@ -169,26 +179,36 @@ internal static class DesktopKeyForwarder
         }
     }
 
-    private static bool SendChord(byte virtualKey, bool control, bool shift, bool alt, bool win)
+    private static bool SendChord(
+        byte virtualKey,
+        bool control,
+        bool shift,
+        bool alt,
+        bool win,
+        bool controlInject,
+        bool shiftInject,
+        bool altInject)
     {
         var downs = new List<Input>();
         var pressedModifiers = new List<byte>();
 
         // Only synthesize modifiers the user is not already holding; injecting a
-        // duplicate modifier would leave the OS believing it was released.
-        if (control && !IsHeld(VkControl))
+        // duplicate modifier would leave the OS believing it was released. When the
+        // hook swallowed the modifier, the physical state cannot be trusted, so it
+        // is injected as well.
+        if (control && (controlInject || !IsHeld(VkControl)))
         {
             downs.Add(KeyInput(VkControl, up: false));
             pressedModifiers.Add(VkControl);
         }
 
-        if (shift && !IsHeld(VkShift))
+        if (shift && (shiftInject || !IsHeld(VkShift)))
         {
             downs.Add(KeyInput(VkShift, up: false));
             pressedModifiers.Add(VkShift);
         }
 
-        if (alt && !IsHeld(VkMenu))
+        if (alt && (altInject || !IsHeld(VkMenu)))
         {
             downs.Add(KeyInput(VkMenu, up: false));
             pressedModifiers.Add(VkMenu);

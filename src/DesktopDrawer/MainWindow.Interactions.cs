@@ -311,18 +311,21 @@ public partial class MainWindow
 
         ShowChrome();
 
-        // Win+Space switches the Windows input language / IME. It belongs to the
-        // focused window's input context, so it is injected in place: replaying it
-        // against the desktop would move focus away mid-typing and could leave the
-        // language change on the wrong window.
-        if (chord.Key == 0x20)
+        // Win+Space switches the input language; Win+Shift+S and Win+PrtScn open
+        // the screenshot tool. These are global and belong to the current input
+        // context, so injecting them in place avoids moving focus away while the
+        // modifier keys are still held (which left the IME in English mode).
+        if (IsInPlaceChord(chord))
         {
             DesktopKeyForwarder.SendSystemChord(
                 chord.Key,
                 chord.Control,
                 chord.Shift,
                 chord.Alt,
-                win: true);
+                win: true,
+                controlInject: chord.ControlInject,
+                shiftInject: chord.ShiftInject,
+                altInject: chord.AltInject);
             return;
         }
 
@@ -338,7 +341,28 @@ public partial class MainWindow
             chord.Control,
             chord.Shift,
             chord.Alt,
-            win: true);
+            win: true,
+            controlInject: chord.ControlInject,
+            shiftInject: chord.ShiftInject,
+            altInject: chord.AltInject);
+    }
+
+    private static bool IsInPlaceChord(WinChord chord)
+    {
+        // Win+Space.
+        if (chord.Key == 0x20)
+        {
+            return true;
+        }
+
+        // Win+PrtScn.
+        if (chord.Key == 0x2C)
+        {
+            return true;
+        }
+
+        // Win+Shift+S.
+        return chord.Key == 0x53 && chord.Shift && !chord.Control && !chord.Alt;
     }
 
     private void SetDensityFromShortcut(TileDensity density)    {
